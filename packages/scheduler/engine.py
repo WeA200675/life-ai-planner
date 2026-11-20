@@ -1,6 +1,6 @@
 """Pure, deterministic, timezone-aware daily scheduler. No network or LLM required."""
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from math import floor
 
 @dataclass(frozen=True)
@@ -33,8 +33,20 @@ def schedule(start: datetime, end: datetime, tasks: list[Task],
     The 70/30 limit applies to flexible-task time after fixed commitments.
     Fixed blocks are immutable. Deferred tasks remain explicit, never discarded.
     """
-    if start.tzinfo is None or end.tzinfo is None:
+    if (start.tzinfo is None or end.tzinfo is None or
+            start.utcoffset() is None or end.utcoffset() is None):
         raise ValueError("start/end must be timezone-aware")
+    if any(t.deadline is not None and
+           (t.deadline.tzinfo is None or t.deadline.utcoffset() is None)
+           for t in tasks):
+        raise ValueError("deadlines must be timezone-aware")
+    # Normalize to a monotonic UTC timeline; wall-clock arithmetic across DST
+    # transitions otherwise creates nonexistent or duplicated local instants.
+    start = start.astimezone(timezone.utc)
+    end = end.astimezone(timezone.utc)
+    tasks = [Task(t.id, t.title, t.minutes, t.priority,
+                  t.deadline.astimezone(timezone.utc) if t.deadline else None)
+             for t in tasks]
     if end <= start or not 0 <= buffer_ratio < 1:
         raise ValueError("invalid window or buffer ratio")
     if any(t.minutes <= 0 or not t.id or not t.title for t in tasks):
@@ -42,6 +54,12 @@ def schedule(start: datetime, end: datetime, tasks: list[Task],
     if len({t.id for t in tasks}) != len(tasks):
         raise ValueError("duplicate task id")
     fixed = list(fixed or [])
+    if any(b.start.tzinfo is None or b.end.tzinfo is None or
+           b.start.utcoffset() is None or b.end.utcoffset() is None
+           for b in fixed):
+        raise ValueError("fixed blocks must be timezone-aware")
+    fixed = [Block(b.task_id, b.start.astimezone(timezone.utc),
+                   b.end.astimezone(timezone.utc)) for b in fixed]
     if any(b.start.tzinfo is None or b.end.tzinfo is None or b.start < start or
            b.end > end or b.end <= b.start for b in fixed):
         raise ValueError("invalid fixed block")
