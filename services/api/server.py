@@ -4,12 +4,13 @@ Development-only loopback server. Do not expose publicly without TLS,
 authentication, rate limiting and a reverse proxy.
 """
 from dataclasses import asdict
+from math import isfinite
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from packages.storage.sqlite_store import TaskStore, StoredTask
-from packages.scheduler import Task, schedule
+from packages.scheduler import Task, Block, schedule
 
 MAX_BODY = 65536
 
@@ -25,7 +26,10 @@ def build_handler(store):
             self.wfile.write(data)
 
         def _body(self):
-            size = int(self.headers.get("Content-Length", "0"))
+            raw_size = self.headers.get("Content-Length", "0")
+            if not raw_size.isdecimal():
+                raise ValueError("invalid Content-Length")
+            size = int(raw_size)
             if not 0 < size <= MAX_BODY:
                 raise ValueError("invalid request size")
             value = json.loads(self.rfile.read(size))
@@ -46,18 +50,36 @@ def build_handler(store):
                 if self.path == "/tasks":
                     if set(body) - {"id", "title", "minutes", "priority", "deadline", "status"}:
                         raise ValueError("unexpected task fields")
+                    if type(body.get("id")) is not str or type(body.get("title")) is not str or type(body.get("minutes")) is not int or type(body.get("priority", 0)) is not int:
+                        raise ValueError("invalid task field types")
+                    if body.get("deadline") is not None and type(body["deadline"]) is not str:
+                        raise ValueError("invalid deadline type")
+                    if type(body.get("status", "open")) is not str:
+                        raise ValueError("invalid status type")
                     task = StoredTask(**body)
                     store.put(task)
                     return self._json(200, {"task": asdict(task)})
                 if self.path == "/plan":
                     start = datetime.fromisoformat(body["start"])
                     end = datetime.fromisoformat(body["end"])
+                    if set(body) - {"start", "end", "buffer_ratio", "fixed"}:
+                        raise ValueError("unexpected plan fields")
+                    ratio = body.get("buffer_ratio", 0.30)
+                    if type(ratio) not in (int, float) or not isfinite(ratio) or not 0 <= ratio < 1:
+                        raise ValueError("invalid buffer ratio")
+                    raw_fixed = body.get("fixed", [])
+                    if not isinstance(raw_fixed, list) or len(raw_fixed) > 500:
+                        raise ValueError("invalid fixed blocks")
                     fixed = []
+                    for b in raw_fixed:
+                        if not isinstance(b, dict) or set(b) != {"task_id", "start", "end"} or type(b["task_id"]) is not str or not b["task_id"]:
+                            raise ValueError("invalid fixed block")
+                        fixed.append(Block(b["task_id"], datetime.fromisoformat(b["start"]), datetime.fromisoformat(b["end"])))
                     tasks = [Task(t.id, t.title, t.minutes, t.priority,
                                   datetime.fromisoformat(t.deadline) if t.deadline else None)
                              for t in store.list("open")]
                     result = schedule(start, end, tasks, fixed,
-                                      float(body.get("buffer_ratio", 0.30)))
+                                      ratio)
                     return self._json(200, {
                         "blocks": [{"task_id": b.task_id, "start": b.start.isoformat(),
                                     "end": b.end.isoformat()} for b in result.blocks],
