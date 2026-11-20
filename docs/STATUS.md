@@ -103,3 +103,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Blocker:** Laufzeitverifikation und Flutter-/Android-Geräteabnahme ausstehend. Öffentliches Repository: keine personenbezogenen Daten oder Geheimnisse committen.
 - **Nächster Schritt:** GitHub-Actions-Workflow-Ergebnis des neuen HEAD prüfen und gegebenenfalls Fehler korrigieren; anschließend SQLite-Backup/Restore und Flutter-MVP implementieren.
 - **Abnahme:** M1–M4 nicht vollständig.
+
+
+## Offline SQLite Backup/Restore – 2026-11-21 (00:42 Europe/Berlin)
+- Ausgangs-HEAD: `90da0eb5e50dfab7391d25300c206016ef93f7eb`; offene Issues 0, offene PRs 0. GitHub Actions [44836361432](https://github.com/WeA200675/life-ai-planner/actions/runs/44836361432) für diesen Ausgangs-HEAD: **success**.
+- `packages/storage/backup.py`: konsistentes SQLite-Online-Backup statt unsicherer Dateikopie (WAL-kompatibel), Integritäts-/Schemaversionprüfung, exklusive Veröffentlichung ohne Überschreiben, Wiederherstellung ausschließlich in neuen Zielpfad. Bestehende Datenbanken werden niemals automatisch ersetzt.
+- `tests/test_backup.py`: sieben neue Regressionstests für Snapshot/Restore, Snapshot-Isolation, Überschreibschutz, beschädigte Backups, zukünftige Schemas und fehlende Quelle.
+- Commits: `28de7141dd8cf6ecd67bb2878fb2564f1263e390` (Code), `fb63f8e85cf143cbfed779e70f1cd0324d6d6d7b` (Tests).
+- **Testnachweis:** Letzter vor Änderungen abgeschlossener CI-Lauf war grün. Neuer Workflow [44838816178](https://github.com/WeA200675/life-ai-planner/actions/runs/44838816178) beim Prüfen **queued**; keine erfolgreiche Ausführung für den neuen Code behauptet. Lokaler Klon wegen DNS `Could not resolve host: github.com` blockiert.
+- **Einschränkungen:** Restore absichtlich nur in neue Datei; eine produktive Umschaltung muss bei geschlossenen Verbindungen separat, abgesichert und mit Rollback erfolgen. Backups sind unverschlüsselt und müssen lokal geschützt werden. Keine Cloud-Exposition.
+- **Nächster Schritt:** CI des neuen HEAD prüfen, Fehler beheben, Backup/Restore bei WAL-Parallelzugriff zusätzlich testen und Flutter-Android-MVP priorisieren.
+- **Abnahme:** M1–M4 weiterhin offen; Android-Build und Geräteabnahme fehlen.
