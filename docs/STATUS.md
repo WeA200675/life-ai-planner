@@ -73,3 +73,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub Actions für diesen Code-HEAD [44822342644](https://github.com/WeA200675/life-ai-planner/actions/runs/44822342644) zum Prüfzeitpunkt **queued**, Ergebnis offen. Kein lokaler Testlauf behauptet.
 - **Offen:** API-Authentifizierung vor Netzwerkfreigabe, SQLite-Migrationsstrategie, Abhängigkeiten/Pausen/Zeitzonen-Härtung, Flutter-Android-MVP, STT/Textfallback, optionale Biometrie und Reflexion, vollständige M1–M4-Abnahme. Repo ist öffentlich: keine persönlichen Daten committen.
 - **Nächster Schritt:** CI für neuen HEAD kontrollieren und ggf. reparieren; sichere API-Versionierung weiter härten, danach Flutter-MVP aufbauen.
+
+## Zeitzonen-/DST-Härtung – 2026-11-20 (23:20 Europe/Berlin)
+- Vor diesem Lauf HEAD `e073ec59e41503a77a4052e9378de5ac77b1c51c`; offene Issues/PRs: jeweils 0.
+- Vorheriger CI-Lauf [44822367253](https://github.com/WeA200675/life-ai-planner/actions/runs/44822367253): **success**.
+- Scheduler rechnet jetzt auf UTC-Instanten, sodass die tatsächliche verstrichene Zeit beim Sommerzeitwechsel für Kapazität, Puffer und Slotbelegung maßgeblich ist. Naive Deadlines und Fixtermine werden ausdrücklich abgewiesen.
+- Vier zusätzliche Regressionstests: Sommerzeitbeginn, Sommerzeitende, naive Deadline und gemischte Zeitzonen.
+- Code-Commits: `26a68b6fdafb7a93f9036d7804458c913a63cff2`, `c8eb0b2f5ca468169ee72935d390c32e1b3e648a`, Testkorrektur `1d5257adbad0211677ce48e0d8c16e6002399b4e`.
+- **Verifikation:** GitHub-Commits bestätigt; CI für diesen letzten Stand beim Schreiben noch nicht abgeschlossen. Kein lokaler Testlauf behauptet.
+- **Nächste Schritte:** CI-Ergebnis des letzten Commits prüfen und ggf. reparieren; anschließend sichere SQLite-Migrationen, API-Validierung und Flutter-Android-MVP.
+- **Blocker:** keine Geräteabnahme, kein Android-Release-Build; Repository öffentlich, keine privaten Daten committen. M1–M4 noch offen.
