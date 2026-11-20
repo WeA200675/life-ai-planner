@@ -27,3 +27,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** Dateien auf GitHub erstellt; lokale Ausführung und CI-Ergebnis für diese Änderungen noch nicht nachgewiesen.
 - Nächste Schritte: CI-Status prüfen; Scheduler-Grenzfälle korrigieren; API und SQLite-Persistenz aufbauen; später Flutter und Android-Geräteabnahme.
 - **Abnahme:** M1–M4 weiterhin offen. Keine vollständige Implementierung behauptet.
+
+## Weitere Implementierung – 2026-11-20
+- SQLite-basierte, lokale Task-Persistenz unter `packages/storage/sqlite_store.py` ergänzt (atomare Upserts, Wiederöffnung, Statusänderung, Filter, Zeitzonenprüfung).
+- Sieben neue Unit-Tests unter `tests/test_sqlite_store.py`.
+- Code-Commit: `983073f4ab22d7f942c4fe3aad7a01c764ba6276`.
+- Testausführung/CI für diese Änderungen noch nicht verifiziert; daher kein grüner Status behauptet.
+- Nächster Schritt: Scheduler-Integration mit Persistenz und HTTP-API, Migrationskonzept und Android-MVP.
+- Gesamtprojekt weiterhin unvollständig; Geräteabnahme ausstehend.
