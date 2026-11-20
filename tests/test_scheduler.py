@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from packages.scheduler import Task, Block, schedule
 
 UTC = timezone.utc
@@ -34,6 +35,37 @@ class SchedulerTests(unittest.TestCase):
     def test_duplicate(self):
         with self.assertRaises(ValueError):
             schedule(at(9), at(12), [Task("x", "One", 20), Task("x", "Two", 20)])
+
+
+    def test_naive_deadline_rejected(self):
+        with self.assertRaises(ValueError):
+            schedule(at(9), at(12), [
+                Task("x", "X", 30, deadline=datetime(2026, 11, 20, 10))])
+
+    def test_dst_spring_forward_uses_elapsed_minutes(self):
+        berlin = ZoneInfo("Europe/Berlin")
+        start = datetime(2026, 3, 29, 1, 0, tzinfo=berlin)
+        end = datetime(2026, 3, 29, 4, 0, tzinfo=berlin)
+        plan = schedule(start, end, [Task("x", "X", 60)])
+        self.assertEqual(plan.capacity_minutes, 120)
+        self.assertEqual(plan.budget_minutes, 84)
+        self.assertEqual((plan.blocks[0].end - plan.blocks[0].start).total_seconds(), 3600)
+
+    def test_dst_fall_back_uses_elapsed_minutes(self):
+        berlin = ZoneInfo("Europe/Berlin")
+        start = datetime(2026, 10, 25, 1, 0, tzinfo=berlin)
+        end = datetime(2026, 10, 25, 4, 0, tzinfo=berlin)
+        plan = schedule(start, end, [])
+        self.assertEqual(plan.capacity_minutes, 240)
+        self.assertEqual(plan.budget_minutes, 168)
+
+    def test_mixed_timezone_fixed_normalized(self):
+        berlin = ZoneInfo("Europe/Berlin")
+        fixed = [Block("meeting", datetime(2026, 11, 20, 10, tzinfo=berlin),
+                       datetime(2026, 11, 20, 11, tzinfo=berlin))]
+        plan = schedule(at(8), at(12), [Task("x", "X", 30)], fixed)
+        self.assertEqual(plan.blocks[0].start, at(9))
+        self.assertEqual(plan.blocks[0].task_id, "meeting")
 
 if __name__ == "__main__":
     unittest.main()
