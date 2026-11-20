@@ -35,3 +35,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Testausführung/CI für diese Änderungen noch nicht verifiziert; daher kein grüner Status behauptet.
 - Nächster Schritt: Scheduler-Integration mit Persistenz und HTTP-API, Migrationskonzept und Android-MVP.
 - Gesamtprojekt weiterhin unvollständig; Geräteabnahme ausstehend.
+
+## API-Implementierung – 2026-11-20
+- Loopback-only HTTP-API für Health, Task-Upsert, Task-Liste und Tagesplanung in `services/api/server.py`.
+- Vier HTTP-Integrationstests ergänzt; API-Beschreibung in `docs/LOCAL_API.md`.
+- Sicherheitsgrenze: absichtlich keine externe Netzbindung ohne Authentifizierung/TLS.
+- Code und Tests committed; Ausführung/CI noch nicht verifiziert.
+- Nächste Schritte: CI kontrollieren, API-Eingaben härten, Datenmigrationen und feste Kalenderblöcke ergänzen, Android-MVP erstellen.
+- M1–M4 nicht vollständig; kein Release oder Geräteabnahme.
