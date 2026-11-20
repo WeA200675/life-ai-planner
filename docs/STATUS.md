@@ -63,3 +63,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub-Schreiboperationen erfolgreich. Tests/CI für diesen HEAD sind noch nicht bestätigt; kein lokaler Lauf behauptet.
 - **Nächster Schritt:** CI prüfen und ggf. reparieren; Planhistorie mit API verbinden, Wiederherstellung und sichere Replanning-Endpunkte integrieren; danach Flutter-MVP.
 - **Abnahme:** M1–M4 unvollständig. Repository öffentlich, keine persönlichen Daten oder Secrets committen.
+
+## API-Planhistorie – 2026-11-20 (später Lauf)
+- Vor Beginn: HEAD `05bf6ea32d327b8a4d5f40ae59ac355867ebb9ca`; keine offenen Issues oder PRs.
+- GitHub Actions für Ausgangs-HEAD: Run [44819750555](https://github.com/WeA200675/life-ai-planner/actions/runs/44819750555) erfolgreich abgeschlossen.
+- `services/api/server.py`: neue lokale Endpunkte `GET /plans/{id}/latest`, `POST /plans/{id}/commit`, `POST /plans/{id}/undo`. Revisionen werden atomar in derselben SQLite-Datei wie Tasks gespeichert. Stale Revision liefert HTTP 409; unzulässige Eingaben HTTP 400.
+- `tests/test_plan_revision_api.py`: vier neue HTTP-Testfälle (Commit/Undo, 409-Konflikt, ungültige Payloads, fehlender Plan); `tests/__init__.py` für stabile Testimporte.
+- Letzter Code-Commit: `15c62ba6e1aa36eb78341fc14c20d057a03ee990`.
+- **Verifikation:** GitHub Actions für diesen Code-HEAD [44822342644](https://github.com/WeA200675/life-ai-planner/actions/runs/44822342644) zum Prüfzeitpunkt **queued**, Ergebnis offen. Kein lokaler Testlauf behauptet.
+- **Offen:** API-Authentifizierung vor Netzwerkfreigabe, SQLite-Migrationsstrategie, Abhängigkeiten/Pausen/Zeitzonen-Härtung, Flutter-Android-MVP, STT/Textfallback, optionale Biometrie und Reflexion, vollständige M1–M4-Abnahme. Repo ist öffentlich: keine persönlichen Daten committen.
+- **Nächster Schritt:** CI für neuen HEAD kontrollieren und ggf. reparieren; sichere API-Versionierung weiter härten, danach Flutter-MVP aufbauen.
