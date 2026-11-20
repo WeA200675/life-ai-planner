@@ -9,7 +9,9 @@ from datetime import datetime
 from pathlib import Path
 import sqlite3
 
-SCHEMA_VERSION = 1
+from packages.storage.migrations import CURRENT_VERSION, migrate
+
+SCHEMA_VERSION = CURRENT_VERSION
 
 @dataclass(frozen=True)
 class StoredTask:
@@ -27,16 +29,7 @@ class TaskStore:
             raise ValueError("use a filesystem database; in-memory databases cannot survive reconnects")
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with self._connection() as db:
-            db.execute("""CREATE TABLE IF NOT EXISTS tasks (
-                id TEXT PRIMARY KEY NOT NULL,
-                title TEXT NOT NULL,
-                minutes INTEGER NOT NULL CHECK(minutes > 0),
-                priority INTEGER NOT NULL DEFAULT 0,
-                deadline TEXT,
-                status TEXT NOT NULL DEFAULT 'open'
-                  CHECK(status IN ('open','active','done','cancelled'))
-            )""")
-            db.execute("PRAGMA user_version = 1")
+            migrate(db)
 
     @contextmanager
     def _connection(self):
