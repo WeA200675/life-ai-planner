@@ -83,3 +83,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub-Commits bestätigt; CI für diesen letzten Stand beim Schreiben noch nicht abgeschlossen. Kein lokaler Testlauf behauptet.
 - **Nächste Schritte:** CI-Ergebnis des letzten Commits prüfen und ggf. reparieren; anschließend sichere SQLite-Migrationen, API-Validierung und Flutter-Android-MVP.
 - **Blocker:** keine Geräteabnahme, kein Android-Release-Build; Repository öffentlich, keine privaten Daten committen. M1–M4 noch offen.
+
+## CI-Reparatur – 2026-11-20 (Folgelauf)
+- Vor Änderung HEAD `f22f8d710c9c7b045826091973aa94ef922449a7`; offene Issues 0, offene PRs 0.
+- GitHub Actions [44828198466](https://github.com/WeA200675/life-ai-planner/actions/runs/44828198466): **failure**, 57 ausgeführte Tests, drei Fehlschläge durch dieselbe veraltete Assertion in `tests/test_local_api.py` (auch über importierende Testklassen ausgeführt).
+- Ursache: Nach DST-Härtung serialisiert der Scheduler UTC-Zeitpunkte. Der Test verglich die Offset-Darstellung `09:00+00:00` mit `10:00+01:00` als Zeichenkette, obwohl beide denselben Zeitpunkt beschreiben.
+- Korrektur: Der Test vergleicht jetzt `datetime.fromisoformat`-Zeitpunkte, sodass gleichwertige Offsets akzeptiert werden; die Fixtermin-Schutzprüfung bleibt bestehen.
+- Korrektur-Commit: `9f4c7002c1a4a147726070eb7b8658aa770399bb`.
+- **Verifikation:** Ursache anhand echter CI-Logs belegt und Änderung auf GitHub committed. CI für den Korrektur-Commit noch nicht bestätigt; kein lokaler Testlauf behauptet.
+- **Nächster Schritt:** CI für `9f4c700` prüfen; falls grün, SQLite-Migrationsstrategie und Flutter-Android-MVP priorisieren. M1–M4 weiterhin unvollständig.
