@@ -92,3 +92,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Korrektur-Commit: `9f4c7002c1a4a147726070eb7b8658aa770399bb`.
 - **Verifikation:** Ursache anhand echter CI-Logs belegt und Änderung auf GitHub committed. CI für den Korrektur-Commit noch nicht bestätigt; kein lokaler Testlauf behauptet.
 - **Nächster Schritt:** CI für `9f4c700` prüfen; falls grün, SQLite-Migrationsstrategie und Flutter-Android-MVP priorisieren. M1–M4 weiterhin unvollständig.
+
+## Transaktionale SQLite-Migrationen – 2026-11-21 (00:22 Europe/Berlin)
+- Vor dem Lauf zuletzt dokumentierter HEAD: `857f671e1f032697db6b9dfc737f9683ec5c5283`; GitHub-Commitliste und offene Issues geprüft (0 offene Issues einschließlich PRs laut GitHub-Issue-Suche).
+- Neu: `packages/storage/migrations.py` führt Schema-Version 0 → 1 transaktional mit `BEGIN IMMEDIATE` aus; bestehende Aufgaben bleiben erhalten, inkompatible Legacy-Schemas und unbekannte höhere Datenbankversionen werden sicher zurückgewiesen.
+- `TaskStore` startet jetzt über die zentrale Migration statt die Versionsnummer ungeprüft zu überschreiben.
+- `tests/test_migrations.py`: sechs neue Regressionstests (Neuanlage, Idempotenz, Datenübernahme, Future-Version, inkompatibles Schema, aktive Transaktion).
+- Commits: `018c2bffde7af793363d6e883bc07f84c14bcac6`, `703dcf454fe0c863c5ef546e43305b15b0594f9f`, `4a234002b4187d1d29fb25905f19230989cefeb6`.
+- **Testnachweis:** GitHub-Änderungen bestätigt. Lokaler Klon/Testlauf blockiert durch DNS-/Netzwerkfehler (`Could not resolve host: github.com`); keine lokale Testausführung und kein grüner CI-Lauf für diese Änderungen behauptet. GitHub Combined Status für vorherigen HEAD lieferte keine klassischen Statuschecks; das belegt keinen CI-Erfolg.
+- **Blocker:** Laufzeitverifikation und Flutter-/Android-Geräteabnahme ausstehend. Öffentliches Repository: keine personenbezogenen Daten oder Geheimnisse committen.
+- **Nächster Schritt:** GitHub-Actions-Workflow-Ergebnis des neuen HEAD prüfen und gegebenenfalls Fehler korrigieren; anschließend SQLite-Backup/Restore und Flutter-MVP implementieren.
+- **Abnahme:** M1–M4 nicht vollständig.
