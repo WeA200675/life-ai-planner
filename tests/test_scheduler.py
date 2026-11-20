@@ -13,8 +13,8 @@ class SchedulerTests(unittest.TestCase):
         self.assertEqual(result.capacity_minutes, 480)
         self.assertEqual(result.budget_minutes, 294)
         self.assertEqual(result.deferred, ("b",))
-        self.assertEqual(result.blocks[0].task_id, "a")
-        self.assertEqual(result.blocks[1], fixed[0])
+        self.assertEqual(result.blocks[0], fixed[0])
+        self.assertEqual(result.blocks[1].task_id, "a")
         self.assertEqual(result.reserved_minutes, 180)
 
     def test_no_overwrite_and_deadline(self):
