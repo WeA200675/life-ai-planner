@@ -10,11 +10,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from packages.storage.sqlite_store import TaskStore, StoredTask
+from packages.storage.plan_history import PlanHistory, RevisionConflict
 from packages.scheduler import Task, Block, schedule
 
 MAX_BODY = 65536
 
 def build_handler(store):
+    history = PlanHistory(store.path)
     class Handler(BaseHTTPRequestHandler):
         def _json(self, status, payload):
             data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -42,11 +44,35 @@ def build_handler(store):
                 return self._json(200, {"status": "ok"})
             if self.path == "/tasks":
                 return self._json(200, {"tasks": [asdict(t) for t in store.list()]})
+            if self.path.startswith("/plans/") and self.path.endswith("/latest"):
+                plan_id = self.path[len("/plans/"):-len("/latest")]
+                if not plan_id or "/" in plan_id:
+                    return self._json(404, {"error": "not found"})
+                latest = history.latest(plan_id)
+                return self._json(200, {"plan": asdict(latest) if latest else None})
             return self._json(404, {"error": "not found"})
 
         def do_POST(self):
             try:
                 body = self._body()
+                if self.path.startswith("/plans/") and (self.path.endswith("/commit") or self.path.endswith("/undo")):
+                    is_undo = self.path.endswith("/undo")
+                    suffix = "/undo" if is_undo else "/commit"
+                    plan_id = self.path[len("/plans/"):-len(suffix)]
+                    if not plan_id or "/" in plan_id or len(plan_id) > 128:
+                        raise ValueError("invalid plan id")
+                    allowed = {"expected_revision"} if is_undo else {"expected_revision", "reason", "blocks"}
+                    if set(body) != allowed or type(body["expected_revision"]) is not int:
+                        raise ValueError("invalid revision payload")
+                    if is_undo:
+                        rev = history.undo(plan_id, expected_revision=body["expected_revision"])
+                    else:
+                        if type(body["reason"]) is not str or not isinstance(body["blocks"], list):
+                            raise ValueError("invalid plan payload")
+                        rev = history.commit(plan_id, body["blocks"],
+                                             expected_revision=body["expected_revision"],
+                                             reason=body["reason"])
+                    return self._json(200, {"plan": asdict(rev)})
                 if self.path == "/tasks":
                     if set(body) - {"id", "title", "minutes", "priority", "deadline", "status"}:
                         raise ValueError("unexpected task fields")
@@ -88,6 +114,8 @@ def build_handler(store):
                         "budget_minutes": result.budget_minutes,
                         "reserved_minutes": result.reserved_minutes})
                 return self._json(404, {"error": "not found"})
+            except RevisionConflict as exc:
+                return self._json(409, {"error": str(exc)})
             except (ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
                 return self._json(400, {"error": str(exc)})
 
