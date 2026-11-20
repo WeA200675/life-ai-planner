@@ -49,5 +49,32 @@ class LocalApiTests(unittest.TestCase):
     def test_unknown_route(self):
         self.assertEqual(self.request("/missing")[0], 404)
 
+    def test_rejects_bool_minutes_and_bad_ratio(self):
+        self.assertEqual(self.request("/tasks", {"id": "bad", "title": "Bad", "minutes": True})[0], 400)
+        self.assertEqual(self.request("/plan", {"start": "2026-11-21T09:00:00+01:00",
+                         "end": "2026-11-21T12:00:00+01:00", "buffer_ratio": True})[0], 400)
+        self.assertEqual(self.request("/plan", {"start": "2026-11-21T09:00:00+01:00",
+                         "end": "2026-11-21T12:00:00+01:00", "buffer_ratio": 1e309})[0], 400)
+
+    def test_fixed_blocks_are_immutable(self):
+        self.request("/tasks", {"id": "a", "title": "Write", "minutes": 60})
+        status, result = self.request("/plan", {
+            "start": "2026-11-21T09:00:00+01:00",
+            "end": "2026-11-21T12:00:00+01:00",
+            "fixed": [{"task_id": "meeting", "start": "2026-11-21T09:00:00+01:00",
+                       "end": "2026-11-21T10:00:00+01:00"}]})
+        self.assertEqual(status, 200)
+        self.assertEqual(result["blocks"][0]["task_id"], "meeting")
+        self.assertEqual(result["blocks"][1]["start"], "2026-11-21T10:00:00+01:00")
+
+    def test_overlapping_fixed_blocks_rejected(self):
+        status, _ = self.request("/plan", {
+            "start": "2026-11-21T09:00:00+01:00",
+            "end": "2026-11-21T12:00:00+01:00",
+            "fixed": [
+                {"task_id": "a", "start": "2026-11-21T09:00:00+01:00", "end": "2026-11-21T11:00:00+01:00"},
+                {"task_id": "b", "start": "2026-11-21T10:00:00+01:00", "end": "2026-11-21T12:00:00+01:00"}]})
+        self.assertEqual(status, 400)
+
 if __name__ == "__main__":
     unittest.main()
