@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 import tempfile
 import threading
 import unittest
@@ -65,7 +66,9 @@ class LocalApiTests(unittest.TestCase):
                        "end": "2026-11-21T10:00:00+01:00"}]})
         self.assertEqual(status, 200)
         self.assertEqual(result["blocks"][0]["task_id"], "meeting")
-        self.assertEqual(result["blocks"][1]["start"], "2026-11-21T10:00:00+01:00")
+        # The scheduler serializes UTC instants; offsets may differ while the instant is identical.
+        self.assertEqual(datetime.fromisoformat(result["blocks"][1]["start"]),
+                         datetime.fromisoformat("2026-11-21T10:00:00+01:00"))
 
     def test_overlapping_fixed_blocks_rejected(self):
         status, _ = self.request("/plan", {
