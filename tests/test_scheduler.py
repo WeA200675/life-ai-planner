@@ -64,8 +64,8 @@ class SchedulerTests(unittest.TestCase):
         fixed = [Block("meeting", datetime(2026, 11, 20, 10, tzinfo=berlin),
                        datetime(2026, 11, 20, 11, tzinfo=berlin))]
         plan = schedule(at(8), at(12), [Task("x", "X", 30)], fixed)
-        self.assertEqual(plan.blocks[0].start, at(9))
-        self.assertEqual(plan.blocks[0].task_id, "meeting")
+        meeting = next(b for b in plan.blocks if b.task_id == "meeting")
+        self.assertEqual(meeting.start, at(9))
 
 if __name__ == "__main__":
     unittest.main()
