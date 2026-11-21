@@ -51,6 +51,22 @@ class PlanSnapshotStore {
     List<Map<String, Object?>>? expectedTasks,
   }) async {
     if (!start.isBefore(end)) throw ArgumentError('Invalid window');
+    if (plan.capacityMinutes < 0 || plan.budgetMinutes < 0 ||
+        plan.reservedMinutes < 0 ||
+        plan.budgetMinutes > plan.capacityMinutes ||
+        plan.reservedMinutes > plan.capacityMinutes) {
+      throw ArgumentError('Invalid plan capacity');
+    }
+    final ordered = [...plan.blocks]..sort((a, b) =>
+        a.start.compareTo(b.start));
+    final ids = <String>{};
+    for (var i = 0; i < ordered.length; i++) {
+      final block = ordered[i];
+      if (block.id.trim().isEmpty || !ids.add(block.id) ||
+          (i > 0 && ordered[i - 1].end.isAfter(block.start))) {
+        throw ArgumentError('Duplicate or overlapping plan blocks');
+      }
+    }
     for (final block in plan.blocks) {
       if (!block.start.isBefore(block.end) ||
           block.start.isBefore(start) || block.end.isAfter(end)) {
