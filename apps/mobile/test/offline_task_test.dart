@@ -54,6 +54,25 @@ void main() {
     expect(tasks.length, 3);
   });
 
+  test('offline task counts ignore search and never modify source', () {
+    final tasks = <Map<String, Object?>>[
+      {'id': 1, 'title': 'Alpha', 'done': 0},
+      {'id': 2, 'title': 'Beta', 'done': 1},
+      {'id': 3, 'title': 'Gamma', 'done': 0},
+    ];
+    expect(taskCounts(tasks), (open: 2, completed: 1, total: 3));
+    expect(taskCounts(visibleTasks(tasks, TaskView.completed)).total, 1);
+    expect(taskCounts(tasks).total, 3);
+    expect(taskCounts(<Map<String, Object?>>[]),
+        (open: 0, completed: 0, total: 0));
+  });
+
+  testWidgets('offline dashboard count is visible without network',
+      (tester) async {
+    await tester.pumpWidget(const PlannerApp());
+    expect(find.byKey(const ValueKey('offline-task-counts')), findsOneWidget);
+  });
+
   testWidgets('offline task filters remain available without database',
       (tester) async {
     await tester.pumpWidget(const PlannerApp());
