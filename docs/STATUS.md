@@ -311,3 +311,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Sicherer Fix im Commit `022e5ef1de7d5c69dea7c1775a4570b806a48230`: Dialoge verwenden `TextFormField(initialValue, onChanged)` statt frühzeitig entsorgter externer Controller; Controller-Lifecycle liegt bei der Flutter-Dialogroute. Bestehende Validierung und Abbruch-Fallback bleiben erhalten.
 - **Verifikation:** Commit auf GitHub bestätigt. Flutter-CI und Geräte-Neutest für diesen Fix noch ausstehend; daher keine Behauptung, dass die Assertion beseitigt ist.
 - **Nächster Schritt:** Flutter-CI für `022e5ef` prüfen, neue Debug-APK installieren und App-Start sowie beide Bearbeitungsdialoge testen. Falls Assertion fortbesteht, vollständigen Stacktrace via `adb logcat` sammeln und Widget-Lifecycle gezielt untersuchen. M1–M4 weiterhin offen.
+
+
+## Offline-Deadline-Setter und Android-Fix-CI – 2026-11-21 10:20 Europe/Berlin
+- Ausgangs-HEAD `a0483cf050437b8816c1b46c8c5bc3e675cc08bb`; offene PRs/Issues: 0/0. README, Implementierungsplan und Status gelesen.
+- **Verifiziert:** Flutter-CI [44887089927](https://github.com/WeA200675/life-ai-planner/actions/runs/44887089927) für vorherigen Dialog-Lifecycle-Fix `022e5ef` **success**; Scheduler-CI [44887101485](https://github.com/WeA200675/life-ai-planner/actions/runs/44887101485) für Ausgangs-HEAD **success**. Android-Praxistest nach Fix noch ausstehend, rote Assertion damit **nicht** als beseitigt bestätigt.
+- Code-Commit `7b54a955832363b3c8f5fb3bfd2a62d32487ad74`: `LocalTasks.setDeadline(id, DateTime?)` mit UTC-Normalisierung, positiver Epoch-Millisekundenprüfung, atomarem SQLite-Update, explizitem `null` zum Entfernen einer Frist und Fehler bei fehlender Aufgabe. Vorhandenes v3-Schema wird genutzt, keine Migration oder Netzwerkabhängigkeit.
+- Test-Commit `bbb544c0f3ade9d3ebe1e49bd090bbdf96c6107c`: Regressionstest für ungültige IDs und Fristen vor Unix-Epoch, noch vor Datenbankzugriff. **Keine Ausführung der neuen Tests bestätigt**, Flutter-CI für Test-Commit zum Dokumentationszeitpunkt noch nicht ausgewertet.
+- **Blocker:** Deadline-Eingabe in Flutter fehlt, echte SQLite-Schreib-/Lese-Integration für Setter noch nicht testbestätigt, Android-Gerätetest zur Flutter-Assertion offen. Keine M1–M4-Gesamtabnahme.
+- **Nächster Schritt:** CI für `bbb544c` prüfen und reparieren, Deadline-Setter mit sqflite_common_ffi persistenztesten, dann sichere Deadline-UI ergänzen; Debug-APK auf Android starten und gegebenenfalls vollständigen Stacktrace sichern. Keine Secrets oder personenbezogenen Testdaten committed.
