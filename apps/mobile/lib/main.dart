@@ -79,8 +79,13 @@ class LocalTasks {
 enum TaskView { open, completed, all }
 
 List<Map<String, Object?>> visibleTasks(
-    List<Map<String, Object?>> tasks, TaskView view) {
+    List<Map<String, Object?>> tasks, TaskView view, [String query = '']) {
+  final needle = query.trim().toLowerCase();
   return tasks.where((task) {
+    if (needle.isNotEmpty &&
+        !(task['title'] as String).toLowerCase().contains(needle)) {
+      return false;
+    }
     final done = task['done'] == 1;
     return switch (view) {
       TaskView.open => !done,
@@ -111,6 +116,8 @@ class TaskScreen extends StatefulWidget {
 class _TaskScreenState extends State<TaskScreen> {
   final _store = LocalTasks();
   final _controller = TextEditingController();
+  final _searchController = TextEditingController();
+  String _search = '';
   List<Map<String, Object?>> _tasks = [];
   bool _busy = false;
   TaskView _view = TaskView.open;
@@ -236,13 +243,14 @@ class _TaskScreenState extends State<TaskScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _searchController.dispose();
     _store.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final shown = visibleTasks(_tasks, _view);
+    final shown = visibleTasks(_tasks, _view, _search);
     return Scaffold(
         appBar: AppBar(title: const Text('Life AI Planner – Offline')),
         body: Padding(
@@ -264,6 +272,22 @@ class _TaskScreenState extends State<TaskScreen> {
                 icon: const Icon(Icons.add_circle_outline),
               ),
             ]),
+            TextField(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _search = value),
+              decoration: InputDecoration(
+                labelText: 'Aufgaben suchen',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _search.isEmpty ? null : IconButton(
+                  tooltip: 'Suche zurücksetzen',
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _search = '');
+                  },
+                  icon: const Icon(Icons.clear),
+                ),
+              ),
+            ),
             if (_error != null)
               Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             SegmentedButton<TaskView>(
@@ -278,7 +302,7 @@ class _TaskScreenState extends State<TaskScreen> {
             Expanded(child: shown.isEmpty
                 ? Center(child: Text(_tasks.isEmpty
                     ? 'Noch keine Aufgaben gespeichert.'
-                    : 'Keine Aufgaben in dieser Ansicht.'))
+                    : 'Keine passenden Aufgaben gefunden.'))
                 : ListView.builder(
                     itemCount: shown.length,
                     itemBuilder: (context, index) {
