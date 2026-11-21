@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'offline_day_planner.dart';
 
@@ -30,12 +31,25 @@ class SavedPlan {
   final int createdUtcMs;
 }
 
+/// Canonical fingerprint of task rows. Ordering and map insertion order do not
+/// affect the result, but every persisted field does.
+String taskRowsFingerprint(List<Map<String, Object?>> rows) {
+  final canonical = rows.map((row) {
+    final sortedKeys = row.keys.toList()..sort();
+    return {for (final key in sortedKeys) key: row[key]};
+  }).toList()
+    ..sort((a, b) => (a['id'] as int).compareTo(b['id'] as int));
+  return jsonEncode(canonical);
+}
+
 class PlanSnapshotStore {
   const PlanSnapshotStore(this.db);
   final Database db;
 
   /// Atomic, append-only acceptance. No task table is ever changed.
-  Future<int> accept(DayPlan plan, DateTime start, DateTime end) async {
+  Future<int> accept(DayPlan plan, DateTime start, DateTime end, {
+    List<Map<String, Object?>>? expectedTasks,
+  }) async {
     if (!start.isBefore(end)) throw ArgumentError('Invalid window');
     for (final block in plan.blocks) {
       if (!block.start.isBefore(block.end) ||
@@ -44,6 +58,12 @@ class PlanSnapshotStore {
       }
     }
     return db.transaction((txn) async {
+      if (expectedTasks != null) {
+        final current = await txn.query('tasks');
+        if (taskRowsFingerprint(current) != taskRowsFingerprint(expectedTasks)) {
+          throw StateError('Tasks changed since plan preview');
+        }
+      }
       final id = await txn.insert('plan_snapshots', {
         'created_utc_ms': DateTime.now().toUtc().millisecondsSinceEpoch,
         'window_start_utc_ms': start.toUtc().millisecondsSinceEpoch,
