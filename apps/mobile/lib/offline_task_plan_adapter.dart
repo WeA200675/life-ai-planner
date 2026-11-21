@@ -36,8 +36,6 @@ DayPlan previewLocalTasks(
         }
         try {
           deadline = DateTime.fromMillisecondsSinceEpoch(rawDeadline, isUtc: true);
-        } on RangeError {
-          throw FormatException('Invalid local task deadline');
         } on ArgumentError {
           throw FormatException('Invalid local task deadline');
         }
