@@ -536,3 +536,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Umfang:** Dies ist ein begrenzter sinnvoller Code-Schnitt und ausdrücklich **keine 8000-Zeilen-Implementierung**; Codeumfang ist kein Ersatz für Abnahmekriterien.
 - **Blocker:** Baseline-Ergebnisse auf Zielgerät und CI ausstehend; PR #1 offen; M1–M4 nicht abgenommen.
 - **Nächster Schritt:** CI der Tests prüfen, Benchmark-JSON als reproduzierbares Artefakt sichern, Hotspots priorisieren; Android-Replanning-UI inklusive Bestätigung und Undo fertigstellen.
+
+
+## P0 CI Benchmark-Artefakt – 2026-11-21
+- Ausgangs-HEAD `0b9d674a56cfb2a9398b2a3a847f85aa907f03a3`; offene PR #1 nicht verändert. Vorheriger Scheduler-CI-Lauf für Ausgangs-HEAD [44939630045](https://github.com/WeA200675/life-ai-planner/actions/runs/44939630045) completed/success.
+- Implementierung `ab7439ff810036ae418839be508acd453469745e`: Scheduler-CI führt nach den Unit-Tests reproduzierbare synthetische Benchmarks für 100, 1000 und 10000 Aufgaben aus, speichert JSON mit Median/p95 und lädt es als 14 Tage verfügbares GitHub-Actions-Artefakt hoch. Keine absolute Laufzeit-Grenze auf volatilen Shared-Runners.
+- **Verifikation:** Workflow-Commit bestätigt; neuer CI-Lauf zum Dokumentationszeitpunkt noch nicht nachweislich erfolgreich. Kein gemessener Speedup und kein Android-Gerätetest behauptet.
+- **Blocker:** P0-Messwerte müssen aus dem neuen CI-Artefakt gelesen werden; Flutter-Replanning mit Bestätigung/Undo, M1–M4 und Geräteabnahme offen.
+- **Nächster Schritt:** CI-Lauf und JSON-Artefakt prüfen; aus den realen p95-Werten konkrete Engpässe bestimmen und dann P1-Optimierungen implementieren; parallel P4 Android-Integration.
