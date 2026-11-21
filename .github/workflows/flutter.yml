@@ -1,0 +1,29 @@
+name: Flutter offline MVP checks
+on:
+  push:
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/flutter.yml'
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/flutter.yml'
+  workflow_dispatch:
+jobs:
+  flutter-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Test
+        run: flutter test
