@@ -107,10 +107,12 @@ def build_handler(store):
                     store.put(task)
                     return self._json(200, {"task": asdict(task)})
                 if self.path == "/plan":
+                    if (set(body) - {"start", "end", "buffer_ratio", "fixed"}
+                            or type(body.get("start")) is not str
+                            or type(body.get("end")) is not str):
+                        raise ValueError("invalid plan fields")
                     start = datetime.fromisoformat(body["start"])
                     end = datetime.fromisoformat(body["end"])
-                    if set(body) - {"start", "end", "buffer_ratio", "fixed"}:
-                        raise ValueError("unexpected plan fields")
                     ratio = body.get("buffer_ratio", 0.30)
                     if type(ratio) not in (int, float) or not isfinite(ratio) or not 0 <= ratio < 1:
                         raise ValueError("invalid buffer ratio")
@@ -121,6 +123,8 @@ def build_handler(store):
                     for b in raw_fixed:
                         if not isinstance(b, dict) or set(b) != {"task_id", "start", "end"} or type(b["task_id"]) is not str or not b["task_id"]:
                             raise ValueError("invalid fixed block")
+                        if type(b["start"]) is not str or type(b["end"]) is not str:
+                            raise ValueError("invalid fixed block timestamps")
                         fixed.append(Block(b["task_id"], datetime.fromisoformat(b["start"]), datetime.fromisoformat(b["end"])))
                     tasks = [Task(t.id, t.title, t.minutes, t.priority,
                                   datetime.fromisoformat(t.deadline) if t.deadline else None)
