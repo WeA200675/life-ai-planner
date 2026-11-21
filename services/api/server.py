@@ -58,6 +58,20 @@ def build_handler(store):
                                parse_constant=reject_nonfinite)
             if not isinstance(value, dict):
                 raise ValueError("expected JSON object")
+            # JSON escapes can contain lone UTF-16 surrogates, which cannot
+            # safely be encoded for SQLite or the HTTP response.
+            def reject_surrogates(item):
+                if isinstance(item, str):
+                    if any(0xD800 <= ord(char) <= 0xDFFF for char in item):
+                        raise ValueError("unpaired Unicode surrogate")
+                elif isinstance(item, dict):
+                    for key, child in item.items():
+                        reject_surrogates(key)
+                        reject_surrogates(child)
+                elif isinstance(item, list):
+                    for child in item:
+                        reject_surrogates(child)
+            reject_surrogates(value)
             return value
 
         def do_GET(self):
