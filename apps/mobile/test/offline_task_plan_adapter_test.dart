@@ -37,6 +37,20 @@ void main() {
     expect(() => previewLocalTasks(start, end, [],
         provisionalMinutes: 0), throwsArgumentError);
   });
+  test('provisional estimates respect SQLite maximum duration', () {
+    expect(() => previewLocalTasks(start, end, [
+      {'id': 1, 'done': 0},
+    ], provisionalMinutes: 1441), throwsArgumentError);
+    expect(() => previewLocalTasks(start, end, [
+      {'id': 1, 'done': 0},
+    ], provisionalMinutes: -1), throwsArgumentError);
+    final plan = previewLocalTasks(start, end, [
+      {'id': 1, 'done': 0},
+    ], provisionalMinutes: 1440);
+    expect(plan.deferred, ['1']);
+    expect(plan.blocks, isEmpty);
+  });
+
   test('persisted minutes and priority control ordering without mutation', () {
     final rows = <Map<String, Object?>>[
       {'id': 1, 'done': 0, 'minutes': 50, 'priority': 0},
