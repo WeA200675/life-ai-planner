@@ -425,3 +425,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Verifizierter vorheriger CI-Erfolg: Flutter offline MVP checks bei `e040687` (Run 44913004669) **success**, Scheduler tests bei `be93583` (Run 44913017472) **success**. CI für neuen Test-HEAD bei Dokumentation nicht als erfolgreich belegt; keine lokale Flutter-Ausführung und kein Android-Gerätetest behauptet.
 - Blocker: Android-Geräteabnahme, reproduzierbarer Release-Build, M1–M4-Gesamtabnahme. Öffentliches Repo: keine personenbezogenen Daten oder Secrets.
 - Nächster Schritt: Flutter-CI des Test-HEAD prüfen und Fehler beheben; danach Widgettests der Tagesvorschau und Replanning/SQLite-Persistenz erweitern.
+
+
+## SQLite-Typ- und Wertevalidierung – 2026-11-21 (16:20 Europe/Berlin)
+- Ausgangs-HEAD: `6cbab790e2f9a5d33d97866d6228e786a3d5db7a`; offene Issues und PRs: jeweils 0.
+- Ausgangs-CI: Scheduler [44915507582](https://github.com/WeA200675/life-ai-planner/actions/runs/44915507582) **success**; Flutter [44915497384](https://github.com/WeA200675/life-ai-planner/actions/runs/44915497384) **success** für vorherigen Code-Stand.
+- Implementierung: `packages/storage/sqlite_store.py` verwirft nun SQLite-Typkoerzierung (bool, float, numerische Strings), ungültige Minuten außerhalb 1–1440, Prioritäten außerhalb 0–10 sowie IDs mit Rand-Leerzeichen; validiert Titel, Status und Deadline-Typ explizit vor Datenbankzugriff. Bestehende Daten werden nicht verändert.
+- Regressionstests: `tests/test_sqlite_store.py` mit 14 ungültigen Eingaben und gültigen Grenzwerten inklusive Wiederöffnung. Die Tests wurden auf GitHub committed, **noch nicht erfolgreich ausgeführt nachgewiesen**.
+- Code-Commit: `c6c336efd63767bbb99a4ebecdfd0b60dcc57213`; Test-Commit: `0b1f1ffb423650b428adf01dfa398ea6c73b3772`.
+- CI zum Prüfzeitpunkt: [44918646448](https://github.com/WeA200675/life-ai-planner/actions/runs/44918646448) **in_progress** für Code-Commit; [44918657687](https://github.com/WeA200675/life-ai-planner/actions/runs/44918657687) **queued** für Test-Commit. Flutter-Workflow wird durch diese Python-Änderungen nicht ausgelöst. Keine lokale Testausführung behauptet.
+- Blocker: Endgültige CI-Verifikation dieser Änderungen, reale Android-Geräteabnahme, vollständige M1–M4-Abnahme. Öffentliches Repo: keine privaten Daten oder Secrets.
+- Nächster Schritt: Scheduler-CI des Test-Commits prüfen und Fehler korrigieren; anschließend SQLite-API-Validierung/Versionierung und Offline-Android-Widgettests priorisieren.
