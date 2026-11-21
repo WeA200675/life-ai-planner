@@ -113,6 +113,26 @@ class LocalApiTests(unittest.TestCase):
         self.assertEqual(self.request("/tasks")[1]["tasks"], [])
         self.assertEqual(self.request("/tasks", {"id": "ok", "title": "Valid", "minutes": 30})[0], 200)
 
+    def test_plan_timestamp_types_return_400_and_server_recovers(self):
+        valid = {"start": "2026-11-21T09:00:00+01:00",
+                 "end": "2026-11-21T12:00:00+01:00"}
+        invalid = [
+            {"start": None},
+            {"start": 123},
+            {"end": False},
+            {"end": []},
+            {"fixed": [{"task_id": "meeting", "start": 123,
+                        "end": "2026-11-21T10:00:00+01:00"}]},
+            {"fixed": [{"task_id": "meeting",
+                        "start": "2026-11-21T09:00:00+01:00", "end": None}]},
+        ]
+        for override in invalid:
+            with self.subTest(override=override):
+                status, _ = self.request("/plan", {**valid, **override})
+                self.assertEqual(status, 400)
+        self.assertEqual(self.request("/tasks")[1]["tasks"], [])
+        self.assertEqual(self.request("/plan", valid)[0], 200)
+
     def test_unknown_route(self):
         self.assertEqual(self.request("/missing")[0], 404)
 
