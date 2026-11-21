@@ -475,3 +475,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Vorherige Scheduler-CI: [44925581754](https://github.com/WeA200675/life-ai-planner/actions/runs/44925581754) **success** für älteren HEAD. Aktuelle CI-Abfrage: `855a37f2` run 44929698503 in_progress/null; `2b83e590` run 44929681982 in_progress/null; `366a3078` run 44925581754 completed/success; `eeab31e8` run 44925568147 completed/success; `a098cd18` run 44925557843 completed/success. Keine lokale Python-Ausführung und kein Testerfolg für neuen Test-Commit behauptet.
 - Blocker: Android-Geräteabnahme, Release-Build und vollständige M1–M4-Abnahme offen. API weiterhin nur Loopback, ohne produktive externe Auth/TLS-Freigabe.
 - Nächster Schritt: Scheduler-CI für `855a37f` prüfen, bei Fehlern korrigieren; danach Flutter-Tagesvorschau-Widgettests und Replanning priorisieren.
+
+## API-Planungszeitstempel – 2026-11-21 (18:39 Europe/Berlin)
+- Ausgangs-HEAD: `91198578f86e561a7a5958ca9d1cd07e1de1c117`; vor Änderungen offene Issues: 0, PRs: 0; Scheduler-CI für Ausgangs-HEAD erfolgreich.
+- Fehlerpfad behoben: `POST /plan` prüft `start`, `end` und Fixblock-Zeitstempel vor `datetime.fromisoformat` auf den exakten String-Typ. Vorher konnten JSON-Null, Zahlen, Booleans oder Arrays `TypeError` auslösen und die Verbindung ohne HTTP-Antwort abbrechen; jetzt HTTP 400 statt unbehandelter Exception.
+- Implementierungs-Commit: `ad61ceb60e8ef78096242f984841a9a28085c3a1`; Regressionstest-Commit: `322099d4acb3472dfb4575247bb58217fb7b071e`.
+- Regressionstest: sechs fehlerhafte Zeitstempelvarianten, unveränderter SQLite-Taskbestand, anschließend gültige Planungsanfrage. Testcode committed; **kein lokaler Testlauf behauptet**.
+- CI beim Dokumentieren: Scheduler tests: in_progress/offen (https://github.com/WeA200675/life-ai-planner/actions/runs/44931270077).
+- Blocker: Android-Geräteabnahme und vollständige M1–M4-Abnahme ausstehend; Repository öffentlich, daher keine privaten Testdaten oder Secrets.
+- Nächster Schritt: CI für Test-HEAD prüfen und ggf. reparieren; danach Flutter-Widgettests, dynamische Umplanung und API-Fehlerpfade weiter absichern.
