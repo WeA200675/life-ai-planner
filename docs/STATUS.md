@@ -666,3 +666,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub-Commits bestätigt. Flutter-CI für UI-HEAD [44947884514](https://github.com/WeA200675/life-ai-planner/actions/runs/44947884514) beim Schreiben **queued**, Scheduler [44947884516](https://github.com/WeA200675/life-ai-planner/actions/runs/44947884516) **queued**. Kein neuer Testerfolg behauptet.
 - **Einschränkungen:** Noch **kein** validierter Planhistorien-Import oder gemeinsamer atomarer Task+History-Restore; separate Zwischenablage-Exporte sind kein vollständiges App-Backup und können unverschlüsselt sein. Hardware-/Release-Abnahme und vollständige M1–M4-Abnahme weiterhin offen.
 - **Nächster Schritt:** CI-Ergebnisse und Logs prüfen; bei grünem Ergebnis versionierten gemeinsamen Task+History-Backup-Import mit atomarem Restore, Konfliktprüfung und Geräteabnahme implementieren.
+
+
+## M4 Planhistorie: streng validierter Restore in leere Datenbank – 2026-11-21
+- Ausgangs-HEAD: `53af8fbb391707e493c0454847f4011c5e2f234d`. Vor Änderung: offene PR #1 (M3-Adapter), keine separaten offenen Issues; nicht verändert oder dupliziert.
+- CI vor Änderung: Scheduler [44947898998](https://github.com/WeA200675/life-ai-planner/actions/runs/44947898998) **success** für Ausgangs-HEAD; Flutter [44947884514](https://github.com/WeA200675/life-ai-planner/actions/runs/44947884514) **success** für vorherigen Code-HEAD `8229254c`.
+- Code `a9dd6a6ea3b95d6255177f0ebd91ade963af0dfb`: `plan_history_restore.dart` prüft Backup-Format, Schema, Pflichtfelder, ID-/Positionsreihenfolge, verwaiste und überlappende Blöcke, Grenzen und doppelte Task-IDs. Restore nur in eine **leere** Planhistorie und atomar in SQLite-Transaktion; niemals bestehende Historie überschreiben.
+- Tests `76c32802e87f1cf42c5d74d4f3780168474815df`, Syntaxpräzisierung `8f990b7867c0565751576ea363a3edc3fcec7ce0`: Roundtrip mit IDs, Überschreibschutz, beschädigte Archive und veränderte untrusted Archivdaten.
+- **Nachweis:** GitHub-Commits erfolgreich; neue Flutter-CI beim letzten Abruf noch **in progress** (für `76c32802` Run [44951054718](https://github.com/WeA200675/life-ai-planner/actions/runs/44951054718)). Kein lokaler Flutter-/Android-Lauf nachgewiesen; kein grüner neuer Build behauptet.
+- **Einschränkung:** Restore bewusst nur als Bibliotheksfunktion in leere Datenbank, **nicht** als UI-Import in bestehende App integriert. Noch keine gemeinsame atomare Sicherung von Tasks und Historie, kein Verschlüsselungs-/Dateiauswahl-Workflow, keine Geräteabnahme.
+- **Nächster Schritt:** neuen Flutter-CI-Lauf prüfen und ggf. korrigieren; dann sichere kombinierte Task-/Planhistorie-Sicherung mit Konsistenzprüfung und expliziter Nutzerfreigabe implementieren.
+- **Abnahme:** M1–M4 nicht vollständig.
