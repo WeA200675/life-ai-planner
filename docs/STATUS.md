@@ -416,3 +416,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Testnachweis: Testquelltext committed; kein lokaler Flutter-Lauf in diesem Werkzeugzugang; neuer CI-Lauf bleibt abzuwarten. Kein APK-/Gerätetest nachgewiesen.
 - Blocker: Android-Geräteabnahme, Release-Build und vollständige M1–M4-Abnahme fehlen; öffentliches Repository ohne personenbezogene Daten/Secrets.
 - Nächster Schritt: Flutter-CI des neuen Commits prüfen, bei Fehler korrigieren; anschließend Widgettests der Tagesvorschau und Offline-Fälligkeitsmigration weiter absichern.
+
+
+## Flutter-Fälligkeitsdialog: Datumsgrenzen – 2026-11-21 (15:44 Europe/Berlin)
+- Ausgangs-HEAD `be935831463ddaaeaeb7af2c350665389b94f654`; offene Issues 0, offene PRs 0.
+- Fehlerbehebung: Bestehende Fälligkeitsdaten außerhalb des vom DatePicker unterstützten Bereichs 1971–2100 führen nicht mehr zu einer ungültigen initialDate-Assertion. Der Auswahlcursor wird begrenzt; gespeicherte Fälligkeiten werden weder stillschweigend überschrieben noch verändert. Text-/Offline-Betrieb bleibt erhalten.
+- Implementierung `0a5f556865f1c562448ef4f39729225743a940da`, Integration `567acb053af28df42b18d4127cc15e282b501f69`, Regressionstest `e8187569f5b372e99d6a3c7180ddbc5ff287b309` (Alt-/Zukunftsdaten, Grenzen und gültiges Datum).
+- Verifizierter vorheriger CI-Erfolg: Flutter offline MVP checks bei `e040687` (Run 44913004669) **success**, Scheduler tests bei `be93583` (Run 44913017472) **success**. CI für neuen Test-HEAD bei Dokumentation nicht als erfolgreich belegt; keine lokale Flutter-Ausführung und kein Android-Gerätetest behauptet.
+- Blocker: Android-Geräteabnahme, reproduzierbarer Release-Build, M1–M4-Gesamtabnahme. Öffentliches Repo: keine personenbezogenen Daten oder Secrets.
+- Nächster Schritt: Flutter-CI des Test-HEAD prüfen und Fehler beheben; danach Widgettests der Tagesvorschau und Replanning/SQLite-Persistenz erweitern.
