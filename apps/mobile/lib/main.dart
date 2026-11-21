@@ -179,34 +179,30 @@ class _TaskScreenState extends State<TaskScreen> {
 
   Future<void> _edit(int id, String title) async {
     if (_busy) return;
-    final editController = TextEditingController(text: title);
-    String? updated;
-    try {
-      updated = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Aufgabe bearbeiten'),
-          content: TextField(
-            controller: editController,
-            autofocus: true,
-            maxLength: 500,
-            decoration: const InputDecoration(labelText: 'Aufgabentitel'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Abbrechen'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, editController.text),
-              child: const Text('Speichern'),
-            ),
-          ],
+    String draft = title;
+    final updated = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Aufgabe bearbeiten'),
+        content: TextFormField(
+          initialValue: title,
+          autofocus: true,
+          maxLength: 500,
+          onChanged: (value) => draft = value,
+          decoration: const InputDecoration(labelText: 'Aufgabentitel'),
         ),
-      );
-    } finally {
-      editController.dispose();
-    }
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, draft),
+            child: const Text('Speichern'),
+          ),
+        ],
+      ),
+    );
     if (updated == null || !mounted) return;
     setState(() => _busy = true);
     try {
@@ -221,68 +217,57 @@ class _TaskScreenState extends State<TaskScreen> {
 
   Future<void> _editPlanningMetadata(Map<String, Object?> task) async {
     if (_busy) return;
-    final minutesController = TextEditingController(
-      text: (task['minutes'] as int?)?.toString() ?? '',
-    );
-    final priorityController = TextEditingController(
-      text: (task['priority'] as int? ?? 0).toString(),
-    );
-    ({int? minutes, int priority})? selected;
-    try {
-      selected = await showDialog<({int? minutes, int priority})>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Planungswerte bearbeiten'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: minutesController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Dauer in Minuten (1–1440)',
-                  helperText: 'Leer = vorläufig 30 Minuten',
-                ),
+    String durationDraft = (task['minutes'] as int?)?.toString() ?? '';
+    String priorityDraft = (task['priority'] as int? ?? 0).toString();
+    final selected = await showDialog<({int? minutes, int priority})>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Planungswerte bearbeiten'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              initialValue: durationDraft,
+              keyboardType: TextInputType.number,
+              onChanged: (value) => durationDraft = value,
+              decoration: const InputDecoration(
+                labelText: 'Dauer in Minuten (1–1440)',
+                helperText: 'Leer = vorläufig 30 Minuten',
               ),
-              TextField(
-                controller: priorityController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Priorität (0–10)',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Abbrechen'),
             ),
-            TextButton(
-              onPressed: () {
-                final durationText = minutesController.text.trim();
-                final minutes = durationText.isEmpty
-                    ? null : int.tryParse(durationText);
-                final priority = int.tryParse(priorityController.text.trim());
-                if ((durationText.isNotEmpty &&
-                        (minutes == null || minutes < 1 || minutes > 1440)) ||
-                    priority == null || priority < 0 || priority > 10) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('Dauer oder Priorität ungültig.')),
-                  );
-                  return;
-                }
-                Navigator.pop(dialogContext, (minutes: minutes, priority: priority));
-              },
-              child: const Text('Speichern'),
+            TextFormField(
+              initialValue: priorityDraft,
+              keyboardType: TextInputType.number,
+              onChanged: (value) => priorityDraft = value,
+              decoration: const InputDecoration(labelText: 'Priorität (0–10)'),
             ),
           ],
         ),
-      );
-    } finally {
-      minutesController.dispose();
-      priorityController.dispose();
-    }
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () {
+              final durationText = durationDraft.trim();
+              final minutes = durationText.isEmpty ? null : int.tryParse(durationText);
+              final priority = int.tryParse(priorityDraft.trim());
+              if ((durationText.isNotEmpty &&
+                      (minutes == null || minutes < 1 || minutes > 1440)) ||
+                  priority == null || priority < 0 || priority > 10) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('Dauer oder Priorität ungültig.')),
+                );
+                return;
+              }
+              Navigator.pop(dialogContext, (minutes: minutes, priority: priority));
+            },
+            child: const Text('Speichern'),
+          ),
+        ],
+      ),
+    );
     if (selected == null || !mounted || _busy) return;
     setState(() => _busy = true);
     try {
