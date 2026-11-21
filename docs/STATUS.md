@@ -395,3 +395,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Testnachweis:** GitHub-Commit/Branch-Update bestätigt; Flutter-Tests und APK/Gerätetest für den neuen Commit in diesem Lauf nicht lokal ausgeführt. CI-Ergebnis für neuen Code noch nicht als erfolgreich belegt.
 - **Blocker:** Flutter- und Android-Geräteabnahme, vollständige M1–M4-Abnahme weiterhin offen. Repository öffentlich; keine privaten Daten/Secrets verwendet.
 - **Nächster Schritt:** Flutter-CI für `0628f88` prüfen und Fehler beheben; danach Deadline-Setter-Persistenz und Tagesvorschau-Widgettests ergänzen.
+
+
+## Offline-ID-Normalisierung – 2026-11-21 (14:36 Europe/Berlin)
+- Vor Änderung HEAD `c694b90038291feb671652e3b78b4df2a8a66f63`; offene Issues/PRs jeweils 0. Vorherige Scheduler- und Flutter-CI für `0628f887` erfolgreich; Scheduler-CI für Ausgangs-HEAD ebenfalls erfolgreich.
+- `apps/mobile/lib/offline_day_planner.dart`: IDs von Aufgaben und geschützten Fixterminen mit führenden/nachgestellten Leerzeichen werden explizit zurückgewiesen. Keine stille Normalisierung, keine Änderung gespeicherter Daten; verhindert uneindeutige Kennungen in der Tagesvorschau.
+- `apps/mobile/test/offline_day_planner_test.dart`: synthetischer Regressionstest für beide ID-Arten, unveränderte Eingaben und gültige IDs.
+- Code-Commit `3fd74dfca3215128c293dfbcbcf58f875b1bf4b0`; Test-Commit `39ce5796c30d4af227219b91b4f3bc92d0a0e991`.
+- **Testnachweis:** GitHub-Schreibvorgänge bestätigt. Flutter-/Dart-Tests für diesen neuen Code-HEAD nicht lokal ausgeführt; GitHub-CI für den neuen HEAD bei Dokumentation noch nicht als erfolgreich belegt. Keine Android-Geräteabnahme.
+- **Blocker:** Gerätetest, vollständige M1–M4-Abnahme, Ende-zu-Ende-Prüfung fehlen. Öffentliches Repository: keine personenbezogenen Daten oder Secrets.
+- **Nächster Schritt:** Flutter-CI für `39ce5796` kontrollieren und ggf. korrigieren; anschließend echte SQLite-Deadline-Setter-Persistenz und Widgettests der Tagesvorschau priorisieren.
