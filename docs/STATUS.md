@@ -570,3 +570,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** Commits auf GitHub bestätigt; neue Flutter-CI und Android-Gerätetest beim Schreiben nicht als erfolgreich belegt.
 - **Blocker:** PR #1 muss konfliktfrei geprüft werden; Versionshistorie, Undo, Android-Geräteabnahme und M1–M4-Abnahme offen.
 - **Nächster Schritt:** Flutter-CI für Test-SHA prüfen und ggf. beheben; danach versionierte Planübernahme/Undo mit expliziter Bestätigung und Widgettests integrieren.
+
+
+## Android Planübernahme und Undo – 2026-11-21
+- Ausgangs-HEAD `22ff922b29c64fe05e828343cc3a3add7ffcfc15`; PR #1 weiterhin offen, keine Merge-Behauptung.
+- `53bd32e2eb64b67cfdc29df40685504f8acd6f32`: `plan_snapshot_store.dart` mit SQLite-Schema für versionierte Plan-Snapshots, atomaren Transaktionen, Lesezugriff und vor konkurrierenden neuen Versionen geschütztem Undo. Bestehende Aufgaben werden nicht geändert.
+- `060172ed44caa0c5098a6c8e97a51dddd27e7b94`, Import-Fix `0bf149306f1b7311466d0a1674c90532f68b7a14`: Datenbankschema v4 inkl. Migration v3→v4, Dialogaktion **Plan übernehmen** und Snackbar-**Rückgängig** in der Android-Oberfläche.
+- `03ba9a52c1db1a034b9cccc863bcdf5e09cc4b99`: SQLite-FFI-Tests für Snapshot-Neustart, unveränderte Tasks, Undo-Versionsschutz, ungültige Blöcke und leere Pläne.
+- **Nachweis:** Commits bestätigt; neue Flutter-CI für Test-SHA zum Dokumentationszeitpunkt queued, nicht als erfolgreich belegt. Keine Android-Geräteabnahme oder Laufzeitmessung behauptet.
+- **Grenze:** Undo ist aktuell über die Snackbar erreichbar, keine separate dauerhafte Historienoberfläche. Für vollständig robusten Betrieb fehlen Konfliktschutz gegen zwischen Vorschau und Bestätigung geänderte Aufgaben, UI-Tests und reale Migrationstests.
+- **Nächster Schritt:** Flutter-CI abwarten und Fehler korrigieren, Snapshot-UI/Versionskonflikte und Migration testen, APK bauen und auf Android prüfen.
