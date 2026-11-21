@@ -204,3 +204,15 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Blocker:** Flutter-/Android-Laufzeitverifikation, reproduzierbarer Android-Release-Build und Geräteabnahme ausstehend. Repository öffentlich: keine privaten Daten oder Secrets.
 - **Nächster Schritt:** Flutter-Actions-Ergebnisse für den neuesten HEAD prüfen, bei Fehlschlag reparieren; danach Android-Plattformgerüst und lokale Tagesplanung/Scheduler-Anbindung priorisieren.
 - **Gesamtabnahme:** M1–M4 weiterhin offen.
+
+
+## Offline-Aufgabenbearbeitung – 2026-11-21 (05:42 Europe/Berlin)
+- Vor Änderungen verifizierter HEAD: `9ce20d924f9af0d792da1449bd42f0d866600351`; GitHub-Suchen: 0 offene Issues, 0 offene PRs.
+- Flutter-Actions-Lauf [44865415150](https://github.com/WeA200675/life-ai-planner/actions/runs/44865415150) für vorherigen Code-Commit `daef336`: **success**; Scheduler-Lauf [44865424597](https://github.com/WeA200675/life-ai-planner/actions/runs/44865424597) für Ausgangs-HEAD: **success**.
+- Neu: Offline-Aufgaben können per Dialog bearbeitet oder ohne Änderungen abgebrochen werden. `LocalTasks.rename` prüft positive ID, nichtleeren Titel und maximal 500 Zeichen vor SQLite-Zugriff, aktualisiert parametrisiert und meldet fehlende Datensätze. UI nutzt Busy-Sperre und Fehleranzeige.
+- Regressionstest für ungültige IDs/Titel vor SQLite-Zugriff ergänzt; ausschließlich synthetische Testwerte.
+- Code-Commit `003e6c50b836427fae613d59390f7891e9e1db54`; Test-Commit `819ff95cfd2531cb457187fc24faf5df83908be1`.
+- **Testnachweis:** GitHub bestätigte Commits. Neue Flutter-Actions-Ausführung [44867428272](https://github.com/WeA200675/life-ai-planner/actions/runs/44867428272) beim Abruf **queued**; kein erfolgreicher Testlauf für die neuen Änderungen nachgewiesen. Keine lokale Flutter- oder Android-Geräteausführung behauptet.
+- **Blocker:** Android-Plattformgerüst/Lockfile noch nicht fest versioniert, Release-APK und Geräteabnahme fehlen; öffentliches Repository, keine privaten Daten oder Secrets.
+- **Nächster Schritt:** neue Flutter-CI auswerten und Fehler korrigieren, anschließend Android-Gerüst reproduzierbar versionieren und Tagesplanung/Scheduler-Anbindung implementieren.
+- **Gesamtabnahme:** M1–M4 offen.
