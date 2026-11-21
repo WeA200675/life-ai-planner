@@ -39,8 +39,24 @@ jobs:
         run: flutter analyze --no-fatal-infos
       - name: Test
         run: flutter test
-      - name: Build Android debug APK
-        run: flutter build apk --debug
+      - name: Build Android debug APK (bounded dependency-network retries)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Maven Central/Gradle Plugin Portal occasionally return transient 403/5xx.
+          # Never suppress the final failure or upload an APK from an earlier attempt.
+          rm -f build/app/outputs/flutter-apk/app-debug.apk
+          for attempt in 1 2 3; do
+            if flutter build apk --debug; then
+              test -s build/app/outputs/flutter-apk/app-debug.apk
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Android build failed after 3 attempts; inspect Gradle dependency HTTP responses."
+              exit 1
+            fi
+            sleep $((attempt * 15))
+          done
       - name: Verify APK and record SHA-256
         run: |
           set -euo pipefail
