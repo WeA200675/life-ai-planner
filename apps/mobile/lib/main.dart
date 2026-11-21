@@ -40,6 +40,20 @@ class LocalTasks {
     await db.insert('tasks', {'title': clean, 'done': 0});
   }
 
+  Future<void> rename(int id, String title) async {
+    if (id <= 0) throw ArgumentError.value(id, 'id', 'Must be positive');
+    final clean = title.trim();
+    if (clean.isEmpty || clean.length > 500) {
+      throw ArgumentError('Task title must contain 1–500 characters');
+    }
+    final db = await database;
+    final changed = await db.update('tasks', {'title': clean},
+        where: 'id = ?', whereArgs: [id]);
+    if (changed != 1) {
+      throw StateError('Task not found or update was not unique');
+    }
+  }
+
   Future<void> setDone(int id, bool done) async {
     if (id <= 0) throw ArgumentError.value(id, 'id', 'Must be positive');
     final db = await database;
@@ -128,6 +142,48 @@ class _TaskScreenState extends State<TaskScreen> {
       await _refresh();
     } catch (_) {
       if (mounted) setState(() => _error = 'Aufgabe konnte nicht gespeichert werden.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _edit(int id, String title) async {
+    if (_busy) return;
+    final editController = TextEditingController(text: title);
+    String? updated;
+    try {
+      updated = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Aufgabe bearbeiten'),
+          content: TextField(
+            controller: editController,
+            autofocus: true,
+            maxLength: 500,
+            decoration: const InputDecoration(labelText: 'Aufgabentitel'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Abbrechen'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, editController.text),
+              child: const Text('Speichern'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      editController.dispose();
+    }
+    if (updated == null || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await _store.rename(id, updated);
+      await _refresh();
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Aufgabe konnte nicht geändert werden.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -233,11 +289,22 @@ class _TaskScreenState extends State<TaskScreen> {
                         value: done,
                         title: Text(task['title'] as String),
                         onChanged: _busy ? null : (value) => _toggle(task['id'] as int, value ?? false),
-                        secondary: IconButton(
+                        secondary: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Aufgabe bearbeiten',
+                              icon: const Icon(Icons.edit_outlined),
+                              onPressed: _busy ? null : () => _edit(
+                                task['id'] as int, task['title'] as String),
+                            ),
+                            IconButton(
                           tooltip: 'Aufgabe löschen',
                           icon: const Icon(Icons.delete_outline),
                           onPressed: _busy ? null : () => _confirmDelete(
                             task['id'] as int, task['title'] as String),
+                            ),
+                          ],
                         ),
                       );
                     },
