@@ -11,7 +11,7 @@ DayPlan previewLocalTasks(
   int provisionalMinutes = 30,
   double bufferRatio = 0.30,
 }) {
-  if (provisionalMinutes <= 0) {
+  if (provisionalMinutes <= 0 || provisionalMinutes > 1440) {
     throw ArgumentError.value(provisionalMinutes, 'provisionalMinutes');
   }
   final tasks = <DayTask>[];
