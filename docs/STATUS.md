@@ -160,3 +160,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Testnachweis:** GitHub-Commit bestätigt; Combined Commit Status des Ausgangs-HEAD enthielt keine klassischen Checks (kein CI-Erfolgsbeleg). Für den neuen Commit wurde weder ein grüner Flutter-Workflow noch ein APK-Build oder Gerätetest nachgewiesen. Kein lokaler Flutter-SDK-Lauf verfügbar.
 - **Blocker:** Generiertes Android-Gerüst noch nicht versioniert, Toolchain-Version nicht gepinnt, Release-/Geräteabnahme fehlt; M1–M4 offen. Repository öffentlich: keine personenbezogenen Daten oder Secrets.
 - **Nächster Schritt:** Flutter-Actions-Logs für den neuen HEAD prüfen und Fehler beheben; Android-Gerüst/Lockfile reproduzierbar einchecken; danach Offline-Tagesplanung und Scheduler-Anbindung.
+
+## Offline-Aufgabenfilter – 2026-11-21 (03:36 Europe/Berlin)
+- Vor Änderungen verifizierter HEAD: `c35b5c2d50f5e7873f2e8935942c4e4416523978`; offene Issues 0, offene PRs 0.
+- `apps/mobile/lib/main.dart`: offline nutzbare Ansichten **Offen**, **Erledigt**, **Alle** für bereits lokal gespeicherte SQLite-Aufgaben. Die Filterfunktion erhält die Reihenfolge und verändert keine gespeicherten Daten; eigene Leerzustandsmeldung bei leerem Filter.
+- `apps/mobile/test/offline_task_test.dart`: zwei neue Tests für Filtersemantik, Eingabereihenfolge und sichtbare Umschaltoptionen.
+- Code-Commits: `3b5956f3d22cf45a03ce48cfb9940ea495fac377`, Syntaxkorrektur `96e2500897795f0bef1b863856663968d5471ecc`, Tests `a152f19b558bdaff1a1bd7ef829d73c376b97735`.
+- **Testnachweis:** GitHub-Commits und Dateiinhalte überprüft; lokale Flutter-/Dart-Toolchain nicht verfügbar. GitHub Combined Status für `a152f19` lieferte keine klassischen Statuschecks; dies bestätigt **keinen** erfolgreichen Flutter-Actions-Lauf. Die neuen Tests wurden nicht nachweislich ausgeführt, APK und Gerätetest fehlen.
+- **Infrastrukturblocker:** Lokaler Git-Klon scheitert an DNS-Auflösung von github.com; Änderungen daher ausschließlich über GitHub-Connector mit Blob-SHA-Konfliktschutz vorgenommen. Android-Gerüst wird bisher nur im CI-Workspace erzeugt und ist nicht versioniert.
+- **Nächster Schritt:** Flutter-Actions-Job und Logs überprüfen, ggf. Analyse-/Buildfehler beheben; danach Android-Gerüst und SDK/Lockfile reproduzierbar versionieren, Tagesplanung mit lokalem Scheduler integrieren.
+- **Abnahme:** M1–M4 weiterhin offen; keine Gesamt-Abnahme behauptet.
