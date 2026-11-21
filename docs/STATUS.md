@@ -466,3 +466,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Testnachweis:** Beide GitHub-Commits bestätigt; CI für Code-Commit [44925557843](https://github.com/WeA200675/life-ai-planner/actions/runs/44925557843) beim Prüfen **in_progress**. CI für Test-Commit noch nicht nachweislich erfolgreich; kein lokaler Python- oder Android-Gerätetest behauptet.
 - **Blocker:** vollständige M1–M4-Abnahme, Android-Geräteabnahme, Release-Build; API weiterhin bewusst nur Loopback ohne externe Auth/TLS-Freigabe. Öffentliches Repo: keine privaten Daten oder Secrets.
 - **Nächster Schritt:** Scheduler-CI für `eeab31e8` prüfen und ggf. reparieren; anschließend API-Fehlerpfade und Android-Tagesvorschau-Widgettests absichern.
+
+## API: Ungültiges UTF-8 sicher abweisen – 2026-11-21 (18:22 Europe/Berlin)
+- Ausgangs-HEAD: `366a307814021577deb360ba19fa76a446422bc9`; offene Issues/PRs jeweils 0. Vor jeder Änderung HEAD erneut geprüft.
+- Fehler: JSON-Bytes mit ungültigem UTF-8 lösten zuvor einen unbehandelten `UnicodeDecodeError` aus; die Verbindung konnte ohne HTTP-Antwort abbrechen.
+- `services/api/server.py` behandelt jetzt `UnicodeError` als HTTP 400. `tests/test_local_api.py` enthält zwei fehlerhafte UTF-8-Requests und prüft unveränderte SQLite-Daten sowie anschließende gültige Erstellung. Synthetische Testdaten.
+- Implementierungs-Commit: `2b83e59006a884631f289d50352e2a72035d7202`; Test-Commit: `855a37f20686dfb8ad36a72cfa169be61c0881e1`.
+- Vorherige Scheduler-CI: [44925581754](https://github.com/WeA200675/life-ai-planner/actions/runs/44925581754) **success** für älteren HEAD. Aktuelle CI-Abfrage: `855a37f2` run 44929698503 in_progress/null; `2b83e590` run 44929681982 in_progress/null; `366a3078` run 44925581754 completed/success; `eeab31e8` run 44925568147 completed/success; `a098cd18` run 44925557843 completed/success. Keine lokale Python-Ausführung und kein Testerfolg für neuen Test-Commit behauptet.
+- Blocker: Android-Geräteabnahme, Release-Build und vollständige M1–M4-Abnahme offen. API weiterhin nur Loopback, ohne produktive externe Auth/TLS-Freigabe.
+- Nächster Schritt: Scheduler-CI für `855a37f` prüfen, bei Fehlern korrigieren; danach Flutter-Tagesvorschau-Widgettests und Replanning priorisieren.
