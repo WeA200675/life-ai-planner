@@ -90,4 +90,18 @@ void main() {
     }
   });
 
+  test('duplicate open task IDs fail rather than scheduling twice', () {
+    expect(() => previewLocalTasks(start, end, [
+      {'id': 1, 'done': 0},
+      {'id': 1, 'done': 0},
+    ]), throwsFormatException);
+  });
+
+  test('duplicate IDs are rejected even when one task is completed', () {
+    expect(() => previewLocalTasks(start, end, [
+      {'id': 1, 'done': 1},
+      {'id': 1, 'done': 0},
+    ]), throwsFormatException);
+  });
+
 }
