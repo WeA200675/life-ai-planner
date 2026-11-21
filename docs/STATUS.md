@@ -610,3 +610,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - `b82c7edd0ca323572eb72daf54f6fce341b33506`: UI-Beschriftung auf tatsächlich angezeigte 30 Einträge präzisiert.
 - **CI-Nachweis:** Flutter-CI für `d926fd25` [44941182121](https://github.com/WeA200675/life-ai-planner/actions/runs/44941182121) **success**; für `a749cab0` [44941288345](https://github.com/WeA200675/life-ai-planner/actions/runs/44941288345) **success**, einschließlich GitHub-Workflow-Test-/APK-Schritten. Neuere Historien-Commits noch nicht grün bestätigt. Ein reales Android-Gerät wurde nicht geprüft.
 - **Offen:** aktuelle Historien-CI, App-Abnahme auf Android-Gerät, ggf. vollständige Historien-Pagination über die ersten 30 Einträge hinaus.
+
+
+## M4 Planhistorie: unbegrenztes Nachladen mit stabilem Cursor (2026-11-21)
+- Ausgangs-HEAD `366527d96e48c1080d9eca7fa8a4ae801978fbcf`. Historien-CI für `b82c7edd` [44941639749](https://github.com/WeA200675/life-ai-planner/actions/runs/44941639749) **success** (Flutter-Analyse, Tests, Debug-APK im Workflow).
+- `5ac0730dc29ab8f454d4c912e2660dd5683ed4a7`: Android-Dialog lädt auf Knopfdruck zusätzliche 30 Historieneinträge, mit Lade-/Fehlerzustand und Detailansicht.
+- `6b41f9e6d0364aaa7c1536c588c9f3021e4ffc17`: Regressionstest für 67 gespeicherte Versionen.
+- `1c07ef1885359f5ab6af212de7ad7c3df559c863`, `f2eb692d6caf47a183149486aa9729042b175773`: Cursor-Pagination statt Offset im UI; neu hinzukommende Pläne verschieben bereits geladene Seiten nicht.
+- `fccefb0a66bbf7751e88095f61b308c21440e6ea`: Regressionstest für Cursor-Stabilität bei gleichzeitigem neuen Snapshot.
+- **Offen:** neue Flutter-CI/Debug-APK für Cursor-HEAD, Gerätetest, UX-Abnahme. Kein Release- oder Gerätetest-Erfolg behauptet.
