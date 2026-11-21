@@ -303,6 +303,48 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 
+  Future<void> _editDeadline(Map<String, Object?> task) async {
+    if (_busy) return;
+    final id = task['id'] as int;
+    final stored = task['deadline_utc_ms'] as int?;
+    final initial = stored == null
+        ? DateTime.now()
+        : DateTime.fromMillisecondsSinceEpoch(stored, isUtc: true).toLocal();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1971),
+      lastDate: DateTime(2100),
+      helpText: 'Fälligkeitsdatum wählen',
+    );
+    if (!mounted || selected == null || _busy) return;
+    setState(() => _busy = true);
+    try {
+      // A date-only deadline is inclusive until the end of the selected day.
+      final deadline = DateTime(selected.year, selected.month, selected.day + 1)
+          .subtract(const Duration(milliseconds: 1));
+      await _store.setDeadline(id, deadline);
+      await _refresh();
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Fälligkeit konnte nicht gespeichert werden.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _clearDeadline(int id) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await _store.setDeadline(id, null);
+      await _refresh();
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Fälligkeit konnte nicht entfernt werden.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _confirmDelete(int id, String title) async {
     if (_busy) return;
     final confirmed = await showDialog<bool>(
@@ -502,6 +544,17 @@ class _TaskScreenState extends State<TaskScreen> {
                               icon: const Icon(Icons.tune),
                               onPressed: _busy ? null : () => _editPlanningMetadata(task),
                             ),
+                            IconButton(
+                              tooltip: 'Fälligkeit festlegen',
+                              icon: const Icon(Icons.event_outlined),
+                              onPressed: _busy ? null : () => _editDeadline(task),
+                            ),
+                            if (task['deadline_utc_ms'] != null)
+                              IconButton(
+                                tooltip: 'Fälligkeit entfernen',
+                                icon: const Icon(Icons.event_busy_outlined),
+                                onPressed: _busy ? null : () => _clearDeadline(task['id'] as int),
+                              ),
                             IconButton(
                           tooltip: 'Aufgabe löschen',
                           icon: const Icon(Icons.delete_outline),
