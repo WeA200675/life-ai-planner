@@ -64,4 +64,55 @@ void main() {
       if (dir.existsSync()) dir.deleteSync(recursive: true);
     }
   });
+  test('v2 to v3 migration preserves rows and validates UTC deadline', () async {
+    final dir = Directory.systemTemp.createTempSync('planner-deadline-');
+    final path = '${dir.path}/tasks.db';
+    try {
+      var db = await factory.openDatabase(path, options: OpenDatabaseOptions(
+        version: 2, onCreate: (db, _) => createTaskSchemaV2ForTest(db),
+      ));
+      await db.insert('tasks', {'id': 17, 'title': 'Sample', 'minutes': 45, 'priority': 8});
+      await db.close();
+      db = await factory.openDatabase(path, options: OpenDatabaseOptions(
+        version: 3, onUpgrade: (db, old, _) async {
+          if (old < 3) await migrateTasksV2ToV3(db);
+        },
+      ));
+      try {
+        final row = (await db.query('tasks')).single;
+        expect(row['id'], 17);
+        expect(row['minutes'], 45);
+        expect(row['priority'], 8);
+        expect(row['deadline_utc_ms'], isNull);
+        await db.update('tasks', {'deadline_utc_ms': 1768212000000});
+        expect((await db.query('tasks')).single['deadline_utc_ms'], 1768212000000);
+        await expectLater(db.update('tasks', {'deadline_utc_ms': 0}),
+            throwsA(isA<DatabaseException>()));
+      } finally {
+        await db.close();
+      }
+    } finally {
+      dir.deleteSync(recursive: true);
+    }
+  });
+
+  test('fresh v3 schema includes nullable deadline', () async {
+    final db = await factory.openDatabase(inMemoryDatabasePath,
+        options: OpenDatabaseOptions(version: 3, onCreate: (db, _) => createTaskSchema(db)));
+    try {
+      await db.insert('tasks', {'title': 'Fresh'});
+      expect((await db.query('tasks')).single['deadline_utc_ms'], isNull);
+      await expectLater(db.update('tasks', {'deadline_utc_ms': -1}),
+          throwsA(isA<DatabaseException>()));
+    } finally {
+      await db.close();
+    }
+  });
+
+}
+
+Future<void> createTaskSchemaV2ForTest(DatabaseExecutor db) async {
+  await db.execute('CREATE TABLE tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, '
+      'title TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0, '
+      'minutes INTEGER, priority INTEGER NOT NULL DEFAULT 0)');
 }
