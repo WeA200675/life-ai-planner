@@ -216,3 +216,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Blocker:** Android-Plattformgerüst/Lockfile noch nicht fest versioniert, Release-APK und Geräteabnahme fehlen; öffentliches Repository, keine privaten Daten oder Secrets.
 - **Nächster Schritt:** neue Flutter-CI auswerten und Fehler korrigieren, anschließend Android-Gerüst reproduzierbar versionieren und Tagesplanung/Scheduler-Anbindung implementieren.
 - **Gesamtabnahme:** M1–M4 offen.
+
+
+## Offline-Suche – 2026-11-21 (06:18 Europe/Berlin)
+- Ausgangs-HEAD vor Änderungen: `4edce45a6c3b1b8e01cdd2b44a2c9cf18296f56c`; 0 offene Issues, 0 offene PRs (GitHub-Suche).
+- Vorherige Flutter-CI [44867428272](https://github.com/WeA200675/life-ai-planner/actions/runs/44867428272) für `819ff95`: **success**; Scheduler-CI [44867439207](https://github.com/WeA200675/life-ai-planner/actions/runs/44867439207) für `4edce45`: **success**.
+- Neu: Offline-Aufgabensuche ohne Netzwerk, trim-/case-insensitiv, kombinierbar mit Offen/Erledigt/Alle; Suchfeld und Zurücksetzen; kein Ändern der SQLite-Daten. Regressionstest für Suchkombination, Leerabfrage und Quellreihenfolge sowie Widget-Testanpassung.
+- Code-Commit: `df5126133528188c0f5d0355babdcb26c3b47087`; Test-Commit: `de3a300960581c8b930c0a7a902642179e74a225`.
+- **Verifikation:** GitHub-API bestätigte beide Commits. Die vorherige CI ist grün, aber kein Testnachweis für neue Suche. Neuer Flutter-Test/Android-Build beim Dokumentieren nicht als erfolgreich verifiziert; kein lokaler Flutter-Lauf behauptet.
+- **Blocker:** Android-Gerüst und Lockfile noch nicht versioniert; Release-APK und Geräteabnahme fehlen. Öffentliches Repository: keine personenbezogenen Daten/Secrets committen.
+- **Nächster Schritt:** Flutter-CI für `de3a300` prüfen und Fehler beheben; danach Android-Gerüst/Lockfile reproduzierbar versionieren und lokale Tagesplanung mit Scheduler-Anbindung implementieren.
+- **Gesamtabnahme:** M1–M4 weiterhin offen.
