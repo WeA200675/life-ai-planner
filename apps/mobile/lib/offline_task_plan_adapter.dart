@@ -15,11 +15,15 @@ DayPlan previewLocalTasks(
     throw ArgumentError.value(provisionalMinutes, 'provisionalMinutes');
   }
   final tasks = <DayTask>[];
+  final seenIds = <int>{};
   for (final row in rows) {
     final id = row['id'];
     final done = row['done'];
     if (id is! int || id <= 0 || (done != 0 && done != 1)) {
       throw FormatException('Invalid local task row');
+    }
+    if (!seenIds.add(id)) {
+      throw FormatException('Duplicate local task id');
     }
     if (done == 0) {
       final minutes = row['minutes'] ?? provisionalMinutes;
