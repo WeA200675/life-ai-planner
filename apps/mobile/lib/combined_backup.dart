@@ -67,3 +67,36 @@ void validateCombinedBackup(String source) {
     }
   }
 }
+
+/// Restores a complete archive only into a fresh, empty SQLite database.
+/// Both tablesets are committed together or rolled back together. Existing
+/// user data is never overwritten, including after a stale confirmation.
+Future<({int tasks, int snapshots})> restoreCombinedIntoEmptyDatabase(
+    Database db, String source) async {
+  validateCombinedBackup(source);
+  final data = jsonDecode(source) as Map<String, dynamic>;
+  final tasks = decodeTaskBackup(jsonEncode(data['tasks']));
+  final history = decodePlanHistoryBackup(jsonEncode(data['plan_history']));
+  return db.transaction((txn) async {
+    for (final table in [
+      'tasks', 'plan_snapshots', 'plan_snapshot_blocks',
+    ]) {
+      final rows = await txn.query(table, limit: 1);
+      if (rows.isNotEmpty) {
+        throw StateError('Combined restore requires an empty database');
+      }
+    }
+    final batch = txn.batch();
+    for (final task in tasks.tasks) {
+      batch.insert('tasks', task);
+    }
+    for (final snapshot in history.snapshots) {
+      batch.insert('plan_snapshots', snapshot);
+    }
+    for (final block in history.blocks) {
+      batch.insert('plan_snapshot_blocks', block);
+    }
+    await batch.commit(noResult: true);
+    return (tasks: tasks.tasks.length, snapshots: history.snapshots.length);
+  });
+}
