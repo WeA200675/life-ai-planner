@@ -328,3 +328,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Code-/Test-Commits: `add90583de1daba9f6c7a4904b8a4828ebc57620`, `74322023085587fd1ccfdacd7aff20cb654018c0`, `84f7e68e91b546a2e6593c6b75a44c91f99d0612`, `1bc58d5d7c7650e13f2c123d1d41fe2ca18e8e21`.
 - **Testnachweis:** GitHub-Schreiboperationen bestätigt; für diese Änderungen weder lokale Flutter-Testausführung noch abgeschlossener GitHub-Actions-Erfolg nachgewiesen. Keine Android-Geräteabnahme.
 - **Blocker/Nächster Schritt:** Flutter-CI für neuesten HEAD prüfen und Fehler beheben, dann Deadline-Setter mit SQLite-Integrationstest absichern und Deadline-UI ergänzen. Gemeldete Flutter-Assertion auf Gerät erneut testen. M1–M4 weiterhin offen; öffentliches Repository, keine Secrets oder persönlichen Testdaten.
+
+
+## Offline-Fälligkeit in Flutter – 2026-11-21 (11:22 Europe/Berlin)
+- Ausgangs-HEAD vor Änderung: `8912de54955fb9e8b338561f4ce0680dad171a9f`; offene PRs: 0; offene Issues: 0 (GitHub-Suchen).
+- Implementierung: In `apps/mobile/lib/main.dart` kann eine lokale Aufgabe jetzt über den DatePicker ein Fälligkeitsdatum erhalten; eine zweite Aktion entfernt eine bestehende Fälligkeit. Die bestehende SQLite-Methode `setDeadline` speichert UTC-Epoch-Millisekunden. Ein ausgewählter Kalendertag wird als Ende des lokalen Tages interpretiert; Abbrechen ändert nichts. Schreibfehler werden angezeigt.
+- Code-Commit: `d0b149d6227a3460092666d60fafae4db2434e0c`.
+- **Verifikation:** GitHub-Connector bestätigte den Commit. Combined Status für Ausgangs-HEAD lieferte keine klassischen Checks; weder Flutter Analyze/Test noch Android-Build für den neuen Commit wurden in diesem Lauf ausgeführt oder als erfolgreich bestätigt. Daher **keine** grüne Abnahme behauptet.
+- **Offen/Blocker:** Flutter-CI-Logs des neuen Commits prüfen; DatePicker-Grenzfälle und Persistenz mit Widget-/SQLite-Tests abdecken; Android-Geräteabnahme fehlt. Ein öffentlicher Repository-Zugriff bleibt bestehen: keine personenbezogenen Daten oder Secrets committen.
+- **Nächster Schritt:** CI des neuen Commits kontrollieren, Fehler korrigieren und Offline-Fälligkeit in Tagesvorschau samt Tests sichtbar machen. M1–M4 weiterhin nicht vollständig abgenommen.
