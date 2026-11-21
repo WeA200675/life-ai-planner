@@ -24,6 +24,24 @@ class SchedulerTests(unittest.TestCase):
         self.assertEqual(result.deferred, ("urgent",))
         self.assertEqual(result.blocks[0].task_id, "fixed")
 
+    def test_deadline_pruning_keeps_later_tasks_schedulable(self):
+        fixed = [Block("meeting1", at(9, 30), at(10)),
+                 Block("meeting2", at(10, 30), at(11))]
+        tasks = [Task("urgent", "Urgent", 45, priority=10, deadline=at(10)),
+                 Task("later", "Later", 20, priority=0)]
+        plan = schedule(at(9), at(12), tasks, fixed, buffer_ratio=0)
+        self.assertEqual(plan.deferred, ("urgent",))
+        self.assertEqual(next(b for b in plan.blocks if b.task_id == "later").start, at(9))
+        self.assertEqual(tuple(b.task_id for b in plan.blocks if b.task_id.startswith("meeting")),
+                         ("meeting1", "meeting2"))
+
+    def test_deadline_equal_to_finish_is_allowed(self):
+        plan = schedule(at(9), at(11),
+                        [Task("exact", "Exact", 30, deadline=at(9, 30))],
+                        buffer_ratio=0)
+        self.assertEqual(plan.deferred, ())
+        self.assertEqual(plan.blocks[0].end, at(9, 30))
+
     def test_invalid_overlap(self):
         with self.assertRaises(ValueError):
             schedule(at(9), at(12), [], [Block("a", at(9), at(11)), Block("b", at(10), at(12))])
