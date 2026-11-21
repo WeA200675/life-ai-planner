@@ -28,6 +28,14 @@ def build_handler(store):
             self.wfile.write(data)
 
         def _body(self):
+            # Only a single JSON media type and a single length are supported.
+            # Reject ambiguous framing before reading or mutating the store.
+            if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
+                raise ValueError("Content-Type must be application/json")
+            if self.headers.get("Transfer-Encoding") is not None:
+                raise ValueError("Transfer-Encoding is not supported")
+            if len(self.headers.get_all("Content-Length", [])) != 1:
+                raise ValueError("exactly one Content-Length is required")
             raw_size = self.headers.get("Content-Length", "0")
             if not raw_size.isdecimal():
                 raise ValueError("invalid Content-Length")
