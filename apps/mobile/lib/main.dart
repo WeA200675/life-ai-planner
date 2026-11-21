@@ -5,6 +5,7 @@ import 'offline_task_plan_adapter.dart';
 import 'local_task_schema.dart';
 import 'planner_theme.dart';
 import 'deadline_presentation.dart';
+import 'deferred_task_explanation.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -411,7 +412,12 @@ class _TaskScreenState extends State<TaskScreen> {
                   ),
                 if (plan.deferred.isNotEmpty) ...[
                   const Text('Nicht eingeplant:'),
-                  for (final id in plan.deferred) Text(names[id] ?? id),
+                  for (final id in plan.deferred)
+                    ListTile(
+                      dense: true,
+                      title: Text(names[id] ?? id),
+                      subtitle: Text(deferredTaskExplanation(plan, id)),
+                    ),
                 ],
               ],
             ),
