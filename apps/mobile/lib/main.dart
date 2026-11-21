@@ -75,7 +75,6 @@ class PlannerApp extends StatelessWidget {
         theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
         home: const TaskScreen(),
       );
-  }
 }
 
 class TaskScreen extends StatefulWidget {
