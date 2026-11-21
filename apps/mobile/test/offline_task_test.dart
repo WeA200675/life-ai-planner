@@ -9,6 +9,12 @@ void main() {
     await expectLater(store.add('x' * 501), throwsArgumentError);
   });
 
+  test('invalid deletion ids are rejected before opening SQLite', () async {
+    final store = LocalTasks();
+    await expectLater(store.delete(0), throwsArgumentError);
+    await expectLater(store.delete(-1), throwsArgumentError);
+  });
+
   test('offline status filters preserve ordering and do not mutate input', () {
     final tasks = <Map<String, Object?>>[
       {'id': 3, 'title': 'Open A', 'done': 0},
