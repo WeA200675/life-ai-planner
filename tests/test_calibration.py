@@ -8,6 +8,28 @@ class CalibrationTests(unittest.TestCase):
         return [DayObservation(base - timedelta(days=i), 480, int(480 * fraction), 2)
                 for i in range(count)]
 
+    def test_anchored_window_ignores_future_days(self):
+        days = self.observations(0.50)
+        future = DayObservation(date(2026, 12, 20), 480, 0)
+        expected = calibrate(days, as_of=date(2026, 11, 20))
+        self.assertEqual(calibrate(days + [future], as_of=date(2026, 11, 20)),
+                         expected)
+
+    def test_anchored_window_does_not_use_stale_days(self):
+        days = self.observations(0.50)
+        result = calibrate(days, as_of=date(2026, 12, 20))
+        self.assertEqual(result.sample_days, 0)
+        self.assertEqual(result.reason, "insufficient data")
+
+    def test_anchored_window_is_repeatable(self):
+        days = self.observations(0.50)
+        day = date(2026, 11, 20)
+        self.assertEqual(calibrate(days, as_of=day), calibrate(list(reversed(days)), as_of=day))
+
+    def test_invalid_as_of_rejected(self):
+        with self.assertRaises(ValueError):
+            calibrate(self.observations(0.5), as_of="2026-11-20")
+
     def test_increase_limited_step(self):
         result = calibrate(self.observations(0.50))
         self.assertAlmostEqual(result.ratio, 0.35)
