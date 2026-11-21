@@ -227,3 +227,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Blocker:** Android-Gerüst und Lockfile noch nicht versioniert; Release-APK und Geräteabnahme fehlen. Öffentliches Repository: keine personenbezogenen Daten/Secrets committen.
 - **Nächster Schritt:** Flutter-CI für `de3a300` prüfen und Fehler beheben; danach Android-Gerüst/Lockfile reproduzierbar versionieren und lokale Tagesplanung mit Scheduler-Anbindung implementieren.
 - **Gesamtabnahme:** M1–M4 weiterhin offen.
+
+## Offline-Aufgabenstatistik – 2026-11-21 (06:40 Europe/Berlin)
+- Ausgangs-HEAD vor Änderungen: `35438dd013381b562086c23c0f01c54d1f528ca7`; GitHub-Suchen: 0 offene Issues und 0 offene PRs.
+- Flutter-MVP: offline berechnete Zähler für offene, erledigte und alle Aufgaben in der Oberfläche ergänzt; unabhängig von Suchbegriff/Filter, ohne neue SQLite-Tabelle, Netzwerk oder personenbezogene Testdaten.
+- Regressionstests für gemischte und leere Aufgabenlisten sowie sichtbaren Zähler ergänzt.
+- Code-Commit `12441c52a73d1d036b0f4e685ebc9054712a7597`; Test-Commit `9726094c040b7101a73775057b232f488ff55e91`.
+- **Testnachweis:** GitHub-Schreiboperationen bestätigt; Flutter-Tests, Analyzer, Android-Build und neuer CI-Lauf für diese Commits in diesem Lauf **nicht** erfolgreich verifiziert. Der klassische Combined-Status des Ausgangs-HEAD enthielt keine Checks und belegt keinen Actions-Erfolg.
+- **Blocker:** Android-Plattformgerüst/Lockfile nicht dauerhaft versioniert, Release-APK und Geräteabnahme fehlen; öffentliches Repository, keine Secrets oder persönlichen Testdaten.
+- **Nächster Schritt:** Flutter-CI für `9726094` auswerten und gegebenenfalls reparieren; Android-Gerüst reproduzierbar einchecken und Offline-Tagesplanung mit Scheduler-Anbindung priorisieren.
+- **Abnahme:** M1–M4 weiterhin offen.
