@@ -88,9 +88,14 @@ def schedule(start: datetime, end: datetime, tasks: list[Task],
             conflicts.append(f"{task.id}: buffer budget exceeded")
             continue
         placed = False
+        duration = timedelta(minutes=task.minutes)
+        # A deadline before the gap start cannot be met by this or any later gap.
+        # Avoid repeated timedelta construction while scanning fixed-event gaps.
         for gap in gaps:
-            finish = gap[0] + timedelta(minutes=task.minutes)
-            if finish <= gap[1] and (task.deadline is None or finish <= task.deadline):
+            if task.deadline is not None and gap[0] + duration > task.deadline:
+                break
+            finish = gap[0] + duration
+            if finish <= gap[1]:
                 blocks.append(Block(task.id, gap[0], finish))
                 gap[0] = finish
                 used += task.minutes
