@@ -9,6 +9,12 @@ void main() {
     await expectLater(store.add('x' * 501), throwsArgumentError);
   });
 
+  test('invalid completion ids are rejected before opening SQLite', () async {
+    final store = LocalTasks();
+    await expectLater(store.setDone(0, true), throwsArgumentError);
+    await expectLater(store.setDone(-5, false), throwsArgumentError);
+  });
+
   test('invalid deletion ids are rejected before opening SQLite', () async {
     final store = LocalTasks();
     await expectLater(store.delete(0), throwsArgumentError);
