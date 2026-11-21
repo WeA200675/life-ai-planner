@@ -218,6 +218,88 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 
+  Future<void> _editPlanningMetadata(Map<String, Object?> task) async {
+    if (_busy) return;
+    final minutesController = TextEditingController(
+      text: (task['minutes'] as int?)?.toString() ?? '',
+    );
+    final priorityController = TextEditingController(
+      text: (task['priority'] as int? ?? 0).toString(),
+    );
+    ({int? minutes, int priority})? selected;
+    try {
+      selected = await showDialog<({int? minutes, int priority})>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Planungswerte bearbeiten'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: minutesController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Dauer in Minuten (1–1440)',
+                  helperText: 'Leer = vorläufig 30 Minuten',
+                ),
+              ),
+              TextField(
+                controller: priorityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Priorität (0–10)',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Abbrechen'),
+            ),
+            TextButton(
+              onPressed: () {
+                final durationText = minutesController.text.trim();
+                final minutes = durationText.isEmpty
+                    ? null : int.tryParse(durationText);
+                final priority = int.tryParse(priorityController.text.trim());
+                if ((durationText.isNotEmpty &&
+                        (minutes == null || minutes < 1 || minutes > 1440)) ||
+                    priority == null || priority < 0 || priority > 10) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(content: Text('Dauer oder Priorität ungültig.')),
+                  );
+                  return;
+                }
+                Navigator.pop(dialogContext, (minutes: minutes, priority: priority));
+              },
+              child: const Text('Speichern'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      minutesController.dispose();
+      priorityController.dispose();
+    }
+    if (selected == null || !mounted || _busy) return;
+    setState(() => _busy = true);
+    try {
+      await _store.setPlanningMetadata(
+        task['id'] as int,
+        minutes: selected.minutes,
+        priority: selected.priority,
+      );
+      await _refresh();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Planungswerte konnten nicht gespeichert werden.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _confirmDelete(int id, String title) async {
     if (_busy) return;
     final confirmed = await showDialog<bool>(
@@ -272,7 +354,7 @@ class _TaskScreenState extends State<TaskScreen> {
             child: ListView(
               shrinkWrap: true,
               children: [
-                const Text('08:00–18:00 · 30 Minuten je offener Aufgabe (vorläufig)'),
+                const Text('08:00–18:00 · Individuelle Dauern; ohne Angabe 30 Minuten'),
                 Text('Planbudget: ' + plan.budgetMinutes.toString() +
                     ' Minuten · Freie Reserve: ' + plan.reservedMinutes.toString() + ' Minuten'),
                 for (final block in plan.blocks)
@@ -411,6 +493,11 @@ class _TaskScreenState extends State<TaskScreen> {
                               icon: const Icon(Icons.edit_outlined),
                               onPressed: _busy ? null : () => _edit(
                                 task['id'] as int, task['title'] as String),
+                            ),
+                            IconButton(
+                              tooltip: 'Dauer und Priorität bearbeiten',
+                              icon: const Icon(Icons.tune),
+                              onPressed: _busy ? null : () => _editPlanningMetadata(task),
                             ),
                             IconButton(
                           tooltip: 'Aufgabe löschen',
