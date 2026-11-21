@@ -9,6 +9,14 @@ void main() {
     await expectLater(store.add('x' * 501), throwsArgumentError);
   });
 
+  test('invalid renames are rejected before opening SQLite', () async {
+    final store = LocalTasks();
+    await expectLater(store.rename(0, 'Valid'), throwsArgumentError);
+    await expectLater(store.rename(-1, 'Valid'), throwsArgumentError);
+    await expectLater(store.rename(1, '  '), throwsArgumentError);
+    await expectLater(store.rename(1, 'x' * 501), throwsArgumentError);
+  });
+
   test('invalid completion ids are rejected before opening SQLite', () async {
     final store = LocalTasks();
     await expectLater(store.setDone(0, true), throwsArgumentError);
