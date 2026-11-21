@@ -94,4 +94,34 @@ void main() {
     expect(taskRowsFingerprint(first), taskRowsFingerprint(second));
   });
 
+  test('overlapping or duplicate blocks are rejected atomically', () async {
+    for (final blocks in <List<DayBlock>>[
+      [
+        DayBlock('a', start, start.add(const Duration(minutes: 30))),
+        DayBlock('b', start.add(const Duration(minutes: 10)),
+            start.add(const Duration(minutes: 40))),
+      ],
+      [
+        DayBlock('same', start, start.add(const Duration(minutes: 20))),
+        DayBlock('same', start.add(const Duration(minutes: 20)),
+            start.add(const Duration(minutes: 40))),
+      ],
+    ]) {
+      await expectLater(
+        store.accept(DayPlan(blocks, const [], const [], 600, 420, 500),
+            start, end),
+        throwsArgumentError,
+      );
+    }
+    expect(await store.latest(), isNull);
+  });
+
+  test('impossible capacity is rejected without persistence', () async {
+    await expectLater(
+      store.accept(const DayPlan([], [], [], 600, 700, 0), start, end),
+      throwsArgumentError,
+    );
+    expect(await store.latest(), isNull);
+  });
+
 }
