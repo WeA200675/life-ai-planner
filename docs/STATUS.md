@@ -193,3 +193,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Blocker:** Flutter/Android lokal nicht verifiziert, APK und manuelle Geräteabnahme ausstehend; Repository öffentlich, daher keine Secrets oder personenbezogenen Testdaten.
 - **Nächster Schritt:** CI für neuesten HEAD auswerten, bei Fehlern reparieren; anschließend Android-Plattformgerüst dauerhaft versionieren und lokale Tagesplanung/Scheduler-Anbindung ergänzen.
 - **Gesamtabnahme:** M1–M4 weiterhin offen.
+
+
+## Offline-Statusänderungen abgesichert – 2026-11-21 (05:17 Europe/Berlin)
+- Vor Änderung HEAD `a47ec1e60e94d0efdf6d1696a6ab30e7b71a737c`; GitHub-Suche: 0 offene Issues, 0 offene PRs.
+- `apps/mobile/lib/main.dart`: `setDone` lehnt nichtpositive IDs vor dem Datenbankzugriff ab und meldet fehlende/mehrdeutige Datensätze statt einen stillen Erfolg vorzutäuschen. Der UI-Toggle nutzt dieselbe Busy-Sperre wie Hinzufügen und Löschen; `finally` gibt sie auch bei Fehlern frei.
+- `apps/mobile/test/offline_task_test.dart`: Regressionstest für ungültige Statusänderungs-IDs ohne SQLite-Zugriff.
+- Code-Commit `b28f21ad3a7bf747a6b9d715e739937e225c7e00`; Test-Commit `daef336bfb6eca88390dd175e09635bc432b61b6`.
+- **Verifikation:** GitHub-API bestätigte beide Commits. Für den Ausgangs-HEAD lieferte der klassische Combined-Status keine Checks; das ist kein Actions-Testnachweis. Flutter-/Android-Tests für diese Änderungen wurden in diesem Lauf nicht ausgeführt oder als grün bestätigt.
+- **Blocker:** Flutter-/Android-Laufzeitverifikation, reproduzierbarer Android-Release-Build und Geräteabnahme ausstehend. Repository öffentlich: keine privaten Daten oder Secrets.
+- **Nächster Schritt:** Flutter-Actions-Ergebnisse für den neuesten HEAD prüfen, bei Fehlschlag reparieren; danach Android-Plattformgerüst und lokale Tagesplanung/Scheduler-Anbindung priorisieren.
+- **Gesamtabnahme:** M1–M4 weiterhin offen.
