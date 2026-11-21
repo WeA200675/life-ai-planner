@@ -492,82 +492,127 @@ class _TaskScreenState extends State<TaskScreen> {
 
   Future<void> _showPlanHistory() async {
     if (_busy) return;
+    const pageSize = 30;
+    final entries = <SavedPlan>[];
+    var loading = false;
+    var hasMore = true;
+    String? historyError;
     try {
-      final entries = await _store.planHistory();
+      final initial = await _store.planHistory(limit: pageSize);
+      entries.addAll(initial);
+      hasMore = initial.length == pageSize;
       if (!mounted) return;
       await showDialog<void>(
         context: context,
-        builder: (historyContext) => AlertDialog(
-          title: const Text('Letzte 30 Tagespläne'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: entries.isEmpty
-                ? const Text('Noch keine gespeicherten Tagespläne.')
-                : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: entries.length,
-                    itemBuilder: (context, index) {
-                      final entry = entries[index];
-                      final timestamp = DateTime.fromMillisecondsSinceEpoch(
-                          entry.createdUtcMs, isUtc: true).toLocal();
-                      return ListTile(
-                        title: Text('Plan #${entry.id}'),
-                        subtitle: Text(timestamp.toString()),
-                        onTap: () async {
-                          try {
-                            final selected = await _store.planById(entry.id);
-                            if (!mounted || !historyContext.mounted) return;
-                            if (selected == null) {
-                              ScaffoldMessenger.of(this.context).showSnackBar(
-                                const SnackBar(content: Text('Plan nicht mehr vorhanden.')),
-                              );
-                              return;
-                            }
-                            await showDialog<void>(
-                              context: historyContext,
-                              builder: (detailContext) => AlertDialog(
-                                title: Text('Plan #${selected.id}'),
-                                content: SizedBox(
-                                  width: double.maxFinite,
-                                  child: ListView(
-                                    shrinkWrap: true,
-                                    children: [
-                                      for (final block in selected.blocks)
-                                        ListTile(
-                                          title: Text(block.id),
-                                          subtitle: Text(
-                                            '${TimeOfDay.fromDateTime(block.start.toLocal()).format(detailContext)}'
-                                            ' – ${TimeOfDay.fromDateTime(block.end.toLocal()).format(detailContext)}',
-                                          ),
-                                        ),
-                                      if (selected.blocks.isEmpty)
-                                        const Text('Keine Zeitblöcke gespeichert.'),
-                                    ],
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(detailContext),
-                                    child: const Text('Schließen'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          } catch (_) {
-                            if (mounted) setState(() =>
-                                _error = 'Historischer Plan nicht verfügbar.');
+        builder: (historyContext) => StatefulBuilder(
+          builder: (historyContext, updateDialog) => AlertDialog(
+            title: const Text('Planhistorie'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  if (entries.isEmpty)
+                    const Text('Noch keine gespeicherten Tagespläne.'),
+                  for (final entry in entries)
+                    ListTile(
+                      title: Text('Plan #${entry.id}'),
+                      subtitle: Text(
+                        DateTime.fromMillisecondsSinceEpoch(
+                          entry.createdUtcMs, isUtc: true,
+                        ).toLocal().toString(),
+                      ),
+                      onTap: () async {
+                        try {
+                          final selected = await _store.planById(entry.id);
+                          if (!mounted || !historyContext.mounted) return;
+                          if (selected == null) {
+                            updateDialog(() => historyError =
+                                'Plan wurde zwischenzeitlich entfernt.');
+                            return;
                           }
-                        },
-                      );
-                    },
-                  ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(historyContext),
-              child: const Text('Schließen'),
+                          await showDialog<void>(
+                            context: historyContext,
+                            builder: (detailContext) => AlertDialog(
+                              title: Text('Plan #${selected.id}'),
+                              content: SizedBox(
+                                width: double.maxFinite,
+                                child: ListView(
+                                  shrinkWrap: true,
+                                  children: [
+                                    for (final block in selected.blocks)
+                                      ListTile(
+                                        title: Text(block.id),
+                                        subtitle: Text(
+                                          '${TimeOfDay.fromDateTime(block.start.toLocal()).format(detailContext)}'
+                                          ' – ${TimeOfDay.fromDateTime(block.end.toLocal()).format(detailContext)}',
+                                        ),
+                                      ),
+                                    if (selected.blocks.isEmpty)
+                                      const Text('Keine Zeitblöcke gespeichert.'),
+                                  ],
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(detailContext),
+                                  child: const Text('Schließen'),
+                                ),
+                              ],
+                            ),
+                          );
+                        } catch (_) {
+                          if (historyContext.mounted) {
+                            updateDialog(() =>
+                                historyError = 'Plan konnte nicht geladen werden.');
+                          }
+                        }
+                      },
+                    ),
+                  if (historyError != null)
+                    Text(historyError!, style: TextStyle(
+                      color: Theme.of(historyContext).colorScheme.error,
+                    )),
+                  if (hasMore)
+                    TextButton.icon(
+                      onPressed: loading ? null : () async {
+                        updateDialog(() {
+                          loading = true;
+                          historyError = null;
+                        });
+                        try {
+                          final next = await _store.planHistory(
+                            limit: pageSize, offset: entries.length,
+                          );
+                          if (!historyContext.mounted) return;
+                          updateDialog(() {
+                            final known = entries.map((e) => e.id).toSet();
+                            entries.addAll(next.where((e) => !known.contains(e.id)));
+                            hasMore = next.length == pageSize;
+                            loading = false;
+                          });
+                        } catch (_) {
+                          if (historyContext.mounted) {
+                            updateDialog(() {
+                              loading = false;
+                              historyError = 'Weitere Pläne konnten nicht geladen werden.';
+                            });
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.expand_more),
+                      label: Text(loading ? 'Lade…' : 'Weitere 30 Pläne laden'),
+                    ),
+                ],
+              ),
             ),
-          ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(historyContext),
+                child: const Text('Schließen'),
+              ),
+            ],
+          ),
         ),
       );
     } catch (_) {
