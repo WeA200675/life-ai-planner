@@ -115,6 +115,35 @@ class PlanSnapshotStore {
     ))), headers.single['created_utc_ms'] as int);
   }
 
+  /// Paginated history. Bounded queries avoid loading every old plan into RAM.
+  /// Snapshot blocks are loaded only when a particular plan is opened.
+  Future<List<SavedPlan>> history({int limit = 30, int offset = 0}) async {
+    if (limit < 1 || limit > 100 || offset < 0) {
+      throw ArgumentError('History pagination out of range');
+    }
+    final headers = await db.query('plan_snapshots',
+        columns: ['id', 'created_utc_ms'],
+        orderBy: 'id DESC', limit: limit, offset: offset);
+    return List.unmodifiable(headers.map((row) => SavedPlan(
+        row['id'] as int, const [], row['created_utc_ms'] as int)));
+  }
+
+  /// Read one historical version without modifying the active plan.
+  Future<SavedPlan?> byId(int id) async {
+    if (id <= 0) throw ArgumentError.value(id, 'id');
+    final headers = await db.query('plan_snapshots',
+        columns: ['id', 'created_utc_ms'],
+        where: 'id = ?', whereArgs: [id], limit: 1);
+    if (headers.isEmpty) return null;
+    final rows = await db.query('plan_snapshot_blocks',
+        where: 'snapshot_id = ?', whereArgs: [id], orderBy: 'position ASC');
+    return SavedPlan(id, List.unmodifiable(rows.map((row) => DayBlock(
+      row['task_id'] as String,
+      DateTime.fromMillisecondsSinceEpoch(row['start_utc_ms'] as int, isUtc: true),
+      DateTime.fromMillisecondsSinceEpoch(row['end_utc_ms'] as int, isUtc: true),
+    ))), headers.single['created_utc_ms'] as int);
+  }
+
   /// Undo only the expected newest version; stale confirmations cannot erase
   /// a newer plan accepted by another UI action.
   Future<bool> undoLatest(int expectedId) async {
