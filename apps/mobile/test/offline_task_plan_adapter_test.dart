@@ -118,4 +118,26 @@ void main() {
     ]), throwsFormatException);
   });
 
+  test('remaining-day preview excludes completed tasks and respects current time', () {
+    final now = DateTime.utc(2026, 1, 12, 9);
+    final rows = <Map<String, Object?>>[
+      {'id': 1, 'done': 1, 'minutes': 15},
+      {'id': 2, 'done': 0, 'minutes': 20},
+    ];
+    final plan = replanLocalTasks(now, end, rows);
+    expect(plan.capacityMinutes, 60);
+    expect(plan.budgetMinutes, 42);
+    expect(plan.blocks.map((b) => b.id).toList(), ['2']);
+    expect(plan.blocks.single.start, now);
+    expect(rows[0]['done'], 1);
+  });
+
+  test('remaining-day preview rejects elapsed windows and corrupt rows', () {
+    expect(() => replanLocalTasks(end, end, []), throwsArgumentError);
+    expect(() => replanLocalTasks(start, end, [
+      {'id': 1, 'done': 0, 'minutes': 'invalid'},
+    ]), throwsFormatException);
+  });
+
+
 }
