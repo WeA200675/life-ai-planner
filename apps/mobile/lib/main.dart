@@ -314,7 +314,7 @@ class _TaskScreenState extends State<TaskScreen> {
         : DateTime.fromMillisecondsSinceEpoch(stored, isUtc: true).toLocal();
     final selected = await showDatePicker(
       context: context,
-      initialDate: initial,
+      initialDate: safeDeadlinePickerInitialDate(initial),
       firstDate: DateTime(1971),
       lastDate: DateTime(2100),
       helpText: 'Fälligkeitsdatum wählen',
