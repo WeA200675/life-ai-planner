@@ -502,3 +502,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Nachweisstand bei Dokumentation:** Commits auf GitHub bestätigt; Flutter-CI für Test-HEAD [44936156398](https://github.com/WeA200675/life-ai-planner/actions/runs/44936156398) queued, Scheduler-CI [44936156351](https://github.com/WeA200675/life-ai-planner/actions/runs/44936156351) queued. **Kein erfolgreicher Testlauf für den neuen HEAD behauptet**, keine lokale Dart-/Android-Geräteausführung.
 - **Blocker:** Replanning noch nicht in die Android-Tagesansicht integriert; Persistenz, Versionskontrolle/Undo und Geräteabnahme fehlen. Vollständige M1–M4-Abnahme, Release-Build und End-to-End-Tests ausstehend.
 - **Nächster Schritt:** Flutter-CI des Test-HEAD prüfen, Fehler korrigieren, anschließend Replanning in Tagesvorschau mit expliziter Bestätigung und Widgettests einbinden.
+
+
+## Agile delivery acceleration — 2026-11-21
+- Ausgangs-HEAD: `e7777bff279ae7dc1caeca75e9ab0360371c69cc`. Offener PR #1 (`4140265`) mit SQLite-Replanning-Adapter; kein separates offenes Issue (GitHub Issues API führt PRs ebenfalls auf). PR-Head-CI: Flutter [44937153003](https://github.com/WeA200675/life-ai-planner/actions/runs/44937153003) **success**, Scheduler [44937153001](https://github.com/WeA200675/life-ai-planner/actions/runs/44937153001) **success**.
+- Implementiert: [docs/DELIVERY_ACCELERATION.md](DELIVERY_ACCELERATION.md), Commit `72fd5472187a7f6dbf109e95864fd7086c478a32`. Enthält einen einzigen Integrationsverantwortlichen, HEAD-/Blob-SHA-Prüfung vor Writes, sechs vertikale Qualitäts-Gates, CI-/APK-Fallbacks, Performance-Messvorgaben und explizite Abnahmekriterien. Keine bestehende Runtime-Funktion geändert; **keine Laufzeitbeschleunigung oder vollständige Implementierung behauptet**.
+- Testnachweis: GitHub-Commit bestätigt; reine Dokumentationsänderung, keine lokalen Tests. Erfolgreiche PR-CI ist nur für dessen SHA belegt, nicht als Android-Geräteabnahme.
+- Blocker: PR #1 noch offen; Android-Replanning-Bestätigung, Versionshistorie/Undo, Geräteabnahme und M1–M4-Gesamtabnahme ausstehend.
+- Nächster Schritt: PR #1 konfliktfrei prüfen/integrieren, anschließend Android-Replanning-UI inklusive Bestätigung/Undo und Widgettests als zusammenhängenden vertikalen Schnitt liefern.
