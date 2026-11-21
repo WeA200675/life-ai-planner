@@ -628,3 +628,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Commit `8db58f28dee475e1ef40e29d115f786b726b4ff2`: Android-Build führt höchstens drei Versuche mit begrenztem Backoff durch, entfernt vorab ein eventuell altes APK, prüft die APK-Datei und lässt den Job bei anhaltendem Fehler ausdrücklich fehlschlagen. Tests/Analyse laufen weiterhin vor dem Build; keine künstlich grünen Builds.
 - **Nachweis:** GitHub-Commit bestätigt. Neuer Flutter-Run [44942543213](https://github.com/WeA200675/life-ai-planner/actions/runs/44942543213) beim Schreiben **queued**. Kein erfolgreicher Build für diesen Commit behauptet.
 - **Nächster Schritt:** neuen CI-Run prüfen; bei dauerhaftem 403 Repository-/Runner-Netzwerk prüfen, nicht blind Kotlin-/Gradle-Versionen verändern. Anschließend PR #1 mit aktuellem main vergleichen und M3-Replanning-Abnahme fortsetzen. M1–M4 und Android-Geräteabnahme weiterhin offen.
+
+
+## M5 Export historischer Pläne – 2026-11-21
+- Ausgangs-HEAD `4cd7e5dc61a12b7cfeb63300ae9847d23d09df64`; parallel laufende Automationen beachten, vor jedem Commit HEAD prüfen.
+- `d33b6c26af45b38a5bbbab31bb1a0d6cb9c365df`: deterministischer JSON-Export einzelner gespeicherter Planversionen, Schema `life-ai-planner-saved-plan` v1, UTC-Zeiten, Validierung auf doppelte/überlappende Blöcke; keine Netzwerkübertragung.
+- `721d0944e8a06d044526a962a660d9adc4be18d4`: **JSON kopieren** in historischer Detailansicht, explizite Nutzeraktion und Fehler-Fallback.
+- `fe7e4b2284f865517c23e85af30171db7a9748e7`: Tests für deterministischen Export, UTC, Whitelist-Felder, ungültige und leere Pläne.
+- **Grenze:** Export kopiert nur einen Plan als Text in die Zwischenablage; noch kein Datei-Backup oder Import, keine automatische Synchronisation. Zwischenablage kann von anderen Apps gelesen werden: keine sensiblen Task-Titel im Export enthalten, nur Task-IDs und Zeitblöcke.
+- **CI:** Flutter-Lauf für `8db58f28` [44942543213](https://github.com/WeA200675/life-ai-planner/actions/runs/44942543213) success. Neue Export-CI für `fe7e4b22` zum Dokumentationszeitpunkt queued, noch nicht freigegeben.
