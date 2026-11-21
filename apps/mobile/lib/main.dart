@@ -529,6 +529,7 @@ class _TaskScreenState extends State<TaskScreen> {
       }
       final backup = decodeTaskBackup(source);
       final expected = await _store.all();
+      final impact = previewTaskRestore(expected, backup);
       if (!mounted) return;
       final confirmed = await showDialog<bool>(
         context: context,
@@ -536,6 +537,8 @@ class _TaskScreenState extends State<TaskScreen> {
           title: const Text('Aufgaben wiederherstellen?'),
           content: Text(
             'Die Sicherung enthält ${backup.tasks.length} Aufgaben. '
+            'Vergleich: ${impact.added} neu, ${impact.changed} geändert, '
+            '${impact.removed} entfernt, ${impact.unchanged} unverändert. '
             'Alle ${expected.length} aktuellen Aufgaben werden ersetzt. '
             'Gespeicherte Planversionen bleiben unverändert und können '
             'danach auf frühere Aufgaben-IDs verweisen. '
