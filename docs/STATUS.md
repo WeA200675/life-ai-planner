@@ -580,3 +580,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Nachweis:** Commits bestätigt; neue Flutter-CI für Test-SHA zum Dokumentationszeitpunkt queued, nicht als erfolgreich belegt. Keine Android-Geräteabnahme oder Laufzeitmessung behauptet.
 - **Grenze:** Undo ist aktuell über die Snackbar erreichbar, keine separate dauerhafte Historienoberfläche. Für vollständig robusten Betrieb fehlen Konfliktschutz gegen zwischen Vorschau und Bestätigung geänderte Aufgaben, UI-Tests und reale Migrationstests.
 - **Nächster Schritt:** Flutter-CI abwarten und Fehler korrigieren, Snapshot-UI/Versionskonflikte und Migration testen, APK bauen und auf Android prüfen.
+
+
+## Android M3 Planübernahme – Konfliktschutz, Migration und dauerhaftes Undo (2026-11-21)
+- Ausgangs-HEAD `ce923bd1ba8d411bcac808670f0b5e41854b068f`.
+- `5fc6287363deacc2885e36b47636065f66ff99a6`: kanonischer Aufgaben-Fingerprint und atomare SQLite-Transaktionsprüfung. Ein seit der Vorschau geänderter Task-Datensatz verhindert die Planübernahme; keine stillen Überschreibungen.
+- `686b50f0f7e6d35cf7be4e297373f7b4cf0d0bc9`: UI übergibt eine unveränderliche Vorschaukopie zur Prüfung.
+- `33ed496ebbf2802513480243efa1745620e37b78`: Tests für veraltete Bestätigung, unveränderte Aufgaben und deterministische Fingerprints.
+- `3b1e9ca1d586cf3de776540d358f8eb10b926ade`, korrigiert durch `7069bdc88b595b734c681d93f26e8f0585d3ea58`: Migrationstest für v3-Task-Schema, wiederholbare Snapshot-Tabellenerstellung und unveränderte Tasks. **Dieser Test simuliert noch keinen echten Datei-DB-Version-Upgrade-Neustart.**
+- `d926fd25c6bcfd920a588b99b33ece8ad331415f`: persistente UI zum Anzeigen des neuesten gespeicherten Plans und Undo nach App-Neustart; veraltete Undo-Versionen werden abgewiesen.
+- **Verifikation:** GitHub-Commits bestätigt; Flutter-CI für neuen HEAD zum Dokumentationszeitpunkt queued, nicht als grün behauptet. Ein älterer Flutter-CI-Lauf `060172ed` scheiterte wegen fehlendem `DayPlan`-Import; Fix `0bf1493` committed. Scheduler-CI für Ausgangs-HEAD `ce923bd` war success.
+- **Offene Abnahmekriterien:** aktueller Flutter-CI grün, echter SQLite-Datei-Upgrade-Test, Widgettest für Bestätigen/Undo, Release-APK und reale Android-Geräteabnahme. PR #1 weiterhin offen und nicht gemerged. Meilenstein daher **funktional erweitert, noch nicht vollständig abgenommen**.
