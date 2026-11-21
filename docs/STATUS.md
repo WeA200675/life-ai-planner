@@ -591,3 +591,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - `d926fd25c6bcfd920a588b99b33ece8ad331415f`: persistente UI zum Anzeigen des neuesten gespeicherten Plans und Undo nach App-Neustart; veraltete Undo-Versionen werden abgewiesen.
 - **Verifikation:** GitHub-Commits bestätigt; Flutter-CI für neuen HEAD zum Dokumentationszeitpunkt queued, nicht als grün behauptet. Ein älterer Flutter-CI-Lauf `060172ed` scheiterte wegen fehlendem `DayPlan`-Import; Fix `0bf1493` committed. Scheduler-CI für Ausgangs-HEAD `ce923bd` war success.
 - **Offene Abnahmekriterien:** aktueller Flutter-CI grün, echter SQLite-Datei-Upgrade-Test, Widgettest für Bestätigen/Undo, Release-APK und reale Android-Geräteabnahme. PR #1 weiterhin offen und nicht gemerged. Meilenstein daher **funktional erweitert, noch nicht vollständig abgenommen**.
+
+
+## M3 Abnahme-Härtung – 2026-11-21
+- Ausgangs-HEAD `7746f4c88a6fd9be4877d31f0b835aef3575d95b`. Flutter-CI auf `3b1e9ca` **failure**: Migrationstest versuchte bereits vorhandene Spalte `minutes` erneut anzulegen. Log [44941161287](https://github.com/WeA200675/life-ai-planner/actions/runs/44941161287). Frühere Import-Korrektur `0bf1493` ist bereits committed.
+- `a749cab02844734b6afb99fe1520687c3e00a2ef`: Migrationstest ersetzt durch tatsächliche **dateibasierte** SQLite-v3→v4-Öffnung, Datenvergleich, Snapshot-Speicherung und erneuten Prozess-/DB-Neustart. Kein doppeltes Anlegen vorhandener Task-Spalten.
+- `75ee5285d97cc7b39905e3220e04c989d96923ab`: Snapshot-Übernahme lehnt ungültige Kapazitätswerte, doppelte IDs und überlappende Zeitblöcke vor der Transaktion ab.
+- `da7140ade0ea02ebeba45d5ec02d8ed5298ce05d`: zusätzliche SQLite-Regressionstests für Überlappung, Duplikate und unmögliche Kapazität.
+- **Verifikation:** Commits vorhanden; Flutter-CI des neuen Test-HEAD zum Dokumentationszeitpunkt queued, nicht als grün behauptet. Android-Gerätetest und Release-APK weiterhin nicht nachgewiesen.
+- **Abnahme offen:** aktueller Flutter-CI-Lauf (Analyse, Tests, APK) und Artefaktprüfung; echte Hardware-/Offline-Abnahme; UI-Widgettest für Übernehmen/Undo. M3 daher **nicht vollständig abgenommen**.
