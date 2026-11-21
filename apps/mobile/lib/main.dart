@@ -52,6 +52,20 @@ class LocalTasks {
   }
 }
 
+enum TaskView { open, completed, all }
+
+List<Map<String, Object?>> visibleTasks(
+    List<Map<String, Object?>> tasks, TaskView view) {
+  return tasks.where((task) {
+    final done = task['done'] == 1;
+    return switch (view) {
+      TaskView.open => !done,
+      TaskView.completed => done,
+      TaskView.all => true,
+    };
+  }).toList(growable: false);
+}
+
 class PlannerApp extends StatelessWidget {
   const PlannerApp({super.key});
 
@@ -61,6 +75,7 @@ class PlannerApp extends StatelessWidget {
         theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
         home: const TaskScreen(),
       );
+  }
 }
 
 class TaskScreen extends StatefulWidget {
@@ -75,6 +90,7 @@ class _TaskScreenState extends State<TaskScreen> {
   final _controller = TextEditingController();
   List<Map<String, Object?>> _tasks = [];
   bool _busy = false;
+  TaskView _view = TaskView.open;
   String? _error;
 
   @override
@@ -125,7 +141,9 @@ class _TaskScreenState extends State<TaskScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    final shown = visibleTasks(_tasks, _view);
+    return Scaffold(
         appBar: AppBar(title: const Text('Life AI Planner – Offline')),
         body: Padding(
           padding: const EdgeInsets.all(16),
@@ -148,12 +166,23 @@ class _TaskScreenState extends State<TaskScreen> {
             ]),
             if (_error != null)
               Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            Expanded(child: _tasks.isEmpty
-                ? const Center(child: Text('Noch keine Aufgaben gespeichert.'))
+            SegmentedButton<TaskView>(
+              segments: const [
+                ButtonSegment(value: TaskView.open, label: Text('Offen')),
+                ButtonSegment(value: TaskView.completed, label: Text('Erledigt')),
+                ButtonSegment(value: TaskView.all, label: Text('Alle')),
+              ],
+              selected: {_view},
+              onSelectionChanged: (values) => setState(() => _view = values.first),
+            ),
+            Expanded(child: shown.isEmpty
+                ? Center(child: Text(_tasks.isEmpty
+                    ? 'Noch keine Aufgaben gespeichert.'
+                    : 'Keine Aufgaben in dieser Ansicht.'))
                 : ListView.builder(
-                    itemCount: _tasks.length,
+                    itemCount: shown.length,
                     itemBuilder: (context, index) {
-                      final task = _tasks[index];
+                      final task = shown[index];
                       final done = task['done'] == 1;
                       return CheckboxListTile(
                         key: ValueKey(task['id']),
