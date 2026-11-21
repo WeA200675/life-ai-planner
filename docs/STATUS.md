@@ -716,3 +716,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub-Code- und Test-Commits bestätigt. Flutter/Scheduler-CI für diesen letzten Test-HEAD zum Zeitpunkt der Abfrage noch nicht abgeschlossen; kein lokaler Test oder grüner APK-Build für diese Änderungen behauptet.
 - **Sicherheitsgrenze:** Kein Umschalten der aktiven DB, kein UI-Import, kein Dateiauswahldialog, keine Verschlüsselung. Staging-Pfad muss in einem ausschließlich von der App kontrollierten Verzeichnis liegen; konkurrierende Fremdprozesse am selben Dateipfad sind nicht abgesichert. Kein automatischer Eingriff in produktive Daten.
 - **Nächster Schritt:** CI für Staging-Tests prüfen und Fehler korrigieren; dann sichere, explizit bestätigte Aktivierung mit geschlossenem DB-Handle, Original-Backup und Rollback-/Neustartprüfung entwerfen und testen. Geräte-/Release-Abnahme und M1–M4-Abnahme weiter offen.
+
+
+## M4 Staging-Integritätsprüfung – 2026-11-22 (00:44 Europe/Berlin)
+- Ausgangs-HEAD `88f871f85dd5d8f684300394f74091b37ef1352c`; README, IMPLEMENTATION_PLAN und STATUS geprüft. PR #1 weiter offen; Issues-Endpunkt zeigt nur PR #1, keine separaten Issues.
+- Vorherige CI: Flutter `092b2aca` [44961676618](https://github.com/WeA200675/life-ai-planner/actions/runs/44961676618) **success**, Scheduler `88f871f8` [44961698898](https://github.com/WeA200675/life-ai-planner/actions/runs/44961698898) **success**.
+- `199727d869c81b02f81764508bc89404baeae986`: Kandidaten-DB wird jetzt mit **beiden** SQLite-Prüfungen `PRAGMA integrity_check` und `PRAGMA foreign_key_check` kontrolliert. Hintergrund: `integrity_check` erkennt verwaiste Fremdschlüssel nicht. Bei Fehlern wird die Staging-Datei wie bisher verworfen; aktive DB bleibt unberührt.
+- `4b06fdbe1930fbb2b252ed69c253eb075dbf88b0`: gezielte FFI-Regressionstests für verwaiste Planblöcke trotz grünem `integrity_check` und für intaktes Schema.
+- **Testnachweis:** Commits bestätigt; neue Flutter-CI für den letzten Code-HEAD noch zu verifizieren. Keine lokale Flutter-Ausführung behauptet.
+- **Blocker/weiter offen:** Kein aktivierter UI-Restore und keine sichere DB-Umschaltung/Recovery. Vor einer Aktivierung: Original-DB sichern, offene Handles schließen, SQLite-WAL/SHM behandeln, atomare Aktivierung/Rollback auf Android-Gerät testen. Release- und Geräteabnahme, vollständige M1–M4-Abnahme fehlen.
+- **Nächster Schritt:** neue Flutter-CI prüfen, danach isolierte Aktivierungsstrategie mit Crash-Recovery und expliziter Bestätigung implementieren.
