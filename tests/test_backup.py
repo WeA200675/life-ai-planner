@@ -54,3 +54,32 @@ class BackupTests(unittest.TestCase):
     def test_missing_source_rejected(self):
         with self.assertRaises(ValueError):
             backup_database(self.root / "missing.db", self.backup)
+
+    def test_wal_snapshot_includes_committed_rows_without_checkpoint(self):
+        # A WAL writer can leave committed changes in -wal rather than the main file.
+        writer = sqlite3.connect(self.source)
+        self.addCleanup(writer.close)
+        writer.execute("PRAGMA journal_mode=WAL")
+        writer.execute(
+            "INSERT INTO tasks(id, title, minutes, priority, deadline, status) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            ("wal-row", "Committed in WAL", 15, 0, None, "open"),
+        )
+        writer.commit()
+        backup_database(self.source, self.backup)
+        self.assertEqual(TaskStore(self.backup).get("wal-row").title, "Committed in WAL")
+
+    def test_snapshot_excludes_uncommitted_wal_rows(self):
+        writer = sqlite3.connect(self.source)
+        self.addCleanup(writer.close)
+        writer.execute("PRAGMA journal_mode=WAL")
+        writer.execute(
+            "INSERT INTO tasks(id, title, minutes, priority, deadline, status) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            ("pending", "Uncommitted", 15, 0, None, "open"),
+        )
+        try:
+            backup_database(self.source, self.backup)
+        finally:
+            writer.rollback()
+        self.assertIsNone(TaskStore(self.backup).get("pending"))
