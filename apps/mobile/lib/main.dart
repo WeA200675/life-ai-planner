@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'plan_export.dart';
+import 'task_backup.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import 'offline_task_plan_adapter.dart';
@@ -126,6 +127,13 @@ class LocalTasks {
 
   Future<SavedPlan?> planById(int id) async =>
       PlanSnapshotStore(await database).byId(id);
+
+  Future<String> exportTasks() async =>
+      encodeTaskBackup(await all());
+
+  Future<int> restoreTasks(TaskBackup backup,
+      List<Map<String, Object?>> expectedTasks) async =>
+      restoreTaskBackup(await database, backup, expectedTasks: expectedTasks);
 
   Future<SavedPlan?> latestPlan() async =>
       PlanSnapshotStore(await database).latest();
@@ -495,6 +503,84 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 
+  Future<void> _copyTaskBackup() async {
+    if (_busy) return;
+    try {
+      final json = await _store.exportTasks();
+      await Clipboard.setData(ClipboardData(text: json));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Aufgaben-Backup als JSON kopiert.'),
+      ));
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Backup konnte nicht erstellt werden.');
+    }
+  }
+
+  Future<void> _restoreTaskBackup() async {
+    if (_busy) return;
+    try {
+      final clipboard = await Clipboard.getData(Clipboard.kTextPlain);
+      final source = clipboard?.text;
+      if (source == null || source.isEmpty) {
+        if (mounted) setState(() =>
+            _error = 'Keine JSON-Sicherung in der Zwischenablage.');
+        return;
+      }
+      final backup = decodeTaskBackup(source);
+      final expected = await _store.all();
+      if (!mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Aufgaben wiederherstellen?'),
+          content: Text(
+            'Die Sicherung enthält ${backup.tasks.length} Aufgaben. '
+            'Alle ${expected.length} aktuellen Aufgaben werden ersetzt. '
+            'Gespeicherte Planversionen bleiben unverändert und können '
+            'danach auf frühere Aufgaben-IDs verweisen. '
+            'Bitte vorher eine aktuelle Sicherung kopieren.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Aufgaben ersetzen'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted || _busy) return;
+      setState(() => _busy = true);
+      try {
+        final count = await _store.restoreTasks(backup, expected);
+        await _refresh();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('$count Aufgaben wiederhergestellt.'),
+        ));
+      } on StateError {
+        if (mounted) setState(() => _error =
+            'Aufgaben wurden zwischenzeitlich geändert. '
+            'Wiederherstellung abgebrochen.');
+      } catch (_) {
+        if (mounted) setState(() => _error =
+            'Wiederherstellung fehlgeschlagen. Aktuelle Aufgaben bleiben erhalten.');
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+    } on FormatException {
+      if (mounted) setState(() =>
+          _error = 'Ungültige oder nicht unterstützte JSON-Sicherung.');
+    } catch (_) {
+      if (mounted) setState(() =>
+          _error = 'Zwischenablage konnte nicht gelesen werden.');
+    }
+  }
+
   Future<void> _showPlanHistory() async {
     if (_busy) return;
     const pageSize = 30;
@@ -808,6 +894,21 @@ class _TaskScreenState extends State<TaskScreen> {
                 icon: const Icon(Icons.list_alt),
                 label: const Text('Planhistorie'),
               ),
+            ),
+            Wrap(
+              spacing: 8,
+              children: [
+                TextButton.icon(
+                  onPressed: _busy ? null : _copyTaskBackup,
+                  icon: const Icon(Icons.copy_all_outlined),
+                  label: const Text('Aufgaben sichern'),
+                ),
+                TextButton.icon(
+                  onPressed: _busy ? null : _restoreTaskBackup,
+                  icon: const Icon(Icons.restore_outlined),
+                  label: const Text('Backup einlesen'),
+                ),
+              ],
             ),
             if (_error != null)
               Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
