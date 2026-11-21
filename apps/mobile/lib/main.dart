@@ -498,7 +498,7 @@ class _TaskScreenState extends State<TaskScreen> {
       await showDialog<void>(
         context: context,
         builder: (historyContext) => AlertDialog(
-          title: const Text('Letzte Tagespläne'),
+          title: const Text('Letzte 30 Tagespläne'),
           content: SizedBox(
             width: double.maxFinite,
             child: entries.isEmpty
