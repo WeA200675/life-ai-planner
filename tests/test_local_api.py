@@ -102,6 +102,17 @@ class LocalApiTests(unittest.TestCase):
         self.assertEqual(self.request("/tasks")[1]["tasks"], [])
         self.assertEqual(self.request("/tasks", {"id": "valid", "title": "Example", "minutes": 30})[0], 200)
 
+    def test_invalid_utf8_returns_400_and_preserves_store(self):
+        for payload in (b'{"id":"bad","title":"\xff","minutes":30}',
+                        b'{"id":"bad","title":"\xc3","minutes":30}'):
+            req = Request(self.base + "/tasks", data=payload,
+                          headers={"Content-Type": "application/json"})
+            with self.assertRaises(HTTPError) as raised:
+                urlopen(req, timeout=3)
+            self.assertEqual(raised.exception.code, 400)
+        self.assertEqual(self.request("/tasks")[1]["tasks"], [])
+        self.assertEqual(self.request("/tasks", {"id": "ok", "title": "Valid", "minutes": 30})[0], 200)
+
     def test_unknown_route(self):
         self.assertEqual(self.request("/missing")[0], 404)
 
