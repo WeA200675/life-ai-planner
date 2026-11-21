@@ -71,4 +71,23 @@ void main() {
     }
   });
 
+  test('UTC deadline rejects a task that cannot finish in time', () {
+    final rows = <Map<String, Object?>>[
+      {'id': 1, 'done': 0, 'minutes': 30,
+       'deadline_utc_ms': DateTime.utc(2026, 1, 12, 8, 15).millisecondsSinceEpoch},
+    ];
+    final plan = previewLocalTasks(start, end, rows);
+    expect(plan.blocks, isEmpty);
+    expect(plan.deferred, ['1']);
+    expect(plan.conflicts.single, contains('no feasible time slot'));
+  });
+
+  test('invalid UTC deadline metadata fails explicitly', () {
+    for (final invalid in [0, -1, 'tomorrow', true]) {
+      expect(() => previewLocalTasks(start, end, [
+        {'id': 1, 'done': 0, 'deadline_utc_ms': invalid}
+      ]), throwsFormatException);
+    }
+  });
+
 }
