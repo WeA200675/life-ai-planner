@@ -17,6 +17,15 @@ void main() {
     await expectLater(store.rename(1, 'x' * 501), throwsArgumentError);
   });
 
+  test('invalid planning metadata is rejected before opening SQLite', () async {
+    final store = LocalTasks();
+    await expectLater(store.setPlanningMetadata(0, minutes: 30), throwsArgumentError);
+    await expectLater(store.setPlanningMetadata(1, minutes: 0), throwsArgumentError);
+    await expectLater(store.setPlanningMetadata(1, minutes: 1441), throwsArgumentError);
+    await expectLater(store.setPlanningMetadata(1, priority: -1), throwsArgumentError);
+    await expectLater(store.setPlanningMetadata(1, priority: 11), throwsArgumentError);
+  });
+
   test('invalid completion ids are rejected before opening SQLite', () async {
     final store = LocalTasks();
     await expectLater(store.setDone(0, true), throwsArgumentError);
