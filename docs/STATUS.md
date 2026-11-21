@@ -600,3 +600,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - `da7140ade0ea02ebeba45d5ec02d8ed5298ce05d`: zusätzliche SQLite-Regressionstests für Überlappung, Duplikate und unmögliche Kapazität.
 - **Verifikation:** Commits vorhanden; Flutter-CI des neuen Test-HEAD zum Dokumentationszeitpunkt queued, nicht als grün behauptet. Android-Gerätetest und Release-APK weiterhin nicht nachgewiesen.
 - **Abnahme offen:** aktueller Flutter-CI-Lauf (Analyse, Tests, APK) und Artefaktprüfung; echte Hardware-/Offline-Abnahme; UI-Widgettest für Übernehmen/Undo. M3 daher **nicht vollständig abgenommen**.
+
+
+## M4 Offline-Planhistorie (2026-11-21)
+- Ausgangs-HEAD `be1f93a84d52a3c0000a1c2fdc90137e2486f198`.
+- `b5756d28c16d77d8309a22f2dce4825bb19a90cf`: begrenzte SQLite-Historienabfrage (Standard 30, Maximum 100, Offset) und rein lesender Einzelzugriff auf ältere Versionen.
+- `36403d567d9278a9507490904b29cbfa57516abf`: Android-Dialog **Planhistorie** mit Anzeige der letzten 30 Planversionen und Detailansicht; kein unbeabsichtigtes Aktivieren alter Pläne.
+- `9fed4df8655a24036fbf0a5791695ca57ad2b60d`: Tests für Reihenfolge, Pagination, Versionsabruf und ungültige Grenzen.
+- `b82c7edd0ca323572eb72daf54f6fce341b33506`: UI-Beschriftung auf tatsächlich angezeigte 30 Einträge präzisiert.
+- **CI-Nachweis:** Flutter-CI für `d926fd25` [44941182121](https://github.com/WeA200675/life-ai-planner/actions/runs/44941182121) **success**; für `a749cab0` [44941288345](https://github.com/WeA200675/life-ai-planner/actions/runs/44941288345) **success**, einschließlich GitHub-Workflow-Test-/APK-Schritten. Neuere Historien-Commits noch nicht grün bestätigt. Ein reales Android-Gerät wurde nicht geprüft.
+- **Offen:** aktuelle Historien-CI, App-Abnahme auf Android-Gerät, ggf. vollständige Historien-Pagination über die ersten 30 Einträge hinaus.
