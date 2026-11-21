@@ -37,6 +37,19 @@ void main() {
       DayBlock('  ', start, start.add(const Duration(minutes: 15))),
     ]), throwsArgumentError);
   });
+  test('rejects task metadata outside SQLite schema constraints', () {
+    for (final invalid in [
+      const DayTask(id: 'zero', minutes: 0),
+      const DayTask(id: 'too-long', minutes: 1441),
+      const DayTask(id: 'negative-priority', minutes: 10, priority: -1),
+      const DayTask(id: 'excess-priority', minutes: 10, priority: 11),
+    ]) {
+      expect(() => planOfflineDay(start, end, [invalid]), throwsArgumentError);
+    }
+    expect(() => planOfflineDay(start, end, [
+      const DayTask(id: 'valid', minutes: 1440, priority: 10),
+    ]), returnsNormally);
+  });
   test('deadline conflicts are explicit without dropping tasks', () {
     final plan = planOfflineDay(start, end, [
       DayTask(id: 'early', minutes: 40,

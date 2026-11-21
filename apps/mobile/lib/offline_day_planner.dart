@@ -35,7 +35,8 @@ DayPlan planOfflineDay(DateTime start, DateTime end, List<DayTask> tasks,
   }
   final ids = <String>{};
   for (final task in tasks) {
-    if (task.id.trim().isEmpty || task.minutes <= 0 ||
+    if (task.id.trim().isEmpty || task.minutes < 1 || task.minutes > 1440 ||
+        task.priority < 0 || task.priority > 10 ||
         !ids.add(task.id)) {
       throw ArgumentError('Invalid or duplicate task');
     }
