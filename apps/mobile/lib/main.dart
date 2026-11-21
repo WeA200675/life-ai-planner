@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'plan_export.dart';
 import 'task_backup.dart';
+import 'plan_history_backup.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import 'offline_task_plan_adapter.dart';
@@ -127,6 +128,9 @@ class LocalTasks {
 
   Future<SavedPlan?> planById(int id) async =>
       PlanSnapshotStore(await database).byId(id);
+
+  Future<String> exportPlanHistory() async =>
+      exportPlanHistoryBackup(await database);
 
   Future<String> exportTasks() async =>
       encodeTaskBackup(await all());
@@ -500,6 +504,21 @@ class _TaskScreenState extends State<TaskScreen> {
       }
     } catch (_) {
       if (mounted) setState(() => _error = 'Tagesvorschau konnte nicht erstellt werden.');
+    }
+  }
+
+  Future<void> _copyPlanHistoryBackup() async {
+    if (_busy) return;
+    try {
+      final json = await _store.exportPlanHistory();
+      await Clipboard.setData(ClipboardData(text: json));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Planhistorie als JSON kopiert.'),
+      ));
+    } catch (_) {
+      if (mounted) setState(() => _error =
+          'Planhistorie konnte nicht exportiert werden. Daten unverändert.');
     }
   }
 
@@ -901,6 +920,11 @@ class _TaskScreenState extends State<TaskScreen> {
             Wrap(
               spacing: 8,
               children: [
+                TextButton.icon(
+                  onPressed: _busy ? null : _copyPlanHistoryBackup,
+                  icon: const Icon(Icons.history_toggle_off),
+                  label: const Text('Planhistorie sichern'),
+                ),
                 TextButton.icon(
                   onPressed: _busy ? null : _copyTaskBackup,
                   icon: const Icon(Icons.copy_all_outlined),
