@@ -38,6 +38,36 @@ class TaskStoreTests(unittest.TestCase):
             self.store.put(StoredTask("x", "X", 10, deadline="2026-11-20T12:00:00"))
         self.store.put(StoredTask("x", "X", 10, deadline="2026-11-20T12:00:00+01:00"))
 
+    def test_invalid_types_and_bounds_are_never_persisted(self):
+        invalid = [
+            StoredTask("x", "X", True),
+            StoredTask("x", "X", "30"),
+            StoredTask("x", "X", 1.5),
+            StoredTask("x", "X", 1441),
+            StoredTask("x", "X", 0),
+            StoredTask("x", "X", 30, True),
+            StoredTask("x", "X", 30, -1),
+            StoredTask("x", "X", 30, 11),
+            StoredTask("x", "X", 30, "2"),
+            StoredTask(" x", "X", 30),
+            StoredTask("x ", "X", 30),
+            StoredTask(" ", "X", 30),
+            StoredTask("x", " ", 30),
+            StoredTask("x", "X", 30, deadline=123),
+        ]
+        for task in invalid:
+            with self.subTest(task=task):
+                with self.assertRaises(ValueError):
+                    self.store.put(task)
+                self.assertEqual(self.store.list(), [])
+
+    def test_valid_boundary_values_survive_reopen(self):
+        self.store.put(StoredTask("low", "Low", 1, 0))
+        self.store.put(StoredTask("high", "High", 1440, 10))
+        reopened = TaskStore(self.path)
+        self.assertEqual(reopened.get("low").minutes, 1)
+        self.assertEqual(reopened.get("high").priority, 10)
+
     def test_sql_injection_is_data(self):
         self.store.put(StoredTask("x'; DROP TABLE tasks;--", "safe", 10))
         self.assertEqual(len(self.store.list()), 1)
