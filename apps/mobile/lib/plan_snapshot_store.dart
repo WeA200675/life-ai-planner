@@ -128,6 +128,19 @@ class PlanSnapshotStore {
         row['id'] as int, const [], row['created_utc_ms'] as int)));
   }
 
+  /// Stable cursor pagination: new plans cannot shift older pages.
+  Future<List<SavedPlan>> historyBefore(int beforeId, {int limit = 30}) async {
+    if (beforeId <= 0 || limit < 1 || limit > 100) {
+      throw ArgumentError('Invalid history cursor or page size');
+    }
+    final headers = await db.query('plan_snapshots',
+        columns: ['id', 'created_utc_ms'],
+        where: 'id < ?', whereArgs: [beforeId],
+        orderBy: 'id DESC', limit: limit);
+    return List.unmodifiable(headers.map((row) => SavedPlan(
+        row['id'] as int, const [], row['created_utc_ms'] as int)));
+  }
+
   /// Read one historical version without modifying the active plan.
   Future<SavedPlan?> byId(int id) async {
     if (id <= 0) throw ArgumentError.value(id, 'id');
