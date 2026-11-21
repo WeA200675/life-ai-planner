@@ -553,3 +553,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächliche Verifikation:** GitHub-Commits erfolgreich. CI [44940476986](https://github.com/WeA200675/life-ai-planner/actions/runs/44940476986) für Test-HEAD beim Prüfen **queued**; [44940467793](https://github.com/WeA200675/life-ai-planner/actions/runs/44940467793) für Code-HEAD **in_progress**. Keine neuen Tests als bestanden behauptet, kein lokaler Lauf/Android-Test.
 - **Blocker:** persistente idempotente Nachtkonsolidierung, Android Replanning-UI/Undo und Geräteabnahme fehlen; M1–M4 nicht abgenommen.
 - **Nächster Schritt:** CI des neuen HEAD kontrollieren und ggf. korrigieren; dann datumsgebundene persistente Konsolidierung mit Restart-/Idempotenztests, ohne PR #1 zu duplizieren.
+
+
+## P0 Benchmark-Vergleich und Regressionserkennung – 2026-11-21
+- Ausgangs-HEAD `bf5a3d78bdc95e72dfa25fc8567a5dad5ff74c76`; PR #1 unverändert offen. Scheduler-CI des Ausgangs-HEAD [44940494383](https://github.com/WeA200675/life-ai-planner/actions/runs/44940494383) **completed/success**; Benchmark-Artefakt `scheduler-benchmark-44940494383` vorhanden. Die tatsächlichen JSON-Messwerte wurden nicht heruntergeladen und daher nicht behauptet.
+- Implementiert `tools/compare_scheduler_benchmarks.py` mit strengem Vergleich gleicher Python-/Plattform-/Workload-Metadaten, p95-Differenz und optionalem Exit-Code bei >10% Regression. Commits `6601846a67c092683352024667d065b6b2efd2c8` und Schwellenwert-Fix `dd68bd3fd197e417355a5ddede663eb95009de2f`.
+- Tests `tests/test_compare_scheduler_benchmarks.py`, Commit `79b90ffb7767693f058b3f22c97dfb2a261f075c`: Regression, Verbesserung, Schwellenwert, Plattform- und Workload-Mismatch, Duplikate und nicht-endliche Werte. Testausführung für neue Commits noch nicht als erfolgreich bestätigt.
+- **Blocker:** CI für neuen HEAD und tatsächliche Baseline-/Candidate-JSON-Auswertung noch ausstehend. Android-Replanning mit Bestätigung/Undo, Geräteabnahme und M1–M4 weiterhin offen.
+- **Nächster Schritt:** neuen CI-Lauf prüfen und ggf. korrigieren; Benchmark-Artefakte von zwei vergleichbaren Läufen auswerten; P4 Android-UI fertigstellen.
