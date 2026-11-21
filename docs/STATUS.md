@@ -647,3 +647,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - `6cf819da95d9281982c0fa3d209c06b99d2aa36b`: Android-Buttons **Aufgaben sichern** und **Backup einlesen**, Zwischenablage-Workflow, Bestätigungsdialog und Fehler-Fallback.
 - **Wichtige Einschränkungen:** Backup betrifft ausschließlich Aufgaben, **nicht** Planhistorie oder eine vollständige App-Sicherung. Planhistorie bleibt beim Task-Restore erhalten, historische Task-IDs können danach andere/fehlende Aufgaben referenzieren. Zwischenablage kann sensible Titel enthalten; Nutzer muss diese selbst sicher verwahren. Noch kein Dateiexport, keine Dateiauswahl, keine automatische Synchronisierung.
 - **Abnahme:** GitHub-Commits bestätigt, neue Flutter-CI und Android-APK noch nicht als grün nachgewiesen; reale Geräteprüfung ausstehend.
+
+
+## M4 Restore-Rollback-Regression – 2026-11-21 (21:23 Europe/Berlin)
+- Vor Änderung HEAD `b7e4bf243355b23da6379d3af276a7d3a2fa92ad`; README, Implementierungsplan und Status gelesen. Offene PR #1 (M3 SQLite-Replanning), kein eigenständiges Issue; GitHub Issues listet PR #1 ebenfalls.
+- Ausgangs-CI **nachweislich grün**: [Flutter offline MVP checks 44944243782](https://github.com/WeA200675/life-ai-planner/actions/runs/44944243782) und [Scheduler tests 44944243751](https://github.com/WeA200675/life-ai-planner/actions/runs/44944243751), beide `b7e4bf24` success.
+- Code-Commit `10b5e57407fc7814d74eebe96700c44b42772ce8`: zwei zusätzliche Flutter/SQLite-Regressionstests für atomaren Restore-Rollback nach durch SQL-Trigger erzwungenem Insert-Fehler sowie Ablehnung nachträglich manipulierter Backup-Daten vor Löschung. Produktivcode unverändert, da bestehende DB-Transaktion und Revalidierung gezielt abgesichert werden.
+- **Verifikation neuer Änderungen:** GitHub-Commit bestätigt; Flutter-CI [44946015499](https://github.com/WeA200675/life-ai-planner/actions/runs/44946015499) und Scheduler-CI [44946015536](https://github.com/WeA200675/life-ai-planner/actions/runs/44946015536) zum Prüfzeitpunkt queued. Kein neuer grüner Testlauf behauptet.
+- **Blocker/Abnahme:** Reale Android-Geräteabnahme und vollständiger Backup/Restore von Planhistorie fehlen. Zwischenablage-Backups bleiben unverschlüsselt; keine Secrets oder personenbezogenen Testdaten committed. M1–M4 nicht vollständig abgenommen.
+- **Nächster Schritt:** neue Flutter-CI und APK-Artefakt prüfen; bei Fehlschlag Logs analysieren, andernfalls vollständigen versionierten Task+Planhistorie-Datei-Backup-Pfad mit sicherer Wiederherstellung und UI-Test priorisieren.
