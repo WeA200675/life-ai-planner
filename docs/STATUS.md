@@ -144,3 +144,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Blocker:** Android-Plattformgerüst und reproduzierbarer APK-Build fehlen; kein Gerätetest, keine Scheduler-Integration in Flutter. Repository öffentlich: keine Secrets oder personenbezogenen Daten.
 - **Nächster Schritt:** Flutter-Workflow-Ergebnis prüfen, Lint-/Testfehler beheben, Android-Plattformdateien mit passender Toolchain generieren und Debug-APK bauen; danach lokale Tagesansicht und Scheduler-Anbindung.
 - **Abnahme:** M1–M4 weiterhin offen.
+
+## Android-APK-CI-Fallback – 2026-11-21 (02:38 Europe/Berlin)
+- Vor Änderung HEAD `c110972e6559dc64b25fd67a4e030aa66b01eb6e`; GitHub-Suche ergab keine offenen Issues/PRs. Combined Status des Ausgangs-HEAD lieferte keine klassischen Statuschecks; dies ist kein Nachweis eines erfolgreichen Actions-Laufs.
+- `.github/workflows/flutter.yml` erweitert: Flutter- und Java-Versionen werden protokolliert; nach `flutter pub get`, `flutter analyze` und `flutter test` wird das fehlende Android-Plattformgerüst mit `flutter create --platforms=android --project-name life_ai_planner .` im CI-Workspace generiert und ein Debug-APK gebaut. Das Artefakt wird nur bei erfolgreichem Build für sieben Tage hochgeladen; fehlendes APK lässt den Job scheitern.
+- Code-/Workflow-Commit: `3960f6aab7b5f3ad61470941a64489f376b8214e`. Der generierte Android-Code ist **noch nicht** ins Repository eingecheckt; dies ist ein CI-Fallback, kein bestätigter reproduzierbarer Release-Build.
+- **Verifikation:** GitHub-Commit bestätigt. Kein lokaler Flutter-/Android-Lauf; der neue CI-Job und APK-Build sind zum Dokumentationszeitpunkt nicht als erfolgreich nachgewiesen. Workflow verwendet den beweglichen Flutter-Stable-Kanal; für langfristige Reproduzierbarkeit ist eine konkrete SDK-Version samt Lockfile nötig.
+- **Blocker:** Android-Geräteabnahme, Release-Signierung, lokale Scheduler-Integration und M1–M4-Gesamtabnahme stehen aus. Repo öffentlich; keine Secrets oder privaten Daten eingecheckt.
+- **Nächster Schritt:** Actions-Lauf für `3960f6a` prüfen, konkrete Fehlermeldungen korrigieren, Flutter-Version pinnen, Android-Plattformdateien kontrolliert einchecken und danach Offline-Tagesplanung implementieren.
