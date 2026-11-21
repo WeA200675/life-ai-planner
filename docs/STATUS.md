@@ -456,3 +456,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Testnachweis:** GitHub-Commits bestätigt; Scheduler-CI für Code [44923787363](https://github.com/WeA200675/life-ai-planner/actions/runs/44923787363) zum Prüfzeitpunkt **in_progress**, für Test [44923797782](https://github.com/WeA200675/life-ai-planner/actions/runs/44923797782) **queued**. Keine lokale Testausführung und kein neuer CI-Erfolg behauptet.
 - **Blocker:** Android-Geräteabnahme, Release-Build und M1–M4-Gesamtabnahme weiterhin offen. API nur Loopback, keine produktive externe Freigabe.
 - **Nächster Schritt:** CI für `59493ad8` prüfen, Fehler beheben; danach API-Schema-/HTTP-Grenzfälle und Android-Widgettests priorisieren.
+
+
+## API: HTTP-Request-Framing und Content-Type – 2026-11-21
+- Ausgangs-HEAD `44878935da9e1d9fd819e00bf377f953899f7205`; offene Issues 0, PRs 0. Ausgangs-CI Scheduler [44923814214](https://github.com/WeA200675/life-ai-planner/actions/runs/44923814214) **success**. Auch der vorherige neue JSON-Testlauf [44923797782](https://github.com/WeA200675/life-ai-planner/actions/runs/44923797782) ist **success**.
+- `services/api/server.py` lehnt vor JSON-Verarbeitung und SQLite-Mutation nicht-JSON-Medientypen, Transfer-Encoding und doppelte Content-Length-Header mit HTTP 400 ab. Bewusst kein Chunked-Support in der lokalen Standardbibliothek-API; eindeutige Content-Length erforderlich.
+- `tests/test_local_api.py`: HTTP-Regressionstest mit falschem Medientyp, Transfer-Encoding, zwei Content-Length-Headern; prüft unveränderte SQLite-Aufgaben und gültige Folgeanfrage. Ausschließlich synthetische Daten.
+- Implementierung: `a098cd18dd5380952c3a2a21bb62e681490677f3`; Tests: `eeab31e85d67447d6b6dc45c70a826dd1b1dbe96`.
+- **Testnachweis:** Beide GitHub-Commits bestätigt; CI für Code-Commit [44925557843](https://github.com/WeA200675/life-ai-planner/actions/runs/44925557843) beim Prüfen **in_progress**. CI für Test-Commit noch nicht nachweislich erfolgreich; kein lokaler Python- oder Android-Gerätetest behauptet.
+- **Blocker:** vollständige M1–M4-Abnahme, Android-Geräteabnahme, Release-Build; API weiterhin bewusst nur Loopback ohne externe Auth/TLS-Freigabe. Öffentliches Repo: keine privaten Daten oder Secrets.
+- **Nächster Schritt:** Scheduler-CI für `eeab31e8` prüfen und ggf. reparieren; anschließend API-Fehlerpfade und Android-Tagesvorschau-Widgettests absichern.
