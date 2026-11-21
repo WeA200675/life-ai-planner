@@ -1,8 +1,9 @@
 import 'offline_day_planner.dart';
 
 /// Converts local SQLite rows into a deterministic, read-only planning preview.
-/// Until task durations are persisted, each open task receives an explicit
-/// provisional 30-minute estimate; no database data is modified.
+/// Older SQLite rows without planning metadata use a provisional 30-minute
+/// duration and priority zero. Malformed metadata is rejected, never guessed.
+/// No database data is modified.
 DayPlan previewLocalTasks(
   DateTime start,
   DateTime end,
@@ -21,7 +22,15 @@ DayPlan previewLocalTasks(
       throw FormatException('Invalid local task row');
     }
     if (done == 0) {
-      tasks.add(DayTask(id: id.toString(), minutes: provisionalMinutes));
+      final minutes = row['minutes'] ?? provisionalMinutes;
+      final priority = row['priority'] ?? 0;
+      if (minutes is! int || minutes <= 0 || minutes > 1440 ||
+          priority is! int || priority < 0 || priority > 10) {
+        throw FormatException('Invalid local task planning metadata');
+      }
+      tasks.add(DayTask(
+        id: id.toString(), minutes: minutes, priority: priority,
+      ));
     }
   }
   return planOfflineDay(start, end, tasks, bufferRatio: bufferRatio);
