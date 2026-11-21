@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import 'offline_task_plan_adapter.dart';
+import 'plan_snapshot_store.dart';
 import 'local_task_schema.dart';
 import 'planner_theme.dart';
 import 'deadline_presentation.dart';
@@ -20,11 +21,15 @@ class LocalTasks {
     final root = await getDatabasesPath();
     return _db = await openDatabase(
       p.join(root, 'life_ai_planner.db'),
-      version: 3,
-      onCreate: (db, version) => createTaskSchema(db),
+      version: 4,
+      onCreate: (db, version) async {
+        await createTaskSchema(db);
+        await createPlanSnapshotSchema(db);
+      },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) await migrateTasksV1ToV2(db);
         if (oldVersion < 3) await migrateTasksV2ToV3(db);
+        if (oldVersion < 4) await createPlanSnapshotSchema(db);
       },
     );
   }
@@ -104,6 +109,15 @@ class LocalTasks {
     final db = await database;
     return await db.delete('tasks', where: 'id = ?', whereArgs: [id]) == 1;
   }
+
+  Future<int> acceptPlan(DayPlan plan, DateTime start, DateTime end) async =>
+      PlanSnapshotStore(await database).accept(plan, start, end);
+
+  Future<SavedPlan?> latestPlan() async =>
+      PlanSnapshotStore(await database).latest();
+
+  Future<bool> undoPlan(int id) async =>
+      PlanSnapshotStore(await database).undoLatest(id);
 
   Future<void> close() async {
     await _db?.close();
@@ -398,7 +412,7 @@ class _TaskScreenState extends State<TaskScreen> {
       String hhmm(DateTime time) =>
           time.hour.toString().padLeft(2, '0') + ':' +
           time.minute.toString().padLeft(2, '0');
-      await showDialog<void>(
+      final accepted = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: Text(remaining ? 'Resttag – Neuplanung' : 'Tagesplanung – Vorschau'),
@@ -435,9 +449,30 @@ class _TaskScreenState extends State<TaskScreen> {
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Schließen'),
             ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Plan übernehmen'),
+            ),
           ],
         ),
       );
+      if (accepted == true && mounted) {
+        final id = await _store.acceptPlan(plan, start, end);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Tagesplan lokal gespeichert.'),
+          action: SnackBarAction(label: 'Rückgängig', onPressed: () async {
+            try {
+              final undone = await _store.undoPlan(id);
+              if (mounted && !undone) {
+                setState(() => _error = 'Plan wurde inzwischen geändert.');
+              }
+            } catch (_) {
+              if (mounted) setState(() => _error = 'Rückgängig fehlgeschlagen.');
+            }
+          }),
+        ));
+      }
     } catch (_) {
       if (mounted) setState(() => _error = 'Tagesvorschau konnte nicht erstellt werden.');
     }
