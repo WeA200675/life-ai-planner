@@ -337,3 +337,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub-Connector bestätigte den Commit. Combined Status für Ausgangs-HEAD lieferte keine klassischen Checks; weder Flutter Analyze/Test noch Android-Build für den neuen Commit wurden in diesem Lauf ausgeführt oder als erfolgreich bestätigt. Daher **keine** grüne Abnahme behauptet.
 - **Offen/Blocker:** Flutter-CI-Logs des neuen Commits prüfen; DatePicker-Grenzfälle und Persistenz mit Widget-/SQLite-Tests abdecken; Android-Geräteabnahme fehlt. Ein öffentlicher Repository-Zugriff bleibt bestehen: keine personenbezogenen Daten oder Secrets committen.
 - **Nächster Schritt:** CI des neuen Commits kontrollieren, Fehler korrigieren und Offline-Fälligkeit in Tagesvorschau samt Tests sichtbar machen. M1–M4 weiterhin nicht vollständig abgenommen.
+
+
+## Offline-Fälligkeitsanzeige – 2026-11-21 (Folgelauf)
+- Ausgangs-HEAD: `b988300f509b69b60e07903f6c1a2262b1daadf2`; offene Issues/PRs jeweils 0. README, Implementierungsplan und Status geprüft. Combined Commit Status meldete keine klassischen Statuschecks; **kein CI-Erfolgsbeleg**.
+- Flutter-Aufgabenliste zeigt gespeicherte Fälligkeit lokal als Datum, heute, morgen oder überfällig; kein Netzwerkzugriff. Die reine Darstellungsfunktion vergleicht Kalendertage UTC-normalisiert, um DST-bedingte 23-/25-Stunden-Tage nicht als falsche Tagesdifferenz zu behandeln.
+- Code-Commits: `5eee44c65d8db88209a403eb7a863fbb17ad326e`, DST-Korrektur `97a5fd604c5d495e1297ece507569b5ff8c93530`, UI `5215b9c8305388fc2f2a634c0fd882b05163e589`; Test-Commit `0569f866b7dc3489fe4893f5877dff5a1cfa3a90`.
+- Vier synthetische Dart-Regressionstests hinzugefügt: fehlende/ungültige Frist, heute/morgen/später, überfällig und DST-Kalendertage. **GitHub-Commits bestätigt, Testausführung/Flutter-CI für neuen HEAD nicht bestätigt.** Keine Android-Geräteabnahme.
+- Blocker: Flutter-Toolchain und Gerätetests nicht in diesem Lauf verfügbar; rote Geräte-Assertion nach Lifecycle-Fix weiterhin nicht erneut nachgewiesen behoben; vollständige M1–M4-Abnahme offen.
+- Nächster Schritt: Flutter-CI für Test-Commit prüfen, bei Fehlschlag korrigieren; SQLite-Setter mit FFI-Integration testen, Fälligkeit in Tagesvorschau anzeigen, Android-APK am Gerät inklusive Lifecycle-Fehler prüfen. Keine personenbezogenen Testdaten oder Secrets.
