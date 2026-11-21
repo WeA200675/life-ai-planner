@@ -15,3 +15,15 @@ String deadlineLabel(int? utcMilliseconds, DateTime now) {
   if (days == 1) return 'Morgen fällig · $date';
   return 'Fällig · $date';
 }
+
+/// Keeps the date picker within its supported range, including legacy dates.
+/// This changes only the picker cursor; it never rewrites a stored deadline.
+DateTime safeDeadlinePickerInitialDate(DateTime candidate) {
+  final local = candidate.toLocal();
+  final day = DateTime(local.year, local.month, local.day);
+  final first = DateTime(1971);
+  final last = DateTime(2100);
+  if (day.isBefore(first)) return first;
+  if (day.isAfter(last)) return last;
+  return day;
+}
