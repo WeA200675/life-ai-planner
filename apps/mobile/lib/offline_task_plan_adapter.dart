@@ -52,3 +52,27 @@ DayPlan previewLocalTasks(
   }
   return planOfflineDay(start, end, tasks, bufferRatio: bufferRatio);
 }
+
+/// Replans local SQLite tasks from [now] without changing persistent rows.
+///
+/// The adapter deliberately reuses the same strict validation as the full-day
+/// preview. Completed tasks are already filtered by [previewLocalTasks]; the
+/// remaining window is recalculated from current time. No network is required.
+DayPlan replanLocalTasks(
+  DateTime now,
+  DateTime end,
+  List<Map<String, Object?>> rows, {
+  int provisionalMinutes = 30,
+  double bufferRatio = 0.30,
+}) {
+  // Validate all rows and metadata before producing a replacement preview.
+  // Use a full-window conversion with an artificial start at [now] to preserve
+  // strict SQLite row validation and deterministic scheduling semantics.
+  return previewLocalTasks(
+    now,
+    end,
+    rows,
+    provisionalMinutes: provisionalMinutes,
+    bufferRatio: bufferRatio,
+  );
+}
