@@ -378,13 +378,19 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 
-  Future<void> _showDayPreview() async {
+  Future<void> _showDayPreview({bool remaining = false}) async {
     if (_busy) return;
     final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day, 8);
+    final start = remaining ? now : DateTime(now.year, now.month, now.day, 8);
     final end = DateTime(now.year, now.month, now.day, 18);
+    if (!start.isBefore(end)) {
+      if (mounted) setState(() => _error = 'Der Planungstag ist bereits beendet.');
+      return;
+    }
     try {
-      final plan = previewLocalTasks(start, end, _tasks);
+      final plan = remaining
+          ? replanLocalTasks(start, end, _tasks)
+          : previewLocalTasks(start, end, _tasks);
       if (!mounted) return;
       final names = {
         for (final task in _tasks) task['id'].toString(): task['title'] as String,
@@ -395,13 +401,15 @@ class _TaskScreenState extends State<TaskScreen> {
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Tagesplanung – Vorschau'),
+          title: Text(remaining ? 'Resttag – Neuplanung' : 'Tagesplanung – Vorschau'),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView(
               shrinkWrap: true,
               children: [
-                const Text('08:00–18:00 · Individuelle Dauern; ohne Angabe 30 Minuten'),
+                Text(remaining
+                    ? 'Ab jetzt bis 18:00 · Nur offene Aufgaben · Keine Speicherung'
+                    : '08:00–18:00 · Individuelle Dauern; ohne Angabe 30 Minuten'),
                 Text('Planbudget: ' + plan.budgetMinutes.toString() +
                     ' Minuten · Freie Reserve: ' + plan.reservedMinutes.toString() + ' Minuten'),
                 for (final block in plan.blocks)
@@ -510,6 +518,14 @@ class _TaskScreenState extends State<TaskScreen> {
                 onPressed: _busy ? null : _showDayPreview,
                 icon: const Icon(Icons.calendar_today_outlined),
                 label: const Text('Tagesvorschau'),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _busy ? null : () => _showDayPreview(remaining: true),
+                icon: const Icon(Icons.update),
+                label: const Text('Resttag neu planen'),
               ),
             ),
             if (_error != null)
