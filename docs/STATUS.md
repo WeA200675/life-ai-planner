@@ -114,3 +114,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Einschränkungen:** Restore absichtlich nur in neue Datei; eine produktive Umschaltung muss bei geschlossenen Verbindungen separat, abgesichert und mit Rollback erfolgen. Backups sind unverschlüsselt und müssen lokal geschützt werden. Keine Cloud-Exposition.
 - **Nächster Schritt:** CI des neuen HEAD prüfen, Fehler beheben, Backup/Restore bei WAL-Parallelzugriff zusätzlich testen und Flutter-Android-MVP priorisieren.
 - **Abnahme:** M1–M4 weiterhin offen; Android-Build und Geräteabnahme fehlen.
+
+
+## WAL-Snapshot-Regression – 2026-11-21 (01:20 Europe/Berlin)
+- Ausgangs-HEAD vor Änderung: `422d13436ee2b928b6598b12210bc5601ad0861f`. Offene Issues: 0, offene PRs: 0 (GitHub-Suchen).
+- Zusätzliche Regressionstests in `tests/test_backup.py`: (1) committed WAL-Eintrag wird im Snapshot erhalten, obwohl noch kein Checkpoint erzwungen wurde; (2) uncommitted WAL-Eintrag wird nicht in den Snapshot übernommen. Beide Tests verwenden ausschließlich synthetische Daten.
+- Test-Code-Commit: `6ec1469026cf31cfc35502016512531f710c85d6`.
+- **Testnachweis:** Commit auf GitHub bestätigt. Keine lokale Ausführung und kein CI-Ergebnis für diesen Commit verifiziert; grüne Tests werden nicht behauptet.
+- **Blocker:** GitHub Actions für den neuen HEAD prüfen, Flutter-Toolchain/Android-Gerät für Build und Abnahme fehlen; Backup-Verschlüsselung und sichere Restore-Umschaltung noch offen.
+- **Nächster Schritt:** GitHub Actions für `6ec1469` prüfen und gegebenenfalls korrigieren; danach Android-Flutter-MVP (lokale Taskliste, Textinput, Tagesansicht) priorisieren.
+- **Abnahme:** M1–M4 weiterhin offen.
