@@ -41,11 +41,21 @@ jobs:
         run: flutter test
       - name: Build Android debug APK
         run: flutter build apk --debug
+      - name: Verify APK and record SHA-256
+        run: |
+          set -euo pipefail
+          apk=build/app/outputs/flutter-apk/app-debug.apk
+          test -s "$apk"
+          unzip -t "$apk" > /dev/null
+          sha256sum "$apk" > "$apk.sha256"
+          cat "$apk.sha256"
       - name: Upload debug APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: life-ai-planner-debug-apk
-          path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+          path: |
+            apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+            apps/mobile/build/app/outputs/flutter-apk/app-debug.apk.sha256
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
