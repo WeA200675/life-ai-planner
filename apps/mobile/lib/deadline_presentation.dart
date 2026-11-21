@@ -7,7 +7,8 @@ String deadlineLabel(int? utcMilliseconds, DateTime now) {
   final localNow = now.toLocal();
   final today = DateTime(localNow.year, localNow.month, localNow.day);
   final dueDay = DateTime(deadline.year, deadline.month, deadline.day);
-  final days = dueDay.difference(today).inDays;
+  final days = DateTime.utc(dueDay.year, dueDay.month, dueDay.day)
+      .difference(DateTime.utc(today.year, today.month, today.day)).inDays;
   final date = '${deadline.day.toString().padLeft(2, '0')}.${deadline.month.toString().padLeft(2, '0')}.${deadline.year}';
   if (deadline.isBefore(localNow)) return 'Überfällig · $date';
   if (days == 0) return 'Heute fällig · $date';
