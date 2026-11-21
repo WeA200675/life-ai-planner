@@ -63,4 +63,35 @@ void main() {
     expect((await store.latest())?.blocks, isEmpty);
     expect(await store.undoLatest(id), isTrue);
   });
+  test('stale confirmation is rejected without creating a plan', () async {
+    await db.execute('CREATE TABLE tasks (id INTEGER PRIMARY KEY, title TEXT)');
+    await db.insert('tasks', {'id': 1, 'title': 'Original'});
+    final previewRows = await db.query('tasks');
+    await db.update('tasks', {'title': 'Changed'}, where: 'id = ?', whereArgs: [1]);
+    await expectLater(
+      store.accept(plan('1'), start, end, expectedTasks: previewRows),
+      throwsStateError,
+    );
+    expect(await store.latest(), isNull);
+    expect((await db.query('tasks')).single['title'], 'Changed');
+  });
+
+  test('unchanged task snapshot is accepted regardless of column ordering', () async {
+    await db.execute('CREATE TABLE tasks (id INTEGER PRIMARY KEY, title TEXT)');
+    await db.insert('tasks', {'id': 1, 'title': 'Stable'});
+    final id = await store.accept(plan('1'), start, end,
+      expectedTasks: [{'title': 'Stable', 'id': 1}]);
+    expect((await store.latest())?.id, id);
+  });
+
+  test('fingerprint is independent of row order', () {
+    final first = <Map<String, Object?>>[
+      {'id': 2, 'title': 'B'}, {'id': 1, 'title': 'A'},
+    ];
+    final second = <Map<String, Object?>>[
+      {'title': 'A', 'id': 1}, {'title': 'B', 'id': 2},
+    ];
+    expect(taskRowsFingerprint(first), taskRowsFingerprint(second));
+  });
+
 }
