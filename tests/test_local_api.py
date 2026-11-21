@@ -113,6 +113,25 @@ class LocalApiTests(unittest.TestCase):
         self.assertEqual(self.request("/tasks")[1]["tasks"], [])
         self.assertEqual(self.request("/tasks", {"id": "ok", "title": "Valid", "minutes": 30})[0], 200)
 
+    def test_unpaired_unicode_surrogates_rejected_without_mutation(self):
+        # JSON parser accepts escaped surrogate code points by default.
+        for payload in (
+            b'{"id":"bad","title":"\\ud800","minutes":30}',
+            b'{"id":"bad","title":"\\udfff","minutes":30}',
+            b'{"id":"bad","title":"Valid","minutes":30,"extra":{"\\ud800":1}}',
+            b'{"id":"bad","title":"Valid","minutes":30,"extra":["\\udfff"]}',
+        ):
+            with self.subTest(payload=payload):
+                req = Request(self.base + "/tasks", data=payload,
+                              headers={"Content-Type": "application/json"})
+                with self.assertRaises(HTTPError) as raised:
+                    urlopen(req, timeout=3)
+                self.assertEqual(raised.exception.code, 400)
+        self.assertEqual(self.request("/tasks")[1]["tasks"], [])
+        self.assertEqual(self.request("/tasks", {
+            "id": "valid", "title": "Unicode ✓", "minutes": 30,
+        })[0], 200)
+
     def test_plan_timestamp_types_return_400_and_server_recovers(self):
         valid = {"start": "2026-11-21T09:00:00+01:00",
                  "end": "2026-11-21T12:00:00+01:00"}
