@@ -47,10 +47,7 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
           },
         ));
     final result = await restoreCombinedIntoEmptyDatabase(db, archive);
-    final check = await db.rawQuery('PRAGMA integrity_check');
-    if (check.length != 1 || check.single.values.single != 'ok') {
-      throw StateError('Staged SQLite integrity check failed');
-    }
+    await verifyStagedDatabase(db);
     return result;
   } catch (_) {
     // Only delete a destination created by this attempt, never a file that
@@ -63,5 +60,19 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
     rethrow;
   } finally {
     await db?.close();
+  }
+}
+
+/// Independent post-import verification. SQLite integrity_check does not
+/// detect orphaned foreign keys, so both checks are mandatory before a
+/// staged database can ever be considered for activation.
+Future<void> verifyStagedDatabase(Database db) async {
+  final integrity = await db.rawQuery('PRAGMA integrity_check');
+  if (integrity.length != 1 || integrity.single.values.single != 'ok') {
+    throw StateError('Staged SQLite integrity check failed');
+  }
+  final foreignKeys = await db.rawQuery('PRAGMA foreign_key_check');
+  if (foreignKeys.isNotEmpty) {
+    throw StateError('Staged SQLite foreign key check failed');
   }
 }
