@@ -26,6 +26,17 @@ void main() {
     expect(plan.blocks.where((b) => b.id == 'task').single.start, fixed.end);
     expect(plan.budgetMinutes, 62);
   });
+  test('fixed appointment identifiers cannot collide with tasks or each other', () {
+    final meeting = DayBlock('meeting', start, start.add(const Duration(minutes: 15)));
+    expect(() => planOfflineDay(start, end,
+        [const DayTask(id: 'meeting', minutes: 10)], fixed: [meeting]),
+        throwsArgumentError);
+    expect(() => planOfflineDay(start, end, [], fixed: [meeting, meeting]),
+        throwsArgumentError);
+    expect(() => planOfflineDay(start, end, [], fixed: [
+      DayBlock('  ', start, start.add(const Duration(minutes: 15))),
+    ]), throwsArgumentError);
+  });
   test('deadline conflicts are explicit without dropping tasks', () {
     final plan = planOfflineDay(start, end, [
       DayTask(id: 'early', minutes: 40,
