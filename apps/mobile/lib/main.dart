@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
+import 'offline_task_plan_adapter.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -234,6 +235,58 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 
+  Future<void> _showDayPreview() async {
+    if (_busy) return;
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day, 8);
+    final end = DateTime(now.year, now.month, now.day, 18);
+    try {
+      final plan = previewLocalTasks(start, end, _tasks);
+      if (!mounted) return;
+      final names = {
+        for (final task in _tasks) task['id'].toString(): task['title'] as String,
+      };
+      String hhmm(DateTime time) =>
+          time.hour.toString().padLeft(2, '0') + ':' +
+          time.minute.toString().padLeft(2, '0');
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Tagesplanung – Vorschau'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                const Text('08:00–18:00 · 30 Minuten je offener Aufgabe (vorläufig)'),
+                Text('Planbudget: ' + plan.budgetMinutes.toString() +
+                    ' Minuten · Freie Reserve: ' + plan.reservedMinutes.toString() + ' Minuten'),
+                for (final block in plan.blocks)
+                  ListTile(
+                    dense: true,
+                    title: Text(names[block.id] ?? block.id),
+                    subtitle: Text(hhmm(block.start) + '–' + hhmm(block.end)),
+                  ),
+                if (plan.deferred.isNotEmpty) ...[
+                  const Text('Nicht eingeplant:'),
+                  for (final id in plan.deferred) Text(names[id] ?? id),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Schließen'),
+            ),
+          ],
+        ),
+      );
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Tagesvorschau konnte nicht erstellt werden.');
+    }
+  }
+
   Future<void> _toggle(int id, bool done) async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -301,6 +354,14 @@ class _TaskScreenState extends State<TaskScreen> {
               child: Text(
                 'Offen: ${counts.open} · Erledigt: ${counts.completed} · Gesamt: ${counts.total}',
                 key: const ValueKey('offline-task-counts'),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _busy ? null : _showDayPreview,
+                icon: const Icon(Icons.calendar_today_outlined),
+                label: const Text('Tagesvorschau'),
               ),
             ),
             if (_error != null)
