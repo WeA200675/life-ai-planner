@@ -3,6 +3,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import 'offline_task_plan_adapter.dart';
 import 'local_task_schema.dart';
+import 'planner_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -140,7 +141,7 @@ class PlannerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'Life AI Planner',
-        theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+        theme: PlannerTheme.dark,
         home: const TaskScreen(),
       );
 }
