@@ -619,3 +619,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - `1c07ef1885359f5ab6af212de7ad7c3df559c863`, `f2eb692d6caf47a183149486aa9729042b175773`: Cursor-Pagination statt Offset im UI; neu hinzukommende Pläne verschieben bereits geladene Seiten nicht.
 - `fccefb0a66bbf7751e88095f61b308c21440e6ea`: Regressionstest für Cursor-Stabilität bei gleichzeitigem neuen Snapshot.
 - **Offen:** neue Flutter-CI/Debug-APK für Cursor-HEAD, Gerätetest, UX-Abnahme. Kein Release- oder Gerätetest-Erfolg behauptet.
+
+
+## CI-Abhängigkeitshärtung – 2026-11-21, 20:44 Europe/Berlin
+- Ausgangs-HEAD: `c012c133a3bbed09b6345ae28f9d24a8594418de`; offene PRs: #1 (M3 SQLite-Replanning-Adapter); offene eigenständige Issues: keine (GitHub Issues listet PR #1 mit).
+- Python-Scheduler-CI für Ausgangs-HEAD: [44942427508](https://github.com/WeA200675/life-ai-planner/actions/runs/44942427508) **success**.
+- Flutter-Workflow [44942392543](https://github.com/WeA200675/life-ai-planner/actions/runs/44942392543) für `1c07ef18`: **failure** im Schritt `Build Android debug APK`; Job-Log belegt HTTP 403 beim Abruf von Kotlin 2.3.20 aus Maven Central über Gradle Plugin Portal. Das ist ein externer Dependency-Download-Blocker, kein Beleg für einen Flutter-Quellcodefehler.
+- Commit `8db58f28dee475e1ef40e29d115f786b726b4ff2`: Android-Build führt höchstens drei Versuche mit begrenztem Backoff durch, entfernt vorab ein eventuell altes APK, prüft die APK-Datei und lässt den Job bei anhaltendem Fehler ausdrücklich fehlschlagen. Tests/Analyse laufen weiterhin vor dem Build; keine künstlich grünen Builds.
+- **Nachweis:** GitHub-Commit bestätigt. Neuer Flutter-Run [44942543213](https://github.com/WeA200675/life-ai-planner/actions/runs/44942543213) beim Schreiben **queued**. Kein erfolgreicher Build für diesen Commit behauptet.
+- **Nächster Schritt:** neuen CI-Run prüfen; bei dauerhaftem 403 Repository-/Runner-Netzwerk prüfen, nicht blind Kotlin-/Gradle-Versionen verändern. Anschließend PR #1 mit aktuellem main vergleichen und M3-Replanning-Abnahme fortsetzen. M1–M4 und Android-Geräteabnahme weiterhin offen.
