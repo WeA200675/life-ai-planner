@@ -37,6 +37,7 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
     if (await file.exists()) {
       throw StateError('Staging destination already exists');
     }
+    created = true;
     db = await (factory ?? databaseFactory).openDatabase(candidatePath,
         options: OpenDatabaseOptions(
           version: 1,
@@ -45,7 +46,6 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
             await createPlanSnapshotSchema(database);
           },
         ));
-    created = true;
     final result = await restoreCombinedIntoEmptyDatabase(db, archive);
     final check = await db.rawQuery('PRAGMA integrity_check');
     if (check.length != 1 || check.single.values.single != 'ok') {
