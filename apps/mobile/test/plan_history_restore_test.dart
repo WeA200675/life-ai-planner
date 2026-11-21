@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:life_ai_planner/plan_history_backup.dart';
@@ -11,8 +12,11 @@ void main() {
   databaseFactory = databaseFactoryFfi;
 
   test('round-trip preserves IDs and blocks in an empty history database', () async {
-    final source = await openDatabase(inMemoryDatabasePath);
-    final target = await openDatabase(inMemoryDatabasePath);
+    // Separate file paths are essential: sqflite may reuse a single
+    // in-memory connection for the same path, making target non-empty.
+    final directory = await Directory.systemTemp.createTemp('plan-restore-');
+    final source = await openDatabase('${directory.path}/source.db');
+    final target = await openDatabase('${directory.path}/target.db');
     try {
       await createPlanSnapshotSchema(source);
       await createPlanSnapshotSchema(target);
@@ -41,6 +45,7 @@ void main() {
     } finally {
       await source.close();
       await target.close();
+      await directory.delete(recursive: true);
     }
   });
 
