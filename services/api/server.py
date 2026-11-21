@@ -137,7 +137,7 @@ def build_handler(store):
                 return self._json(404, {"error": "not found"})
             except RevisionConflict as exc:
                 return self._json(409, {"error": str(exc)})
-            except (ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
+            except (ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError) as exc:
                 return self._json(400, {"error": str(exc)})
 
     return Handler
