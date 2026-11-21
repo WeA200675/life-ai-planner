@@ -60,6 +60,18 @@ class LocalApiTests(unittest.TestCase):
         self.assertEqual(self.request("/tasks")[1]["tasks"], [])
         self.assertEqual(self.request("/tasks", {"id": "ok", "title": "Example", "minutes": 30})[0], 200)
 
+    def test_nonfinite_json_numbers_rejected_without_mutation(self):
+        # Python's JSON parser accepts these non-standard tokens by default.
+        for token in (b"NaN", b"Infinity", b"-Infinity"):
+            payload = b'{"id":"unsafe","title":"Example","minutes":30,"extra":' + token + b'}'
+            req = Request(self.base + "/tasks", data=payload,
+                          headers={"Content-Type": "application/json"})
+            with self.assertRaises(HTTPError) as raised:
+                urlopen(req, timeout=3)
+            self.assertEqual(raised.exception.code, 400)
+        self.assertEqual(self.request("/tasks")[1]["tasks"], [])
+        self.assertEqual(self.request("/tasks", {"id": "safe", "title": "Example", "minutes": 30})[0], 200)
+
     def test_unknown_route(self):
         self.assertEqual(self.request("/missing")[0], 404)
 
