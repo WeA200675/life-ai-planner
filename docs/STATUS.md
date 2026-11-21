@@ -405,3 +405,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Testnachweis:** GitHub-Schreibvorgänge bestätigt. Flutter-/Dart-Tests für diesen neuen Code-HEAD nicht lokal ausgeführt; GitHub-CI für den neuen HEAD bei Dokumentation noch nicht als erfolgreich belegt. Keine Android-Geräteabnahme.
 - **Blocker:** Gerätetest, vollständige M1–M4-Abnahme, Ende-zu-Ende-Prüfung fehlen. Öffentliches Repository: keine personenbezogenen Daten oder Secrets.
 - **Nächster Schritt:** Flutter-CI für `39ce5796` kontrollieren und ggf. korrigieren; anschließend echte SQLite-Deadline-Setter-Persistenz und Widgettests der Tagesvorschau priorisieren.
+
+
+## Provisorische Schätzdauer: SQLite-Grenze – 2026-11-21
+- Vor Änderungen verifizierter HEAD: `faf3744f6b72efa70efffec73b3dbdb034bdc1e4`; offene Issues 0, offene PRs 0.
+- Fix: `previewLocalTasks` verwirft jetzt `provisionalMinutes > 1440` (wie SQLite-Schema und explizite Aufgabendauer), statt ungültige Planungsmetadaten stillschweigend zu akzeptieren. Keine SQLite-Mutation.
+- Regressionstest: 1441 und -1 werfen ArgumentError; 1440 wird als gültige Schätzung akzeptiert und bei zu kleinem Tagesbudget sicher zurückgestellt.
+- Code-Commit: `87670c311ca67235d635673035cfab2bbc7f4bb8`; Test-Commit: `e04068759b72949c85df6949e8adb5ffaf0c3ffc`.
+- GitHub Actions zuletzt beobachtet: Scheduler tests: in_progress/pending at e040687 (run 44913004731); Flutter offline MVP checks: in_progress/pending at e040687 (run 44913004669); Scheduler tests: in_progress/pending at 87670c3 (run 44912997765); Flutter offline MVP checks: in_progress/pending at 87670c3 (run 44912997717); Scheduler tests: completed/success at faf3744 (run 44909785510). Diese Ergebnisse beweisen **keinen** erfolgreichen Testlauf des neuen Test-Commits, sofern dessen SHA nicht ausdrücklich enthalten ist.
+- Testnachweis: Testquelltext committed; kein lokaler Flutter-Lauf in diesem Werkzeugzugang; neuer CI-Lauf bleibt abzuwarten. Kein APK-/Gerätetest nachgewiesen.
+- Blocker: Android-Geräteabnahme, Release-Build und vollständige M1–M4-Abnahme fehlen; öffentliches Repository ohne personenbezogene Daten/Secrets.
+- Nächster Schritt: Flutter-CI des neuen Commits prüfen, bei Fehler korrigieren; anschließend Widgettests der Tagesvorschau und Offline-Fälligkeitsmigration weiter absichern.
