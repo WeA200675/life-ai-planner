@@ -17,10 +17,11 @@ class LocalTasks {
     final root = await getDatabasesPath();
     return _db = await openDatabase(
       p.join(root, 'life_ai_planner.db'),
-      version: 2,
+      version: 3,
       onCreate: (db, version) => createTaskSchema(db),
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) await migrateTasksV1ToV2(db);
+        if (oldVersion < 3) await migrateTasksV2ToV3(db);
       },
     );
   }
