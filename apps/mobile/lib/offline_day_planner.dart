@@ -35,7 +35,8 @@ DayPlan planOfflineDay(DateTime start, DateTime end, List<DayTask> tasks,
   }
   final ids = <String>{};
   for (final task in tasks) {
-    if (task.id.trim().isEmpty || task.minutes < 1 || task.minutes > 1440 ||
+    if (task.id.trim().isEmpty || task.id != task.id.trim() ||
+        task.minutes < 1 || task.minutes > 1440 ||
         task.priority < 0 || task.priority > 10 ||
         !ids.add(task.id)) {
       throw ArgumentError('Invalid or duplicate task');
@@ -43,7 +44,7 @@ DayPlan planOfflineDay(DateTime start, DateTime end, List<DayTask> tasks,
   }
   final fixedIds = <String>{};
   for (final block in fixed) {
-    if (block.id.trim().isEmpty ||
+    if (block.id.trim().isEmpty || block.id != block.id.trim() ||
         !fixedIds.add(block.id) || ids.contains(block.id)) {
       throw ArgumentError('Invalid or duplicate fixed block id');
     }
