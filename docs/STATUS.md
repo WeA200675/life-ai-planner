@@ -493,3 +493,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** Commits über GitHub bestätigt; neuer CI-Lauf/Testausführung noch nicht als erfolgreich nachgewiesen. Vorheriger CI-Lauf für Ausgangs-HEAD war erfolgreich; nicht auf neue Änderung übertragbar.
 - **Blocker:** Android-Geräteabnahme, Release-Build, M1–M4-Gesamtabnahme weiterhin offen. Repository öffentlich; keine Secrets/privaten Daten.
 - **Nächster Schritt:** CI des neuen Code-HEAD prüfen und bei Fehler korrigieren; dann Flutter-Tagesvorschau/Replanning mit Widgettests absichern.
+
+
+## M3: Offline-Replanning-Vorschau – 2026-11-21 (19:32 Europe/Berlin)
+- Vor Änderungen HEAD `bf16029463666034660fd6f50a5657070a09c7e1`, offene Issues/PRs jeweils 0; vorheriger Scheduler-CI-Lauf [44935145229](https://github.com/WeA200675/life-ai-planner/actions/runs/44935145229) erfolgreich.
+- `replanOfflineDay` in `apps/mobile/lib/offline_day_planner.dart` erstellt eine **rein lesende** Offline-Neuplanung ab aktuellem Zeitpunkt. Erledigte Tasks werden ausgelassen, laufende Fixtermine bis zum ursprünglichen Ende geschützt, vergangene Fixtermine ignoriert; Zeitbudget und 70/30-Puffer werden vom bestehenden deterministischen Planer neu berechnet. Ungültige Fixtermine, unbekannte Erledigt-IDs und doppelte Task-IDs werden abgewiesen. Keine automatische Persistenz oder Kalenderänderung.
+- Implementierungs-Commit `afca8fa237c431d4fcc951e4de32254bdb26066e`; Regressionstest-Commit `bf37fd3ebb8df19d1830cb746a4a412c82b3576f`. Zwei neue Dart-Tests prüfen aktive geschützte Termine, Erledigt-Ausschluss, Pufferbudget, Vergangenheit und ungültige Eingaben mit synthetischen Daten.
+- **Nachweisstand bei Dokumentation:** Commits auf GitHub bestätigt; Flutter-CI für Test-HEAD [44936156398](https://github.com/WeA200675/life-ai-planner/actions/runs/44936156398) queued, Scheduler-CI [44936156351](https://github.com/WeA200675/life-ai-planner/actions/runs/44936156351) queued. **Kein erfolgreicher Testlauf für den neuen HEAD behauptet**, keine lokale Dart-/Android-Geräteausführung.
+- **Blocker:** Replanning noch nicht in die Android-Tagesansicht integriert; Persistenz, Versionskontrolle/Undo und Geräteabnahme fehlen. Vollständige M1–M4-Abnahme, Release-Build und End-to-End-Tests ausstehend.
+- **Nächster Schritt:** Flutter-CI des Test-HEAD prüfen, Fehler korrigieren, anschließend Replanning in Tagesvorschau mit expliziter Bestätigung und Widgettests einbinden.
