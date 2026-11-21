@@ -114,3 +114,51 @@ DayPlan planOfflineDay(DateTime start, DateTime end, List<DayTask> tasks,
   return DayPlan(List.unmodifiable(blocks), List.unmodifiable(deferred),
       List.unmodifiable(conflicts), capacity, budget, available - used);
 }
+
+
+/// Replans the remaining day after an interruption, entirely offline.
+///
+/// Completed task IDs are excluded, and fixed appointments already in progress
+/// remain protected until their original end. Past appointments are ignored.
+/// The input collections are never mutated. The caller must persist/confirm a
+/// proposed replacement plan separately; this is a read-only preview.
+DayPlan replanOfflineDay(
+  DateTime now,
+  DateTime end,
+  List<DayTask> tasks, {
+  List<DayBlock> fixed = const [],
+  Set<String> completedTaskIds = const {},
+  double bufferRatio = 0.30,
+}) {
+  if (!now.isBefore(end)) {
+    throw ArgumentError('Invalid remaining planning window');
+  }
+  final taskIds = tasks.map((task) => task.id).toSet();
+  if (taskIds.length != tasks.length ||
+      !completedTaskIds.every(taskIds.contains)) {
+    throw ArgumentError('Duplicate task or unknown completed task id');
+  }
+  // Reject malformed appointments before clipping, so corrupt input cannot
+  // silently disappear when it lies entirely in the past.
+  for (final block in fixed) {
+    if (!block.start.isBefore(block.end)) {
+      throw ArgumentError('Invalid fixed appointment');
+    }
+  }
+  final remainingFixed = <DayBlock>[
+    for (final block in fixed)
+      if (block.end.isAfter(now) && block.start.isBefore(end))
+        DayBlock(
+          block.id,
+          block.start.isBefore(now) ? now : block.start,
+          block.end.isAfter(end) ? end : block.end,
+        ),
+  ];
+  return planOfflineDay(
+    now,
+    end,
+    [for (final task in tasks) if (!completedTaskIds.contains(task.id)) task],
+    fixed: remainingFixed,
+    bufferRatio: bufferRatio,
+  );
+}
