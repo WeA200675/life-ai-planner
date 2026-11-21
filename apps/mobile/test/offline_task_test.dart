@@ -26,6 +26,23 @@ void main() {
     await expectLater(store.setPlanningMetadata(1, priority: 11), throwsArgumentError);
   });
 
+  test('invalid deadline IDs and pre-epoch dates are rejected before SQLite', () async {
+    final store = LocalTasks();
+    await expectLater(store.setDeadline(0, null), throwsArgumentError);
+    await expectLater(
+      store.setDeadline(-1, DateTime.utc(2030, 1, 1)),
+      throwsArgumentError,
+    );
+    await expectLater(
+      store.setDeadline(1, DateTime.fromMillisecondsSinceEpoch(0, isUtc: true)),
+      throwsArgumentError,
+    );
+    await expectLater(
+      store.setDeadline(1, DateTime.utc(1969, 12, 31)),
+      throwsArgumentError,
+    );
+  });
+
   test('invalid completion ids are rejected before opening SQLite', () async {
     final store = LocalTasks();
     await expectLater(store.setDone(0, true), throwsArgumentError);
