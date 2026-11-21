@@ -85,4 +85,40 @@ void main() {
       DayBlock('b', start.add(const Duration(minutes: 30)), end),
     ]), throwsArgumentError);
   });
+  test('replanning excludes completed tasks and protects active appointment', () {
+    final now = start.add(const Duration(minutes: 20));
+    final active = DayBlock('meeting',
+        start.add(const Duration(minutes: 10)),
+        start.add(const Duration(minutes: 50)));
+    final tasks = [
+      const DayTask(id: 'done', minutes: 10, priority: 10),
+      const DayTask(id: 'next', minutes: 20, priority: 5),
+    ];
+    final result = replanOfflineDay(now, end, tasks,
+        fixed: [active], completedTaskIds: {'done'});
+    expect(result.blocks.map((b) => b.id).toList(), ['meeting', 'next']);
+    expect(result.blocks.first.start, now);
+    expect(result.blocks.first.end, active.end);
+    expect(result.blocks.last.start, active.end);
+    expect(result.capacityMinutes, 100);
+    expect(result.budgetMinutes, 49);
+    expect(tasks.length, 2);
+    expect(active.start, start.add(const Duration(minutes: 10)));
+  });
+
+  test('replanning drops past appointments and rejects unknown completion', () {
+    final now = start.add(const Duration(minutes: 60));
+    final past = DayBlock('past', start,
+        start.add(const Duration(minutes: 30)));
+    final result = replanOfflineDay(now, end,
+        [const DayTask(id: 'pending', minutes: 10)], fixed: [past]);
+    expect(result.blocks.map((b) => b.id), ['pending']);
+    expect(() => replanOfflineDay(now, end,
+        [const DayTask(id: 'pending', minutes: 10)],
+        completedTaskIds: {'unknown'}), throwsArgumentError);
+    expect(() => replanOfflineDay(now, end, [], fixed: [
+      DayBlock('invalid', end, start),
+    ]), throwsArgumentError);
+  });
+
 }
