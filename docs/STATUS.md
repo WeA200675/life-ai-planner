@@ -436,3 +436,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - CI zum Prüfzeitpunkt: [44918646448](https://github.com/WeA200675/life-ai-planner/actions/runs/44918646448) **in_progress** für Code-Commit; [44918657687](https://github.com/WeA200675/life-ai-planner/actions/runs/44918657687) **queued** für Test-Commit. Flutter-Workflow wird durch diese Python-Änderungen nicht ausgelöst. Keine lokale Testausführung behauptet.
 - Blocker: Endgültige CI-Verifikation dieser Änderungen, reale Android-Geräteabnahme, vollständige M1–M4-Abnahme. Öffentliches Repo: keine privaten Daten oder Secrets.
 - Nächster Schritt: Scheduler-CI des Test-Commits prüfen und Fehler korrigieren; anschließend SQLite-API-Validierung/Versionierung und Offline-Android-Widgettests priorisieren.
+
+## API JSON-Eindeutigkeit – 2026-11-21 (16:42 Europe/Berlin)
+- Ausgangs-HEAD `c76dda630a5f95c639a27db0348a332f8e5810c6`; offene PRs 0, offene Issues 0.
+- Ausgangs-CI: Scheduler tests [44918673425](https://github.com/WeA200675/life-ai-planner/actions/runs/44918673425) **success**; letzte Flutter-Prüfung [44915497384](https://github.com/WeA200675/life-ai-planner/actions/runs/44915497384) **success** (älterer Code-Stand).
+- `services/api/server.py`: JSON-Objekte mit doppelten Schlüsseln werden auch verschachtelt mit HTTP 400 abgewiesen; unvollständige Bodies werden explizit zurückgewiesen. Keine stillschweigende Last-Value-Wins-Verarbeitung von widersprüchlichen Task-/Plan-Parametern.
+- `tests/test_local_api.py`: HTTP-Regressionstest für doppelte Top-Level-/Nested-Schlüssel, unveränderten Task-Speicher und weiterhin gültige Task-Erstellung.
+- Code-Commits: `d121b6fd2bdb1d13c329904dc279e73c05745aa5`, `afad799a4b3caef72acfddd11c237724dd9de916`.
+- Verifikation: GitHub-Commits nachgewiesen; Scheduler-CI [44920685414](https://github.com/WeA200675/life-ai-planner/actions/runs/44920685414) für Test-Commit zum Prüfzeitpunkt **queued**, vorheriger Lauf [44920676247](https://github.com/WeA200675/life-ai-planner/actions/runs/44920676247) **in_progress**. Kein neuer Testerfolg behauptet; keine lokale Python- oder Android-Geräteausführung.
+- Blocker: M1–M4 noch nicht vollständig abgenommen, Android-Geräteabnahme fehlt; API absichtlich nur Loopback ohne TLS/Auth, Repo öffentlich – keine persönlichen Daten/Secrets eintragen.
+- Nächster Schritt: neue Scheduler-CI prüfen und ggf. reparieren; danach HTTP-Eingabegrenzen und Offline-API-Fallbacks sowie Android-Widgettests weiter absichern.
