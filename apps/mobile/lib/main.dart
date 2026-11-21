@@ -95,6 +95,13 @@ List<Map<String, Object?>> visibleTasks(
   }).toList(growable: false);
 }
 
+/// Counts all locally loaded tasks, independent of search and filter state.
+({int open, int completed, int total}) taskCounts(
+    List<Map<String, Object?>> tasks) {
+  final completed = tasks.where((task) => task['done'] == 1).length;
+  return (open: tasks.length - completed, completed: completed, total: tasks.length);
+}
+
 class PlannerApp extends StatelessWidget {
   const PlannerApp({super.key});
 
@@ -251,6 +258,7 @@ class _TaskScreenState extends State<TaskScreen> {
   @override
   Widget build(BuildContext context) {
     final shown = visibleTasks(_tasks, _view, _search);
+    final counts = taskCounts(_tasks);
     return Scaffold(
         appBar: AppBar(title: const Text('Life AI Planner – Offline')),
         body: Padding(
@@ -286,6 +294,13 @@ class _TaskScreenState extends State<TaskScreen> {
                   },
                   icon: const Icon(Icons.clear),
                 ),
+              ),
+            ),
+            Semantics(
+              label: 'Aufgabenstatistik',
+              child: Text(
+                'Offen: ${counts.open} · Erledigt: ${counts.completed} · Gesamt: ${counts.total}',
+                key: const ValueKey('offline-task-counts'),
               ),
             ),
             if (_error != null)
