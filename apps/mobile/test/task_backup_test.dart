@@ -76,6 +76,45 @@ void main() {
       await db.close();
     }
   });
+  test('restore rolls back every deletion if an insert fails', () async {
+    final db = await openDatabase(inMemoryDatabasePath, version: 1,
+        onCreate: (db, _) => createTaskSchema(db));
+    try {
+      await db.insert('tasks', task);
+      await db.execute('CREATE TRIGGER block_restore BEFORE INSERT ON tasks '
+          "WHEN NEW.title = 'Blocked' BEGIN SELECT RAISE(ABORT, 'blocked'); END");
+      final before = await db.query('tasks');
+      final replacement = decodeTaskBackup(encodeTaskBackup([
+        {...task, 'id': 2, 'title': 'Allowed'},
+        {...task, 'id': 3, 'title': 'Blocked'},
+      ]));
+      await expectLater(
+        restoreTaskBackup(db, replacement, expectedTasks: before),
+        throwsA(isA<Exception>()),
+      );
+      expect(await db.query('tasks'), before);
+    } finally {
+      await db.close();
+    }
+  });
+
+  test('restore rejects a mutated backup before deleting rows', () async {
+    final db = await openDatabase(inMemoryDatabasePath, version: 1,
+        onCreate: (db, _) => createTaskSchema(db));
+    try {
+      await db.insert('tasks', task);
+      final before = await db.query('tasks');
+      final backup = TaskBackup([{...task, 'done': 7}]);
+      await expectLater(
+        restoreTaskBackup(db, backup, expectedTasks: before),
+        throwsFormatException,
+      );
+      expect(await db.query('tasks'), before);
+    } finally {
+      await db.close();
+    }
+  });
+
   test('backup rejects oversized input before decoding', () {
     expect(() => decodeTaskBackup(' ' * (8 * 1024 * 1024 + 1)),
         throwsFormatException);
