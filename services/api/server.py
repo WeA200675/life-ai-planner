@@ -44,7 +44,10 @@ def build_handler(store):
                         raise ValueError("duplicate JSON key")
                     result[key] = value
                 return result
-            value = json.loads(raw, object_pairs_hook=unique_object)
+            def reject_nonfinite(token):
+                raise ValueError("non-finite JSON number: " + token)
+            value = json.loads(raw, object_pairs_hook=unique_object,
+                               parse_constant=reject_nonfinite)
             if not isinstance(value, dict):
                 raise ValueError("expected JSON object")
             return value
