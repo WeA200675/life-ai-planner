@@ -67,7 +67,7 @@ void main() {
       {...base, 'schema_version': 2},
       {...base, 'extra': 1},
       {...base, 'blocks': [
-        {...(base['blocks'] as List).first as Map, 'snapshot_id': 99}
+        {...((base['blocks'] as List).first as Map<String, Object>), 'snapshot_id': 99}
       ]},
       {...base, 'blocks': [
         ...(base['blocks'] as List),
