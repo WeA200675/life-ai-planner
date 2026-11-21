@@ -40,6 +40,13 @@ DayPlan planOfflineDay(DateTime start, DateTime end, List<DayTask> tasks,
       throw ArgumentError('Invalid or duplicate task');
     }
   }
+  final fixedIds = <String>{};
+  for (final block in fixed) {
+    if (block.id.trim().isEmpty ||
+        !fixedIds.add(block.id) || ids.contains(block.id)) {
+      throw ArgumentError('Invalid or duplicate fixed block id');
+    }
+  }
   final protected = [...fixed]..sort((a, b) => a.start.compareTo(b.start));
   for (var i = 0; i < protected.length; i++) {
     final block = protected[i];
