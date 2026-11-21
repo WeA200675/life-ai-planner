@@ -237,3 +237,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Blocker:** Android-Plattformgerüst/Lockfile nicht dauerhaft versioniert, Release-APK und Geräteabnahme fehlen; öffentliches Repository, keine Secrets oder persönlichen Testdaten.
 - **Nächster Schritt:** Flutter-CI für `9726094` auswerten und gegebenenfalls reparieren; Android-Gerüst reproduzierbar einchecken und Offline-Tagesplanung mit Scheduler-Anbindung priorisieren.
 - **Abnahme:** M1–M4 weiterhin offen.
+
+
+## APK-Verifikation – 2026-11-21 (Priorität Android-Testbarkeit)
+- Ausgangs-HEAD: `dc5166c86912370f38c6426c7a1569dd686379d0`; offene PRs/Issues: 0/0.
+- Verifizierte vorherige CI: Flutter-Lauf [44872007704](https://github.com/WeA200675/life-ai-planner/actions/runs/44872007704) für `9726094` **success**; Scheduler-Lauf [44872017776](https://github.com/WeA200675/life-ai-planner/actions/runs/44872017776) für `dc5166c` **success**. Dies belegt nicht den neuen Workflow.
+- Änderung: `.github/workflows/flutter.yml` prüft vor Artefakt-Upload jetzt APK-Datei auf Existenz und nichtleere Größe, ZIP-Archivintegrität via `unzip -t`, erstellt `app-debug.apk.sha256` und lädt APK und Prüfsumme gemeinsam hoch. Aufbewahrung 14 Tage. Code-Commit: `086f846398a8c7aeb7acf75221cb67753b02d922`.
+- **Testnachweis/Blocker:** Die YAML-Änderung ist committed, aber ein neuer CI-Lauf für diesen Commit war beim Abruf noch nicht sichtbar; daher sind APK-Integritätsprüfung und SHA-256-Artefakt noch nicht als erfolgreich bestätigt. Kein Android-Gerätetest. Android-Plattformgerüst wird derzeit im CI generiert und ist noch nicht versioniert.
+- **Nächster Schritt:** Flutter-Workflow für `086f846` abwarten bzw. auslösen, ZIP-/Checksum-Prüfung und Artefakt prüfen; anschließend Android-Gerüst dauerhaft versionieren und Offline-Tagesplanung mit Scheduler verknüpfen. M1–M4-Abnahme weiterhin offen.
