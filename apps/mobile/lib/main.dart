@@ -119,6 +119,9 @@ class LocalTasks {
   Future<List<SavedPlan>> planHistory({int limit = 30, int offset = 0}) async =>
       PlanSnapshotStore(await database).history(limit: limit, offset: offset);
 
+  Future<List<SavedPlan>> planHistoryBefore(int id, {int limit = 30}) async =>
+      PlanSnapshotStore(await database).historyBefore(id, limit: limit);
+
   Future<SavedPlan?> planById(int id) async =>
       PlanSnapshotStore(await database).byId(id);
 
@@ -581,8 +584,8 @@ class _TaskScreenState extends State<TaskScreen> {
                           historyError = null;
                         });
                         try {
-                          final next = await _store.planHistory(
-                            limit: pageSize, offset: entries.length,
+                          final next = await _store.planHistoryBefore(
+                            entries.last.id, limit: pageSize,
                           );
                           if (!historyContext.mounted) return;
                           updateDialog(() {
