@@ -356,3 +356,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Testnachweis:** GitHub-Commits bestätigt; [Flutter-CI 44898255555](https://github.com/WeA200675/life-ai-planner/actions/runs/44898255555) und [Scheduler-CI 44898255599](https://github.com/WeA200675/life-ai-planner/actions/runs/44898255599) für `43d3cbb` waren bei Prüfung **queued**, kein erfolgreicher Lauf für die Änderung belegt. Lokaler Flutter-Test/Android-Gerätetest nicht ausgeführt.
 - **Blocker:** Android-Geräteabnahme und M1–M4-Gesamtabnahme offen; öffentliches Repo erfordert Verzicht auf private Daten und Secrets.
 - **Nächster Schritt:** CI-Ergebnisse für `43d3cbb` prüfen und ggf. korrigieren; danach SQLite-Deadline-Persistenz-Regression und Deadline-Konflikte in der Tagesvorschau weiter absichern.
+
+## Offline-Deadline-Persistenzintegration – 2026-11-21 (12:41 Europe/Berlin)
+- Ausgangs-HEAD: `81ea6b4d016117a4af9dadf8127dbecf9747fdc4`; vor Schreibzugriff HEAD erneut geprüft. Offene Issues/PRs: 0/0.
+- Vorherige CI: Scheduler und Flutter für Code-HEAD `43d3cbb` jeweils **success** (GitHub Actions); Scheduler für Ausgangs-HEAD `81ea6b4` **success**.
+- Neue Datei `apps/mobile/test/deadline_persistence_integration_test.dart`: zwei synthetische FFI-SQLite-Integrationstests prüfen persistierte UTC-Deadline nach Datenbank-Neuöffnung, Löschung einer Deadline und Weitergabe an die Offline-Tagesplanung sowie Zurückstellung abgelaufener Deadlines.
+- Code-Commit: `f16a3f738d4665c58f01a1161e18e0239b27bbbc`.
+- **Verifikation:** GitHub-Commit und Branch-Update bestätigt. Die neuen Tests wurden in diesem Lauf **nicht lokal ausgeführt**; GitHub Actions für den neuen Code-HEAD muss separat abgeschlossen werden. Kein erfolgreicher Testlauf ohne passenden SHA behauptet.
+- **Blocker:** Android-Geräteabnahme einschließlich gemeldeter Flutter-Assertion weiterhin offen; vollständige M1–M4-Abnahme nicht belegt. Öffentliches Repository: ausschließlich synthetische Testdaten, keine Secrets.
+- **Nächster Schritt:** Flutter-CI für `f16a3f7` prüfen und Fehler beheben; danach echte Deadline-Setter-Persistenz mit injizierbarer DB testen, Fälligkeitskonflikte in Tagesvorschau erklären und Android-Gerätetest durchführen.
