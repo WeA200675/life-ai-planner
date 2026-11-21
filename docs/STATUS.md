@@ -181,3 +181,15 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Blocker:** CI-Ergebnis der Fixes abwarten; Android-Gerüst und Lockfile noch nicht versioniert, Geräte-/Release-Abnahme fehlt. Repo öffentlich, keine privaten Daten oder Secrets committen.
 - **Nächster Schritt:** neuen Flutter-Actions-Lauf prüfen und verbliebene Analyzer-/Test-/Gradle-Fehler korrigieren; danach Android-Gerüst/SDK-Version pinnen und Offline-Tagesplanung integrieren.
 - **Gesamtabnahme:** M1–M4 offen.
+
+
+## Offline-Löschung mit Bestätigung – 2026-11-21 (04:40 Europe/Berlin)
+- Vor Änderungen verifizierter HEAD: `5e58d089e87d95dbdade874cdd9e02aa9897dd82`; offene Issues und PRs: jeweils 0.
+- Vorherige Flutter-CI [44860966659](https://github.com/WeA200675/life-ai-planner/actions/runs/44860966659) für `8ea8002`: **success**. Scheduler-CI [44860979021](https://github.com/WeA200675/life-ai-planner/actions/runs/44860979021) für `5e58d08`: **success**. Das belegt keine Tests für die neuen Änderungen.
+- Neu in `apps/mobile/lib/main.dart`: lokale SQLite-Aufgabenlöschung über parametrisierte ID; expliziter Bestätigungsdialog mit Abbrechen-Option, Fehleranzeige und Sperre gegen parallele Löschaktionen. Kein Cloud-Zugriff erforderlich.
+- Regressionstest in `apps/mobile/test/offline_task_test.dart`: ungültige Lösch-IDs werden vor Datenbankzugriff abgewiesen.
+- Code-Commits: `15d16287b12f2c357800af8466e5627c69af8e1d` (Implementierung), `a5a66a56bd85677e99aeb061e313c0ce8e2c7fa5` (Test).
+- **Verifikation:** GitHub-Commits bestätigt; neue Flutter-/Scheduler-CI nach Implementierungs-Commit beim Abruf **queued** ([Flutter 44862228129](https://github.com/WeA200675/life-ai-planner/actions/runs/44862228129)). Für Test-Commit noch kein abgeschlossenes Ergebnis verifiziert; kein lokaler Flutter-Testlauf und kein Gerätetest behauptet.
+- **Blocker:** Flutter/Android lokal nicht verifiziert, APK und manuelle Geräteabnahme ausstehend; Repository öffentlich, daher keine Secrets oder personenbezogenen Testdaten.
+- **Nächster Schritt:** CI für neuesten HEAD auswerten, bei Fehlern reparieren; anschließend Android-Plattformgerüst dauerhaft versionieren und lokale Tagesplanung/Scheduler-Anbindung ergänzen.
+- **Gesamtabnahme:** M1–M4 weiterhin offen.
