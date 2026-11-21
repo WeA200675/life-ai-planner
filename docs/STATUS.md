@@ -124,3 +124,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Blocker:** GitHub Actions für den neuen HEAD prüfen, Flutter-Toolchain/Android-Gerät für Build und Abnahme fehlen; Backup-Verschlüsselung und sichere Restore-Umschaltung noch offen.
 - **Nächster Schritt:** GitHub Actions für `6ec1469` prüfen und gegebenenfalls korrigieren; danach Android-Flutter-MVP (lokale Taskliste, Textinput, Tagesansicht) priorisieren.
 - **Abnahme:** M1–M4 weiterhin offen.
+
+## Flutter Offline-Text-MVP – 2026-11-21 (Folgelauf)
+- Ausgangs-HEAD vor Änderungen: `667ce62b459ea0b7ed1825eb69185618139256ac`. Offene GitHub-Issues/PRs: 0 (Issue-Suche). Combined Status des Ausgangs-HEAD enthielt keine klassischen Statuschecks; dies ist **kein** CI-Erfolgsnachweis.
+- Neuer Flutter-Quellcode unter `apps/mobile/lib/main.dart` mit lokalem SQLite-Taskstore, Texteingabe (Offline-Fallback), Taskliste, Abschlussmarkierung, Fehleranzeige und Eingabevalidierung. `apps/mobile/pubspec.yaml` enthält Flutter-, sqflite- und path-Abhängigkeiten. `apps/mobile/README.md` dokumentiert Buildschritte und Grenzen.
+- Code-Commits: `012b79d9a200bd4a2260754acbf11506d2129c41`, `6489d0820f685e8933b221cf0bf79dcbf71ea78f`, `39343c3505c1af37aa898450fa872e75d351d4c3`.
+- **Testnachweis:** GitHub-Dateien erfolgreich angelegt. Weder Flutter SDK/Android Toolchain noch Flutter-Testausführung oder APK-Build in diesem Lauf nachgewiesen. Mobile-Code daher ausdrücklich **unverifiziert**. Android-Plattformverzeichnis fehlt und muss generiert und eingecheckt werden.
+- **Blocker:** fehlende Android-Plattformdateien, Flutter-/Android-Build- und Gerätetests; keine gemeinsame Datenbankschema-/Sync-Integration mit Python. Repo öffentlich; keine Secrets oder personenbezogenen Testdaten.
+- **Nächster Schritt:** Android-Plattformgerüst erzeugen; Flutter Analyze/Tests/Debug-APK in CI ausführen; Fehler korrigieren und anschließend lokale Tagesplanung mit Scheduler-Anbindung und Sprach-Textfallback erweitern.
+- **Abnahme:** M1–M4 weiterhin nicht vollständig.
