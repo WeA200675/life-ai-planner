@@ -164,4 +164,19 @@ void main() {
     expect((await store.latest())?.id, ids.last);
   });
 
+  test('cursor history remains stable when a new plan is accepted', () async {
+    final ids = <int>[];
+    for (var i = 0; i < 5; i++) {
+      ids.add(await store.accept(plan('task-$i'), start, end));
+    }
+    final first = await store.history(limit: 2);
+    await store.accept(plan('newer'), start, end);
+    final second = await store.historyBefore(first.last.id, limit: 2);
+    expect(first.map((p) => p.id), [ids[4], ids[3]]);
+    expect(second.map((p) => p.id), [ids[2], ids[1]]);
+    await expectLater(store.historyBefore(0), throwsArgumentError);
+    await expectLater(store.historyBefore(ids.last, limit: 101),
+        throwsArgumentError);
+  });
+
 }
