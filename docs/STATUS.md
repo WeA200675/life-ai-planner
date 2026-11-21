@@ -637,3 +637,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - `fe7e4b2284f865517c23e85af30171db7a9748e7`: Tests für deterministischen Export, UTC, Whitelist-Felder, ungültige und leere Pläne.
 - **Grenze:** Export kopiert nur einen Plan als Text in die Zwischenablage; noch kein Datei-Backup oder Import, keine automatische Synchronisation. Zwischenablage kann von anderen Apps gelesen werden: keine sensiblen Task-Titel im Export enthalten, nur Task-IDs und Zeitblöcke.
 - **CI:** Flutter-Lauf für `8db58f28` [44942543213](https://github.com/WeA200675/life-ai-planner/actions/runs/44942543213) success. Neue Export-CI für `fe7e4b22` zum Dokumentationszeitpunkt queued, noch nicht freigegeben.
+
+
+## M6 Offline-Aufgabenbackup – 2026-11-21
+- Ausgangs-HEAD `20d98a1998e4d37d454c8569e932cee1a7044f5a`.
+- `e449197f9ec8f1fc32a36d8856bff94a95ae0e73`, `8a6b4347cc33ce7c34eccccd285eaae3ab1af80f`: JSON-Sicherung aller Task-Spalten einschließlich IDs, Titel, Erledigtstatus, Dauer, Priorität und UTC-Deadline; Formatversion 1, strikte Validierung, max. 10.000 Tasks und 8 MiB.
+- Wiederherstellung: transaktional, vollständiger Austausch **nur nach expliziter Nutzerbestätigung**; Daten-Fingerprint verhindert veraltete Bestätigung und stille Überschreibung zwischen Vorschau und Commit.
+- `5573dda99ca745d9ea3fe669e196fe81cb55a270`: Tests für deterministischen Roundtrip, falsches Schema, Duplikate, veraltete Bestätigung, leere Sicherung.
+- `6cf819da95d9281982c0fa3d209c06b99d2aa36b`: Android-Buttons **Aufgaben sichern** und **Backup einlesen**, Zwischenablage-Workflow, Bestätigungsdialog und Fehler-Fallback.
+- **Wichtige Einschränkungen:** Backup betrifft ausschließlich Aufgaben, **nicht** Planhistorie oder eine vollständige App-Sicherung. Planhistorie bleibt beim Task-Restore erhalten, historische Task-IDs können danach andere/fehlende Aufgaben referenzieren. Zwischenablage kann sensible Titel enthalten; Nutzer muss diese selbst sicher verwahren. Noch kein Dateiexport, keine Dateiauswahl, keine automatische Synchronisierung.
+- **Abnahme:** GitHub-Commits bestätigt, neue Flutter-CI und Android-APK noch nicht als grün nachgewiesen; reale Geräteprüfung ausstehend.
