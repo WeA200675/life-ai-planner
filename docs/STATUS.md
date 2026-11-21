@@ -376,3 +376,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Testnachweis:** GitHub-Commits bestätigt. Für den neuen UI-HEAD ist noch kein erfolgreicher Flutter-CI-Lauf belegt; lokale Flutter-Tests und Android-Geräteabnahme wurden nicht ausgeführt. Neue Tests sind implementiert, nicht als bestanden ausgegeben.
 - **Blocker:** Android-Geräteabnahme, vollständige M1–M4-Abnahme und End-to-End-Tests ausstehend. Öffentliches Repo: keine persönlichen Daten oder Secrets.
 - **Nächster Schritt:** Flutter-CI des neuen HEAD prüfen und Fehler beheben; danach UI-/Widget-Test für die Zurückstellungsanzeige und robuste Deadline-Setter-Persistenz mit injizierbarer Datenbank ergänzen.
+
+## Flutter-Planung: Schutz vor ID-Kollisionen – 2026-11-21
+- Vor Änderungen verifizierter HEAD: `a1ff35425c164f8c209d11f38ebd4a8d3ee93d53`; offene Issues 0, offene PRs 0.
+- Fehlerbehebung: `planOfflineDay` weist jetzt leere, doppelte oder mit Aufgaben kollidierende Fixtermin-IDs zurück. Damit bleiben Blockkennungen in der Vorschau eindeutig und Fixtermine werden nicht versehentlich mit Aufgaben verwechselt.
+- Regressionstest: `apps/mobile/test/offline_day_planner_test.dart` prüft drei Kollisionsfälle mit ausschließlich synthetischen Daten.
+- Code-Commit: `e84cd0a664c40d5d0bd01a71d66e1d7dee88e748`; Test-Commit: `65a01193134bae39de49a8e3a902806fd69d166b`.
+- Testnachweis: GitHub-Schreibvorgänge bestätigt; vorheriger Scheduler-CI-Lauf auf `a1ff354` war erfolgreich. Flutter-CI für den neuen Test-Commit beim Prüfen noch nicht nachgewiesen. Keine lokale Flutter-Testausführung oder Geräteabnahme behauptet.
+- Blocker: Android-Gerätetest und vollständige M1–M4-Abnahme ausstehend; öffentliches Repository, keine personenbezogenen Daten/Secrets.
+- Nächster Schritt: Flutter-CI für `65a0119` verifizieren, Fehler beheben und anschließend weitere Offline-Planungs-/Persistenzgrenzen testen.
