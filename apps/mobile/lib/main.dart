@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'plan_export.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import 'offline_task_plan_adapter.dart';
@@ -557,6 +559,28 @@ class _TaskScreenState extends State<TaskScreen> {
                                 ),
                               ),
                               actions: [
+                                TextButton.icon(
+                                  onPressed: () async {
+                                    try {
+                                      await Clipboard.setData(ClipboardData(
+                                        text: exportSavedPlanJson(selected),
+                                      ));
+                                      if (!detailContext.mounted) return;
+                                      ScaffoldMessenger.of(detailContext)
+                                          .showSnackBar(const SnackBar(
+                                            content: Text('Plan-JSON kopiert.'),
+                                          ));
+                                    } catch (_) {
+                                      if (!detailContext.mounted) return;
+                                      ScaffoldMessenger.of(detailContext)
+                                          .showSnackBar(const SnackBar(
+                                            content: Text('Export fehlgeschlagen.'),
+                                          ));
+                                    }
+                                  },
+                                  icon: const Icon(Icons.copy),
+                                  label: const Text('JSON kopieren'),
+                                ),
                                 TextButton(
                                   onPressed: () => Navigator.pop(detailContext),
                                   child: const Text('Schließen'),
