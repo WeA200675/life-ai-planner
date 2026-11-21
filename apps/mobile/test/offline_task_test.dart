@@ -41,6 +41,19 @@ void main() {
     expect(tasks.length, 3);
   });
 
+  test('offline search combines with status filter and preserves source', () {
+    final tasks = <Map<String, Object?>>[
+      {'id': 1, 'title': 'Buy Bread', 'done': 0},
+      {'id': 2, 'title': 'BUY MILK', 'done': 1},
+      {'id': 3, 'title': 'Call', 'done': 0},
+    ];
+    expect(visibleTasks(tasks, TaskView.open, ' buy ').map((t) => t['id']), [1]);
+    expect(visibleTasks(tasks, TaskView.completed, 'BUY').map((t) => t['id']), [2]);
+    expect(visibleTasks(tasks, TaskView.all, 'missing'), isEmpty);
+    expect(visibleTasks(tasks, TaskView.all, '  ').length, 3);
+    expect(tasks.length, 3);
+  });
+
   testWidgets('offline task filters remain available without database',
       (tester) async {
     await tester.pumpWidget(const PlannerApp());
@@ -52,7 +65,8 @@ void main() {
   testWidgets('offline text fallback is always visible', (tester) async {
     await tester.pumpWidget(const PlannerApp());
     expect(find.text('Life AI Planner – Offline'), findsOneWidget);
-    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byType(TextField), findsNWidgets(2));
+    expect(find.text('Aufgaben suchen'), findsOneWidget);
     expect(find.byTooltip('Aufgabe speichern'), findsOneWidget);
   });
 }
