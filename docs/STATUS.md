@@ -677,3 +677,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Einschränkung:** Restore bewusst nur als Bibliotheksfunktion in leere Datenbank, **nicht** als UI-Import in bestehende App integriert. Noch keine gemeinsame atomare Sicherung von Tasks und Historie, kein Verschlüsselungs-/Dateiauswahl-Workflow, keine Geräteabnahme.
 - **Nächster Schritt:** neuen Flutter-CI-Lauf prüfen und ggf. korrigieren; dann sichere kombinierte Task-/Planhistorie-Sicherung mit Konsistenzprüfung und expliziter Nutzerfreigabe implementieren.
 - **Abnahme:** M1–M4 nicht vollständig.
+
+
+## M4 Restore-CI-Reparatur – 2026-11-21 (22:38 Europe/Berlin)
+- Ausgangs-HEAD `22cb181d9e5ca5b1692401c6f12accef1540992b`; README, IMPLEMENTATION_PLAN und STATUS geprüft. Offene PR #1 (M3-Replanning), keine separaten Issues.
+- Scheduler [44951078019](https://github.com/WeA200675/life-ai-planner/actions/runs/44951078019) für Ausgangs-HEAD **success**. Flutter [44951063222](https://github.com/WeA200675/life-ai-planner/actions/runs/44951063222) für `8f990b78` **failure**: Analyse grün, 82 Tests bestanden, genau ein Restore-Roundtrip-Test fehlgeschlagen (`Bad state: Plan history must be empty before restoration`); APK-Schritt deshalb übersprungen.
+- Ursache anhand des Testcodes: Source und Target wurden mit `openDatabase(inMemoryDatabasePath)` geöffnet; sqflite kann bei identischem Pfad dieselbe Verbindung wiederverwenden, wodurch das angeblich leere Ziel bereits Source-Daten enthielt. Das ist eine fehlerhafte Testisolation, nicht der Beleg für einen Restore-Produktionsfehler.
+- Korrektur-Commit `7ec9c94ed9037d0e759bac230fc296b1ce3950cf`: Test verwendet jetzt zwei getrennte temporäre SQLite-Dateipfade, schließt beide Verbindungen und entfernt das temporäre Verzeichnis.
+- **Nachweis:** GitHub-Commit erfolgreich. CI/Flutter-Test und APK-Build für den Korrektur-Commit noch nicht als grün bestätigt; keine lokale Testausführung behauptet.
+- **Nächster Schritt:** Flutter-CI dieses Commits prüfen; falls grün, kombiniertes Task+History-Backup mit atomarem Import und expliziter Bestätigung entwickeln. Weiterhin fehlen reale Android-Geräteabnahme, Release-Build, M1–M4-Gesamtabnahme.
