@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import 'offline_task_plan_adapter.dart';
 import 'local_task_schema.dart';
 import 'planner_theme.dart';
+import 'deadline_presentation.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -529,6 +530,9 @@ class _TaskScreenState extends State<TaskScreen> {
                         key: ValueKey(task['id']),
                         value: done,
                         title: Text(task['title'] as String),
+                        subtitle: task['deadline_utc_ms'] is int
+                            ? Text(deadlineLabel(task['deadline_utc_ms'] as int, DateTime.now()))
+                            : null,
                         onChanged: _busy ? null : (value) => _toggle(task['id'] as int, value ?? false),
                         secondary: Row(
                           mainAxisSize: MainAxisSize.min,
