@@ -320,3 +320,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Test-Commit `bbb544c0f3ade9d3ebe1e49bd090bbdf96c6107c`: Regressionstest für ungültige IDs und Fristen vor Unix-Epoch, noch vor Datenbankzugriff. **Keine Ausführung der neuen Tests bestätigt**, Flutter-CI für Test-Commit zum Dokumentationszeitpunkt noch nicht ausgewertet.
 - **Blocker:** Deadline-Eingabe in Flutter fehlt, echte SQLite-Schreib-/Lese-Integration für Setter noch nicht testbestätigt, Android-Gerätetest zur Flutter-Assertion offen. Keine M1–M4-Gesamtabnahme.
 - **Nächster Schritt:** CI für `bbb544c` prüfen und reparieren, Deadline-Setter mit sqflite_common_ffi persistenztesten, dann sichere Deadline-UI ergänzen; Debug-APK auf Android starten und gegebenenfalls vollständigen Stacktrace sichern. Keine Secrets oder personenbezogenen Testdaten committed.
+
+## Einheitliches Midnight-Red-Design – 2026-11-21 (Vormittagslauf)
+- README, Implementierungsplan und Status gelesen; offene Issues und PRs: jeweils 0 laut GitHub-Suche.
+- Nutzerentscheidung umgesetzt: kein Violett/Lila. Zentrale dunkle Theme-Tokens in `apps/mobile/lib/planner_theme.dart` mit Anthrazit, Rubinrot, Korallrot, Bordeaux und Türkis. `PlannerApp` nutzt das Theme für Aufgabenansicht und Tagesvorschau einschließlich Dialogen. Keine Änderung an SQLite-Daten, Scheduler oder API.
+- Theme-Regressionstests in `apps/mobile/test/planner_theme_test.dart` für Farbwerte und einfache Offline-Darstellung ergänzt. Wachseffekte ausdrücklich **nicht** implementiert; spätere optionale Ausbaustufe mit Performance-Fallback.
+- Code-/Test-Commits: `add90583de1daba9f6c7a4904b8a4828ebc57620`, `74322023085587fd1ccfdacd7aff20cb654018c0`, `84f7e68e91b546a2e6593c6b75a44c91f99d0612`, `1bc58d5d7c7650e13f2c123d1d41fe2ca18e8e21`.
+- **Testnachweis:** GitHub-Schreiboperationen bestätigt; für diese Änderungen weder lokale Flutter-Testausführung noch abgeschlossener GitHub-Actions-Erfolg nachgewiesen. Keine Android-Geräteabnahme.
+- **Blocker/Nächster Schritt:** Flutter-CI für neuesten HEAD prüfen und Fehler beheben, dann Deadline-Setter mit SQLite-Integrationstest absichern und Deadline-UI ergänzen. Gemeldete Flutter-Assertion auf Gerät erneut testen. M1–M4 weiterhin offen; öffentliches Repository, keine Secrets oder persönlichen Testdaten.
