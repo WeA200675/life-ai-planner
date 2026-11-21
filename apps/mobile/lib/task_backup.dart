@@ -18,8 +18,8 @@ class TaskBackup {
 }
 
 Map<String, Object?> _validateTask(Map<String, Object?> row) {
-  if (row.keys.toSet().difference(_columns.toSet()).isNotEmpty ||
-      row.keys.toSet().difference(_columns.toSet()).length != 0 ||
+  if (row.length != _columns.length ||
+      row.keys.toSet().difference(_columns.toSet()).isNotEmpty ||
       !_columns.every(row.containsKey)) {
     throw const FormatException('Unexpected or missing task fields');
   }
