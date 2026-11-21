@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import 'offline_task_plan_adapter.dart';
+import 'local_task_schema.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,13 +17,10 @@ class LocalTasks {
     final root = await getDatabasesPath();
     return _db = await openDatabase(
       p.join(root, 'life_ai_planner.db'),
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute(
-          'CREATE TABLE tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, '
-          'title TEXT NOT NULL CHECK(length(trim(title)) > 0), '
-          'done INTEGER NOT NULL DEFAULT 0 CHECK(done IN (0, 1)))',
-        );
+      version: 2,
+      onCreate: (db, version) => createTaskSchema(db),
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) await migrateTasksV1ToV2(db);
       },
     );
   }
@@ -39,6 +37,22 @@ class LocalTasks {
     }
     final db = await database;
     await db.insert('tasks', {'title': clean, 'done': 0});
+  }
+
+  Future<void> setPlanningMetadata(int id, {int? minutes, int priority = 0}) async {
+    if (id <= 0) throw ArgumentError.value(id, 'id', 'Must be positive');
+    if (minutes != null && (minutes < 1 || minutes > 1440)) {
+      throw ArgumentError.value(minutes, 'minutes', 'Must be 1–1440');
+    }
+    if (priority < 0 || priority > 10) {
+      throw ArgumentError.value(priority, 'priority', 'Must be 0–10');
+    }
+    final db = await database;
+    final changed = await db.update(
+      'tasks', {'minutes': minutes, 'priority': priority},
+      where: 'id = ?', whereArgs: [id],
+    );
+    if (changed != 1) throw StateError('Task not found or update was not unique');
   }
 
   Future<void> rename(int id, String title) async {
