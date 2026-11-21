@@ -518,3 +518,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Regressionstests `406efbcd6118821bd72392143a7d0a0dc5a25bfa`: frühe Deadline trotz späterer freier Gaps; nachfolgende Aufgabe weiterhin planbar; exakte Deadline-Grenze zulässig.
 - **Verifikation:** GitHub-Commits bestätigt. Neue CI und Benchmark-Ergebnisse beim Schreiben noch nicht als erfolgreich belegt; kein lokaler Testlauf und keine Android-Geräteabnahme.
 - **Blocker:** M1–M4-Abnahme, Android-Gerätetest, offener PR #1. Nächster Schritt: Scheduler-CI auf Test-SHA kontrollieren; feste synthetische Benchmark-Baseline erfassen, dann PR #1 sicher integrieren und Android-Replanning-UI mit Undo fertigstellen.
+
+
+## Performance-Masterplan P0–P7 – 2026-11-21
+- Ausgangs-HEAD `32f939c023c4e4b1f4b0156aed63d5c015eccf8d`. Neuer dokumentierter Plan: [PERFORMANCE_MASTERPLAN.md](PERFORMANCE_MASTERPLAN.md), Commit `1fc74d6979f03dca3431a1cbfa1176b09cf13760`.
+- Acht prüfbare Meilensteine: P0 reproduzierbare Baseline; P1 Scheduler; P2 SQLite; P3 Flutter; P4 Replanning; P5 Sprache/AI; P6 Stresstests/CI; P7 Release und Gerätetest. Konkrete Ziele sind ausdrücklich **Vorgaben, keine Messwerte**.
+- **Nachweis:** Dokument auf GitHub committed; keine Runtime-Codeänderung und kein neuer Performance-/Android-Test. Frühere CI-Erfolge dürfen nicht als Messbeleg verwendet werden.
+- **Blocker:** Benchmark-Harness und Messungen fehlen; PR #1 ist offen; Android-Geräteabnahme und M1–M4-Abnahme ausstehend.
+- **Nächster Schritt:** P0 Benchmark-Harness mit synthetischen Fixtures implementieren, danach anhand realer Profile die größten Engpässe optimieren; parallel konfliktfrei P4 Android-Replanning fertigstellen.
