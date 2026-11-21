@@ -25,14 +25,18 @@ jobs:
         run: |
           flutter --version
           java -version
+      - name: Generate Android platform scaffold when absent
+        run: |
+          if [ ! -f android/app/build.gradle.kts ] && [ ! -f android/app/build.gradle ]; then
+            flutter create --no-pub --platforms=android --project-name life_ai_planner .
+          fi
+          test -f android/app/src/main/AndroidManifest.xml
       - name: Resolve dependencies
         run: flutter pub get
       - name: Analyze
         run: flutter analyze
       - name: Test
         run: flutter test
-      - name: Generate missing Android platform scaffold
-        run: flutter create --platforms=android --project-name life_ai_planner .
       - name: Build Android debug APK
         run: flutter build apk --debug
       - name: Upload debug APK
