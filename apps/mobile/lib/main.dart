@@ -41,9 +41,13 @@ class LocalTasks {
   }
 
   Future<void> setDone(int id, bool done) async {
+    if (id <= 0) throw ArgumentError.value(id, 'id', 'Must be positive');
     final db = await database;
-    await db.update('tasks', {'done': done ? 1 : 0},
+    final changed = await db.update('tasks', {'done': done ? 1 : 0},
         where: 'id = ?', whereArgs: [id]);
+    if (changed != 1) {
+      throw StateError('Task not found or update was not unique');
+    }
   }
 
   Future<bool> delete(int id) async {
@@ -161,11 +165,15 @@ class _TaskScreenState extends State<TaskScreen> {
   }
 
   Future<void> _toggle(int id, bool done) async {
+    if (_busy) return;
+    setState(() => _busy = true);
     try {
       await _store.setDone(id, done);
       await _refresh();
     } catch (_) {
       if (mounted) setState(() => _error = 'Änderung konnte nicht gespeichert werden.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
