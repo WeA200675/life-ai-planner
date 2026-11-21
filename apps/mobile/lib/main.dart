@@ -116,6 +116,12 @@ class LocalTasks {
       PlanSnapshotStore(await database).accept(
           plan, start, end, expectedTasks: expectedTasks);
 
+  Future<List<SavedPlan>> planHistory({int limit = 30, int offset = 0}) async =>
+      PlanSnapshotStore(await database).history(limit: limit, offset: offset);
+
+  Future<SavedPlan?> planById(int id) async =>
+      PlanSnapshotStore(await database).byId(id);
+
   Future<SavedPlan?> latestPlan() async =>
       PlanSnapshotStore(await database).latest();
 
@@ -484,6 +490,91 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 
+  Future<void> _showPlanHistory() async {
+    if (_busy) return;
+    try {
+      final entries = await _store.planHistory();
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (historyContext) => AlertDialog(
+          title: const Text('Letzte Tagespläne'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: entries.isEmpty
+                ? const Text('Noch keine gespeicherten Tagespläne.')
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: entries.length,
+                    itemBuilder: (context, index) {
+                      final entry = entries[index];
+                      final timestamp = DateTime.fromMillisecondsSinceEpoch(
+                          entry.createdUtcMs, isUtc: true).toLocal();
+                      return ListTile(
+                        title: Text('Plan #${entry.id}'),
+                        subtitle: Text(timestamp.toString()),
+                        onTap: () async {
+                          try {
+                            final selected = await _store.planById(entry.id);
+                            if (!mounted || !historyContext.mounted) return;
+                            if (selected == null) {
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                const SnackBar(content: Text('Plan nicht mehr vorhanden.')),
+                              );
+                              return;
+                            }
+                            await showDialog<void>(
+                              context: historyContext,
+                              builder: (detailContext) => AlertDialog(
+                                title: Text('Plan #${selected.id}'),
+                                content: SizedBox(
+                                  width: double.maxFinite,
+                                  child: ListView(
+                                    shrinkWrap: true,
+                                    children: [
+                                      for (final block in selected.blocks)
+                                        ListTile(
+                                          title: Text(block.id),
+                                          subtitle: Text(
+                                            '${TimeOfDay.fromDateTime(block.start.toLocal()).format(detailContext)}'
+                                            ' – ${TimeOfDay.fromDateTime(block.end.toLocal()).format(detailContext)}',
+                                          ),
+                                        ),
+                                      if (selected.blocks.isEmpty)
+                                        const Text('Keine Zeitblöcke gespeichert.'),
+                                    ],
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(detailContext),
+                                    child: const Text('Schließen'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } catch (_) {
+                            if (mounted) setState(() =>
+                                _error = 'Historischer Plan nicht verfügbar.');
+                          }
+                        },
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(historyContext),
+              child: const Text('Schließen'),
+            ),
+          ],
+        ),
+      );
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Planhistorie nicht verfügbar.');
+    }
+  }
+
   Future<void> _showSavedPlan() async {
     if (_busy) return;
     try {
@@ -636,6 +727,14 @@ class _TaskScreenState extends State<TaskScreen> {
                 onPressed: _busy ? null : _showSavedPlan,
                 icon: const Icon(Icons.history),
                 label: const Text('Gespeicherten Plan anzeigen'),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _busy ? null : _showPlanHistory,
+                icon: const Icon(Icons.list_alt),
+                label: const Text('Planhistorie'),
               ),
             ),
             if (_error != null)
