@@ -526,3 +526,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Nachweis:** Dokument auf GitHub committed; keine Runtime-Codeänderung und kein neuer Performance-/Android-Test. Frühere CI-Erfolge dürfen nicht als Messbeleg verwendet werden.
 - **Blocker:** Benchmark-Harness und Messungen fehlen; PR #1 ist offen; Android-Geräteabnahme und M1–M4-Abnahme ausstehend.
 - **Nächster Schritt:** P0 Benchmark-Harness mit synthetischen Fixtures implementieren, danach anhand realer Profile die größten Engpässe optimieren; parallel konfliktfrei P4 Android-Replanning fertigstellen.
+
+
+## P0 Benchmark-Harness – 2026-11-21
+- Ausgangs-HEAD `09b318ed013f1f81cc30f8bd9109d5e713d9eaef`.
+- Implementiert `tools/benchmark_scheduler.py`: deterministische synthetische Lastfälle (standardmäßig 100/1000/10000 Tasks), Seed, Warmup, Wiederholungen, median/p95/min/max, JSON-Export und Laufzeitumgebung. Commit `c2c87360f2cf6f1ec428e85d1da69c10c27b6dd9`.
+- Tests `tests/test_benchmark_scheduler.py`: Reproduzierbarkeit, Fixblock-Planbarkeit, Perzentilberechnung, ungültige Parameter und Metadaten. Commit `7149371fb0375968b8f4aea21f15bebbf7d740e2`.
+- **Testnachweis:** Dateien auf GitHub committed. Neue CI-Resultate zum Dokumentationszeitpunkt noch nicht bestätigt. Keine gemessene Beschleunigung behauptet. Kein lokaler Android-Test.
+- **Umfang:** Dies ist ein begrenzter sinnvoller Code-Schnitt und ausdrücklich **keine 8000-Zeilen-Implementierung**; Codeumfang ist kein Ersatz für Abnahmekriterien.
+- **Blocker:** Baseline-Ergebnisse auf Zielgerät und CI ausstehend; PR #1 offen; M1–M4 nicht abgenommen.
+- **Nächster Schritt:** CI der Tests prüfen, Benchmark-JSON als reproduzierbares Artefakt sichern, Hotspots priorisieren; Android-Replanning-UI inklusive Bestätigung und Undo fertigstellen.
