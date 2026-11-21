@@ -11,8 +11,6 @@ void main() {
     final db = await openDatabase(inMemoryDatabasePath, version: 3,
       onCreate: (database, _) async {
         await createTaskSchema(database);
-        await migrateTasksV1ToV2(database);
-        await migrateTasksV2ToV3(database);
         await database.insert('tasks', {
           'title': 'Important task', 'done': 0,
           'minutes': 25, 'priority': 7,
