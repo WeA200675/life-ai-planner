@@ -50,6 +50,19 @@ void main() {
       const DayTask(id: 'valid', minutes: 1440, priority: 10),
     ]), returnsNormally);
   });
+  test('rejects whitespace-padded IDs without modifying input', () {
+    final task = const DayTask(id: ' task ', minutes: 10);
+    final fixed = DayBlock(' meeting ', start,
+        start.add(const Duration(minutes: 10)));
+    expect(() => planOfflineDay(start, end, [task]), throwsArgumentError);
+    expect(() => planOfflineDay(start, end, [], fixed: [fixed]),
+        throwsArgumentError);
+    expect(task.id, ' task ');
+    expect(fixed.id, ' meeting ');
+    expect(() => planOfflineDay(start, end, [
+      const DayTask(id: 'task', minutes: 10),
+    ]), returnsNormally);
+  });
   test('deadline conflicts are explicit without dropping tasks', () {
     final plan = planOfflineDay(start, end, [
       DayTask(id: 'early', minutes: 40,
