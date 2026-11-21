@@ -170,3 +170,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Infrastrukturblocker:** Lokaler Git-Klon scheitert an DNS-Auflösung von github.com; Änderungen daher ausschließlich über GitHub-Connector mit Blob-SHA-Konfliktschutz vorgenommen. Android-Gerüst wird bisher nur im CI-Workspace erzeugt und ist nicht versioniert.
 - **Nächster Schritt:** Flutter-Actions-Job und Logs überprüfen, ggf. Analyse-/Buildfehler beheben; danach Android-Gerüst und SDK/Lockfile reproduzierbar versionieren, Tagesplanung mit lokalem Scheduler integrieren.
 - **Abnahme:** M1–M4 weiterhin offen; keine Gesamt-Abnahme behauptet.
+
+
+## Flutter-CI-Fehlerbehebung – 2026-11-21 (04:24 Europe/Berlin)
+- Ausgangs-HEAD vor Änderungen: `2bee66e94789649f5b368f137bd9954127b98e5b`; offene Issues 0, PRs 0.
+- Tatsächlicher GitHub-Actions-Nachweis: Scheduler [44856857463](https://github.com/WeA200675/life-ai-planner/actions/runs/44856857463) **success**; Flutter [44856844796](https://github.com/WeA200675/life-ai-planner/actions/runs/44856844796) **failure**, Job 136700926264, Schritt `flutter analyze`.
+- Log-Ursachen: überzählige schließende Klammer in `lib/main.dart:79`; automatisch erzeugter `test/widget_test.dart` referenziert nicht vorhandene `MyApp` und `material_ui`; Flutter 3.50.1 meldet zusätzliche `material.dart`-Deprecation-Infos.
+- Code-Fix `7f2d1780eeb7917f3cf600aa42514671532915db`: überzählige Klammer entfernt. Workflow-Fix `8ea8002bd7f41e28d928ae2e2e4a3aaede6b5701`: ausschließlich beim Generieren des Android-Gerüsts den unpassenden Template-Test entfernen; Analyse mit `--no-fatal-infos`, damit Hinweise weiterhin sichtbar bleiben, aber nicht als Fehler gelten. Echte Analyzer-Fehler bleiben fatal.
+- **Testnachweis:** Ursachen aus echten CI-Logs; Änderungen per GitHub-API committed. Für die Fixes liegt noch **kein** bestätigter erfolgreicher Flutter-Test oder APK-Build vor. Kein lokaler Flutter-Lauf behauptet.
+- **Blocker:** CI-Ergebnis der Fixes abwarten; Android-Gerüst und Lockfile noch nicht versioniert, Geräte-/Release-Abnahme fehlt. Repo öffentlich, keine privaten Daten oder Secrets committen.
+- **Nächster Schritt:** neuen Flutter-Actions-Lauf prüfen und verbliebene Analyzer-/Test-/Gradle-Fehler korrigieren; danach Android-Gerüst/SDK-Version pinnen und Offline-Tagesplanung integrieren.
+- **Gesamtabnahme:** M1–M4 offen.
