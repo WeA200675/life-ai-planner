@@ -446,3 +446,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Verifikation: GitHub-Commits nachgewiesen; Scheduler-CI [44920685414](https://github.com/WeA200675/life-ai-planner/actions/runs/44920685414) für Test-Commit zum Prüfzeitpunkt **queued**, vorheriger Lauf [44920676247](https://github.com/WeA200675/life-ai-planner/actions/runs/44920676247) **in_progress**. Kein neuer Testerfolg behauptet; keine lokale Python- oder Android-Geräteausführung.
 - Blocker: M1–M4 noch nicht vollständig abgenommen, Android-Geräteabnahme fehlt; API absichtlich nur Loopback ohne TLS/Auth, Repo öffentlich – keine persönlichen Daten/Secrets eintragen.
 - Nächster Schritt: neue Scheduler-CI prüfen und ggf. reparieren; danach HTTP-Eingabegrenzen und Offline-API-Fallbacks sowie Android-Widgettests weiter absichern.
+
+## API: nichtstandardisierte JSON-Zahlen zurückweisen – 2026-11-21
+- Ausgangs-HEAD: `d7a60e3ae184729a2eeee00e8609e70fc7809038`; offene Issues/PRs jeweils 0; vor jeder Änderung HEAD neu abgefragt.
+- Ausgangs-CI: Scheduler [44920703100](https://github.com/WeA200675/life-ai-planner/actions/runs/44920703100) **success**. Flutter zuletzt [44915497384](https://github.com/WeA200675/life-ai-planner/actions/runs/44915497384) **success** (älterer Flutter-Code).
+- `services/api/server.py`: Python-JSON-Erweiterungen `NaN`, `Infinity`, `-Infinity` werden durch `parse_constant` mit HTTP 400 abgewiesen, auch bei verschachtelten Daten; verhindert nichtstandardisierte Zahlen in Offline-API-Eingaben.
+- `tests/test_local_api.py`: HTTP-Regressionstest für alle drei Tokens, unveränderten SQLite-Speicher nach Ablehnung und erfolgreiche gültige Folgeanfrage. Nur synthetische Daten.
+- Code-Commit: `3ec654d731503c23082e85264d22adc12a04c69c`; Test-Commit: `59493ad8b12bf96128dfca44dd7a1cf57f4d0cb3`.
+- **Testnachweis:** GitHub-Commits bestätigt; Scheduler-CI für Code [44923787363](https://github.com/WeA200675/life-ai-planner/actions/runs/44923787363) zum Prüfzeitpunkt **in_progress**, für Test [44923797782](https://github.com/WeA200675/life-ai-planner/actions/runs/44923797782) **queued**. Keine lokale Testausführung und kein neuer CI-Erfolg behauptet.
+- **Blocker:** Android-Geräteabnahme, Release-Build und M1–M4-Gesamtabnahme weiterhin offen. API nur Loopback, keine produktive externe Freigabe.
+- **Nächster Schritt:** CI für `59493ad8` prüfen, Fehler beheben; danach API-Schema-/HTTP-Grenzfälle und Android-Widgettests priorisieren.
