@@ -34,7 +34,17 @@ def build_handler(store):
             size = int(raw_size)
             if not 0 < size <= MAX_BODY:
                 raise ValueError("invalid request size")
-            value = json.loads(self.rfile.read(size))
+            raw = self.rfile.read(size)
+            if len(raw) != size:
+                raise ValueError("incomplete request body")
+            def unique_object(pairs):
+                result = {}
+                for key, value in pairs:
+                    if key in result:
+                        raise ValueError("duplicate JSON key")
+                    result[key] = value
+                return result
+            value = json.loads(raw, object_pairs_hook=unique_object)
             if not isinstance(value, dict):
                 raise ValueError("expected JSON object")
             return value
