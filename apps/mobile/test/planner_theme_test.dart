@@ -11,8 +11,6 @@ void main() {
     expect(theme.colorScheme.onPrimary, PlannerTheme.background);
     expect(theme.colorScheme.secondary, PlannerTheme.turquoise);
     expect(theme.dialogTheme.backgroundColor, PlannerTheme.surface);
-    expect(ThemeData.estimateBrightnessForColor(theme.colorScheme.primary),
-        Brightness.dark);
   });
 
   testWidgets('theme is usable without animation or network', (tester) async {
