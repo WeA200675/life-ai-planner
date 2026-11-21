@@ -72,6 +72,36 @@ class LocalApiTests(unittest.TestCase):
         self.assertEqual(self.request("/tasks")[1]["tasks"], [])
         self.assertEqual(self.request("/tasks", {"id": "safe", "title": "Example", "minutes": 30})[0], 200)
 
+    def test_request_framing_rejected_without_mutation(self):
+        import http.client
+        valid = b'{"id":"framed","title":"Example","minutes":30}'
+        for headers in (
+            {"Content-Type": "text/plain"},
+            {"Content-Type": "application/json", "Transfer-Encoding": "chunked"},
+        ):
+            connection = http.client.HTTPConnection("127.0.0.1", self.httpd.server_port, timeout=3)
+            try:
+                connection.request("POST", "/tasks", body=valid, headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 400)
+                response.read()
+            finally:
+                connection.close()
+        connection = http.client.HTTPConnection("127.0.0.1", self.httpd.server_port, timeout=3)
+        try:
+            connection.putrequest("POST", "/tasks")
+            connection.putheader("Content-Type", "application/json")
+            connection.putheader("Content-Length", str(len(valid)))
+            connection.putheader("Content-Length", str(len(valid)))
+            connection.endheaders(valid)
+            response = connection.getresponse()
+            self.assertEqual(response.status, 400)
+            response.read()
+        finally:
+            connection.close()
+        self.assertEqual(self.request("/tasks")[1]["tasks"], [])
+        self.assertEqual(self.request("/tasks", {"id": "valid", "title": "Example", "minutes": 30})[0], 200)
+
     def test_unknown_route(self):
         self.assertEqual(self.request("/missing")[0], 404)
 
