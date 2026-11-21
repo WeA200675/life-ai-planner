@@ -265,3 +265,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Commits: Adapter `ba223a5b18edd7e5d025b38a59c66b39d38f7207`, drei Regressionstests `924bfac90c47fd38a1b4ea758e5bd3e7ce328777`, UI `a68ec635e6459bae5e76f4f3dfafb82e2e39fe39`.
 - **Verifikation:** GitHub bestätigte die Commits. Neue Flutter-CI [44876872213](https://github.com/WeA200675/life-ai-planner/actions/runs/44876872213) für `a68ec63` beim Abruf **queued**; vorheriger Flutter-Lauf [44876834672](https://github.com/WeA200675/life-ai-planner/actions/runs/44876834672) noch **in_progress**. Keine erfolgreiche neue Flutter-Testausführung oder Geräteabnahme behauptet.
 - **Blocker/Nächster Schritt:** Flutter-CI prüfen, Fehler beheben; anschließend SQLite-Migration für individuelle Dauer/Deadline und geschützte Fixtermine, UI-Tests für Vorschau, echte Planpersistenz/Undo sowie Android-Geräteabnahme. M1–M4 offen. Keine personenbezogenen Testdaten oder Secrets committed.
+
+
+## Offline-Planungsmetadaten – 2026-11-21 (08:20 Europe/Berlin)
+- Ausgangs-HEAD `42da03f31960ada9972a952efdf288af64c83a07`; offene PRs/Issues 0/0.
+- Vorheriger Flutter-CI-Lauf [44876872213](https://github.com/WeA200675/life-ai-planner/actions/runs/44876872213) für `a68ec63` **success**; Scheduler-CI [44876895408](https://github.com/WeA200675/life-ai-planner/actions/runs/44876895408) für `42da03f` **success**.
+- Code-Commit `2a5310ac3f7688a1fed4933b90932f0ac107c96f`: `offline_task_plan_adapter.dart` verarbeitet pro offener Aufgabe optionale, validierte `minutes` (1–1440) und `priority` (0–10). Alte SQLite-Zeilen ohne Metadaten verwenden weiterhin 30 Minuten und Priorität 0; ungültige Werte erzeugen einen expliziten Formatfehler, statt unbemerkt in den Plan einzufließen.
+- Test-Commit `7419177128768975cc5c3747a20763d76f60f25a`: drei Regressionstests für Prioritäts-/Dauerreihenfolge, Altbestand-Fallback und ungültige Metadaten ergänzt.
+- **Testnachweis:** Flutter- und Scheduler-CI für den ersten Code-Commit beim Abruf noch `in_progress` ([Flutter 44879834214](https://github.com/WeA200675/life-ai-planner/actions/runs/44879834214)); der Test-Commit ist noch nicht durch erfolgreich abgeschlossene CI bestätigt. Keine lokale Flutter-Toolchain oder Geräteabnahme nachgewiesen.
+- **Blocker:** Die SQLite-Tabelle speichert `minutes` und `priority` noch nicht; die Adapter-Erweiterung ist vorbereitet, aber in der UI noch nicht editierbar. Android-Gerätetest und M1–M4-Gesamtabnahme fehlen.
+- **Nächster Schritt:** Neue CI-Läufe prüfen und Fehler beheben; anschließend SQLite-Migration (Version 2) für `minutes`/`priority`, sichere Eingabeoberfläche und Persistenztests ergänzen. Keine persönlichen Daten oder Secrets im öffentlichen Repository.
