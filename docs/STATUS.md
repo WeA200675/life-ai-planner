@@ -484,3 +484,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - CI beim Dokumentieren: Scheduler tests: in_progress/offen (https://github.com/WeA200675/life-ai-planner/actions/runs/44931270077).
 - Blocker: Android-Geräteabnahme und vollständige M1–M4-Abnahme ausstehend; Repository öffentlich, daher keine privaten Testdaten oder Secrets.
 - Nächster Schritt: CI für Test-HEAD prüfen und ggf. reparieren; danach Flutter-Widgettests, dynamische Umplanung und API-Fehlerpfade weiter absichern.
+
+## API Unicode-Eingabehärtung – 2026-11-21 (19:21 Europe/Berlin)
+- Ausgangs-HEAD: `3d95fb49c590433dbe35429861b6387df70c703f`; GitHub-Suche: keine offenen Issues/PRs. Scheduler-CI für Ausgangs-HEAD erfolgreich.
+- Problem: JSON erlaubt per Escape lone UTF-16-Surrogates (`\\ud800`), die später beim UTF-8-Encoding für SQLite oder HTTP unbehandelte Fehler auslösen können.
+- Änderung: `services/api/server.py` verwirft Surrogates rekursiv in JSON-Schlüsseln, Strings, Listen und Objekten mit HTTP 400, bevor Mutationen erfolgen. Code-Commit: `d72ddd32a138e0d6ee544c145a305c47500886dd`.
+- Regressionstest in `tests/test_local_api.py`: vier fehlerhafte JSON-Payloads, unveränderter Aufgabenbestand und danach gültige Unicode-Aufgabe. Test-Commit: `0dd9b4127813b6f6c76813b97d62a9b87b1e2305`.
+- **Verifikation:** Commits über GitHub bestätigt; neuer CI-Lauf/Testausführung noch nicht als erfolgreich nachgewiesen. Vorheriger CI-Lauf für Ausgangs-HEAD war erfolgreich; nicht auf neue Änderung übertragbar.
+- **Blocker:** Android-Geräteabnahme, Release-Build, M1–M4-Gesamtabnahme weiterhin offen. Repository öffentlich; keine Secrets/privaten Daten.
+- **Nächster Schritt:** CI des neuen Code-HEAD prüfen und bei Fehler korrigieren; dann Flutter-Tagesvorschau/Replanning mit Widgettests absichern.
