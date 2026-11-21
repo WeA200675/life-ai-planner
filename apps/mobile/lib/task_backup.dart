@@ -105,6 +105,62 @@ String encodeTaskBackup(List<Map<String, Object?>> rows) {
   return output;
 }
 
+/// Preview the exact impact before replacing any local task data.
+class TaskRestorePreview {
+  const TaskRestorePreview({
+    required this.currentCount,
+    required this.backupCount,
+    required this.added,
+    required this.removed,
+    required this.changed,
+    required this.unchanged,
+  });
+  final int currentCount;
+  final int backupCount;
+  final int added;
+  final int removed;
+  final int changed;
+  final int unchanged;
+}
+
+TaskRestorePreview previewTaskRestore(
+    List<Map<String, Object?>> current, TaskBackup backup) {
+  final existing = <int, Map<String, Object?>>{};
+  for (final raw in current) {
+    final row = _validateTask(raw);
+    final id = row['id'] as int;
+    if (existing.containsKey(id)) {
+      throw const FormatException('Duplicate current task identifier');
+    }
+    existing[id] = row;
+  }
+  final target = decodeTaskBackup(encodeTaskBackup(backup.tasks)).tasks;
+  final targetIds = <int>{};
+  var added = 0;
+  var changed = 0;
+  var unchanged = 0;
+  for (final row in target) {
+    final id = row['id'] as int;
+    targetIds.add(id);
+    final old = existing[id];
+    if (old == null) {
+      added++;
+    } else if (taskRowsFingerprint([old]) == taskRowsFingerprint([row])) {
+      unchanged++;
+    } else {
+      changed++;
+    }
+  }
+  return TaskRestorePreview(
+    currentCount: existing.length,
+    backupCount: target.length,
+    added: added,
+    removed: existing.keys.where((id) => !targetIds.contains(id)).length,
+    changed: changed,
+    unchanged: unchanged,
+  );
+}
+
 /// Restore is all-or-nothing. A stale preview cannot overwrite later edits.
 /// The caller must explicitly confirm replacement before invoking this.
 Future<int> restoreTaskBackup(Database db, TaskBackup backup, {
