@@ -152,3 +152,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub-Commit bestätigt. Kein lokaler Flutter-/Android-Lauf; der neue CI-Job und APK-Build sind zum Dokumentationszeitpunkt nicht als erfolgreich nachgewiesen. Workflow verwendet den beweglichen Flutter-Stable-Kanal; für langfristige Reproduzierbarkeit ist eine konkrete SDK-Version samt Lockfile nötig.
 - **Blocker:** Android-Geräteabnahme, Release-Signierung, lokale Scheduler-Integration und M1–M4-Gesamtabnahme stehen aus. Repo öffentlich; keine Secrets oder privaten Daten eingecheckt.
 - **Nächster Schritt:** Actions-Lauf für `3960f6a` prüfen, konkrete Fehlermeldungen korrigieren, Flutter-Version pinnen, Android-Plattformdateien kontrolliert einchecken und danach Offline-Tagesplanung implementieren.
+
+## Flutter-CI-Reihenfolge – 2026-11-21 (03:16 Europe/Berlin)
+- Vor Änderung verifizierter HEAD: `ca827641cc2f53a1f862b05002c83c5afe089981`; offene Issues 0, PRs 0 (GitHub-Suche).
+- `.github/workflows/flutter.yml`: fehlendes Android-Gerüst wird nun **vor** `flutter pub get`, `flutter analyze` und `flutter test` erzeugt; bereits eingechecktes Gerüst wird nicht überschrieben. `--no-pub` verhindert einen unnötigen doppelten Dependency-Resolve. AndroidManifest wird explizit geprüft, bevor Tests/Build starten.
+- Code-Commit: `1898c83143a054857626d48fb685edc57040ec45`.
+- **Testnachweis:** GitHub-Commit bestätigt; Combined Commit Status des Ausgangs-HEAD enthielt keine klassischen Checks (kein CI-Erfolgsbeleg). Für den neuen Commit wurde weder ein grüner Flutter-Workflow noch ein APK-Build oder Gerätetest nachgewiesen. Kein lokaler Flutter-SDK-Lauf verfügbar.
+- **Blocker:** Generiertes Android-Gerüst noch nicht versioniert, Toolchain-Version nicht gepinnt, Release-/Geräteabnahme fehlt; M1–M4 offen. Repository öffentlich: keine personenbezogenen Daten oder Secrets.
+- **Nächster Schritt:** Flutter-Actions-Logs für den neuen HEAD prüfen und Fehler beheben; Android-Gerüst/Lockfile reproduzierbar einchecken; danach Offline-Tagesplanung und Scheduler-Anbindung.
