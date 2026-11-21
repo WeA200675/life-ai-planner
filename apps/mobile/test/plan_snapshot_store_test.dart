@@ -124,4 +124,26 @@ void main() {
     expect(await store.latest(), isNull);
   });
 
+  test('history is newest first, paginated and read-only', () async {
+    final ids = <int>[];
+    for (var i = 0; i < 5; i++) {
+      ids.add(await store.accept(plan('task-$i'), start, end));
+    }
+    final firstPage = await store.history(limit: 2);
+    final secondPage = await store.history(limit: 2, offset: 2);
+    expect(firstPage.map((e) => e.id), [ids[4], ids[3]]);
+    expect(secondPage.map((e) => e.id), [ids[2], ids[1]]);
+    expect(firstPage.singleWhere((e) => e.id == ids[4]).blocks, isEmpty);
+    expect((await store.byId(ids[2]))?.blocks.single.id, 'task-2');
+    expect((await store.latest())?.id, ids[4]);
+  });
+
+  test('history rejects unbounded queries and invalid identifiers', () async {
+    await expectLater(store.history(limit: 101), throwsArgumentError);
+    await expectLater(store.history(limit: 0), throwsArgumentError);
+    await expectLater(store.history(offset: -1), throwsArgumentError);
+    await expectLater(store.byId(0), throwsArgumentError);
+    expect(await store.byId(99999), isNull);
+  });
+
 }
