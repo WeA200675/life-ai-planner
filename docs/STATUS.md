@@ -512,3 +512,5 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Testnachweis:** Quellcode und Tests committed; kein lokaler Flutter-/Dart-Test in dieser Toolumgebung. Vorheriger CI-Erfolg gilt nicht als Nachweis für diese Änderungen; PR-CI muss geprüft werden.
 - **Blocker:** Android-Integration mit expliziter Bestätigung, persistente Planversion/Undo, Geräteabnahme, Release-Build und vollständige M1–M4-Abnahme fehlen.
 - **Nächster Schritt:** Flutter-CI des PR prüfen, Fehler korrigieren; danach Replanning in Android-Tagesansicht mit Widgettests und bestätigter Planversionierung integrieren.
+
+- Nachprüfung: Test-Erwartungswert des 70%-Budgets auf `floor(90 * 0.70) = 62` korrigiert; Commit `75a9d810f861cf6c23eb4110cfdbe26e535c543a`. Flutter-CI [44937136425](https://github.com/WeA200675/life-ai-planner/actions/runs/44937136425) und Scheduler-CI [44937136494](https://github.com/WeA200675/life-ai-planner/actions/runs/44937136494) für diesen Code-HEAD bei Kontrolle **queued**; kein Erfolg behauptet. PR [#1](https://github.com/WeA200675/life-ai-planner/pull/1) offen, nicht gemerged.
