@@ -28,8 +28,23 @@ DayPlan previewLocalTasks(
           priority is! int || priority < 0 || priority > 10) {
         throw FormatException('Invalid local task planning metadata');
       }
+      final rawDeadline = row['deadline_utc_ms'];
+      DateTime? deadline;
+      if (rawDeadline != null) {
+        if (rawDeadline is! int || rawDeadline <= 0) {
+          throw FormatException('Invalid local task deadline');
+        }
+        try {
+          deadline = DateTime.fromMillisecondsSinceEpoch(rawDeadline, isUtc: true);
+        } on RangeError {
+          throw FormatException('Invalid local task deadline');
+        } on ArgumentError {
+          throw FormatException('Invalid local task deadline');
+        }
+      }
       tasks.add(DayTask(
         id: id.toString(), minutes: minutes, priority: priority,
+        deadline: deadline,
       ));
     }
   }
