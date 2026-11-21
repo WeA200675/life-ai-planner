@@ -47,12 +47,25 @@ class TaskStore:
 
     @staticmethod
     def _validate(task: StoredTask):
-        if not task.id.strip() or not task.title.strip() or task.minutes <= 0:
-            raise ValueError("invalid task fields")
-        if task.status not in ("open", "active", "done", "cancelled"):
+        # SQLite silently coerces booleans and numeric strings; reject them
+        # before persistence so the scheduler sees the exact validated values.
+        if type(task.id) is not str or not task.id or task.id != task.id.strip():
+            raise ValueError("invalid task id")
+        if type(task.title) is not str or not task.title.strip():
+            raise ValueError("invalid task title")
+        if type(task.minutes) is not int or not 1 <= task.minutes <= 1440:
+            raise ValueError("minutes must be an integer between 1 and 1440")
+        if type(task.priority) is not int or not 0 <= task.priority <= 10:
+            raise ValueError("priority must be an integer between 0 and 10")
+        if type(task.status) is not str or task.status not in ("open", "active", "done", "cancelled"):
             raise ValueError("invalid status")
         if task.deadline is not None:
-            value = datetime.fromisoformat(task.deadline)
+            if type(task.deadline) is not str:
+                raise ValueError("invalid deadline type")
+            try:
+                value = datetime.fromisoformat(task.deadline)
+            except ValueError as exc:
+                raise ValueError("invalid deadline") from exc
             if value.tzinfo is None or value.utcoffset() is None:
                 raise ValueError("deadline must contain timezone offset")
 
