@@ -111,8 +111,10 @@ class LocalTasks {
     return await db.delete('tasks', where: 'id = ?', whereArgs: [id]) == 1;
   }
 
-  Future<int> acceptPlan(DayPlan plan, DateTime start, DateTime end) async =>
-      PlanSnapshotStore(await database).accept(plan, start, end);
+  Future<int> acceptPlan(DayPlan plan, DateTime start, DateTime end,
+      List<Map<String, Object?>> expectedTasks) async =>
+      PlanSnapshotStore(await database).accept(
+          plan, start, end, expectedTasks: expectedTasks);
 
   Future<SavedPlan?> latestPlan() async =>
       PlanSnapshotStore(await database).latest();
@@ -403,9 +405,12 @@ class _TaskScreenState extends State<TaskScreen> {
       return;
     }
     try {
+      final previewRows = [
+        for (final row in _tasks) Map<String, Object?>.from(row),
+      ];
       final plan = remaining
-          ? replanLocalTasks(start, end, _tasks)
-          : previewLocalTasks(start, end, _tasks);
+          ? replanLocalTasks(start, end, previewRows)
+          : previewLocalTasks(start, end, previewRows);
       if (!mounted) return;
       final names = {
         for (final task in _tasks) task['id'].toString(): task['title'] as String,
@@ -458,7 +463,7 @@ class _TaskScreenState extends State<TaskScreen> {
         ),
       );
       if (accepted == true && mounted) {
-        final id = await _store.acceptPlan(plan, start, end);
+        final id = await _store.acceptPlan(plan, start, end, previewRows);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: const Text('Tagesplan lokal gespeichert.'),
