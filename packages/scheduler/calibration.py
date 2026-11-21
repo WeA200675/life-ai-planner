@@ -22,16 +22,19 @@ class Calibration:
 def calibrate(observations: list[DayObservation], current_ratio: float = 0.30,
               *, lookback_days: int = 14, minimum_days: int = 7,
               step: float = 0.05, lower: float = 0.15,
-              upper: float = 0.50) -> Calibration:
+              upper: float = 0.50, as_of: date | None = None) -> Calibration:
     """Adjust buffer at most one step, using only distinct valid days in a 14-day window.
 
-    Missing observations do not count as zero-interruption days. Days with no
+    Pass as_of for idempotent nightly processing anchored to a specific date;\n    future-dated observations are then excluded. Without as_of, the latest\n    observation anchors the window for backward compatibility.\n    Missing observations do not count as zero-interruption days. Days with no
     usable capacity are excluded; repeated imports of one day cannot bias results.
     """
     if not (isfinite(current_ratio) and isfinite(step) and
             isfinite(lower) and isfinite(upper) and
             0 <= lower <= current_ratio <= upper < 1 and step > 0):
         raise ValueError("invalid calibration parameters")
+    if as_of is not None and (not isinstance(as_of, date) or
+                              isinstance(as_of, __import__('datetime').datetime)):
+        raise ValueError('as_of must be a date')
     if lookback_days < minimum_days or minimum_days < 1:
         raise ValueError("invalid lookback")
     by_day = {}
@@ -47,10 +50,11 @@ def calibrate(observations: list[DayObservation], current_ratio: float = 0.30,
         by_day[o.day] = o
     if not by_day:
         return Calibration(current_ratio, None, 0, False, "insufficient data")
-    newest = max(by_day)
+    newest = as_of if as_of is not None else max(by_day)
     cutoff = newest.toordinal() - lookback_days + 1
     samples = [o for o in by_day.values()
-               if o.day.toordinal() >= cutoff and o.available_minutes > 0]
+               if cutoff <= o.day.toordinal() <= newest.toordinal()
+               and o.available_minutes > 0]
     if len(samples) < minimum_days:
         return Calibration(current_ratio, None, len(samples), False, "insufficient data")
     observed = mean(o.interruption_minutes / o.available_minutes for o in samples)
