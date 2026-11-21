@@ -8,6 +8,15 @@ void main() {
           .toUtc()
           .millisecondsSinceEpoch;
 
+  test('picker bounds legacy and future stored dates without mutation', () {
+    expect(safeDeadlinePickerInitialDate(DateTime(1969, 12, 31)), DateTime(1971));
+    expect(safeDeadlinePickerInitialDate(DateTime(2101, 1, 1)), DateTime(2100));
+    expect(safeDeadlinePickerInitialDate(DateTime(2026, 11, 21, 23)),
+        DateTime(2026, 11, 21));
+    expect(safeDeadlinePickerInitialDate(DateTime(1971)), DateTime(1971));
+    expect(safeDeadlinePickerInitialDate(DateTime(2100)), DateTime(2100));
+  });
+
   test('no deadline and invalid values are explicit', () {
     expect(deadlineLabel(null, DateTime(2026, 1, 1)), 'Keine Fälligkeit');
     expect(() => deadlineLabel(0, DateTime(2026, 1, 1)),
