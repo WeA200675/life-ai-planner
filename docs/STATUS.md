@@ -385,3 +385,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Testnachweis: GitHub-Schreibvorgänge bestätigt; vorheriger Scheduler-CI-Lauf auf `a1ff354` war erfolgreich. Flutter-CI für den neuen Test-Commit beim Prüfen noch nicht nachgewiesen. Keine lokale Flutter-Testausführung oder Geräteabnahme behauptet.
 - Blocker: Android-Gerätetest und vollständige M1–M4-Abnahme ausstehend; öffentliches Repository, keine personenbezogenen Daten/Secrets.
 - Nächster Schritt: Flutter-CI für `65a0119` verifizieren, Fehler beheben und anschließend weitere Offline-Planungs-/Persistenzgrenzen testen.
+
+## Offline-Task-Metadatenvalidierung – 2026-11-21 (14:24 Europe/Berlin)
+- Ausgangs-HEAD: `0d7bab2a925d95d0ebf1c1762266ce15dcfd6717`; offene Issues: 0, offene PRs: 0.
+- Ausgangs-CI: Scheduler tests für `0d7bab2` **success**; Flutter offline MVP checks für vorherigen Code-HEAD `65a0119` **success**. Nicht als Flutter-Erfolg für den neuen Code interpretiert.
+- `planOfflineDay` validiert Task-Minuten (1–1440) und Priorität (0–10) entsprechend den SQLite-CHECK-Constraints, bevor geplant wird. Verhindert divergierende Offline-Planung mit nicht speicherbaren Metadaten.
+- Synthetischer Regressionstest für vier ungültige Werte und gültigen Grenzwert ergänzt.
+- Code-Commit: `0628f8873fc63dc4268dcfd3e770e86cbf3d25b3`.
+- **Testnachweis:** GitHub-Commit/Branch-Update bestätigt; Flutter-Tests und APK/Gerätetest für den neuen Commit in diesem Lauf nicht lokal ausgeführt. CI-Ergebnis für neuen Code noch nicht als erfolgreich belegt.
+- **Blocker:** Flutter- und Android-Geräteabnahme, vollständige M1–M4-Abnahme weiterhin offen. Repository öffentlich; keine privaten Daten/Secrets verwendet.
+- **Nächster Schritt:** Flutter-CI für `0628f88` prüfen und Fehler beheben; danach Deadline-Setter-Persistenz und Tagesvorschau-Widgettests ergänzen.
