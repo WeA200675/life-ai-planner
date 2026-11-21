@@ -37,4 +37,38 @@ void main() {
     expect(() => previewLocalTasks(start, end, [],
         provisionalMinutes: 0), throwsArgumentError);
   });
+  test('persisted minutes and priority control ordering without mutation', () {
+    final rows = <Map<String, Object?>>[
+      {'id': 1, 'done': 0, 'minutes': 50, 'priority': 0},
+      {'id': 2, 'done': 0, 'minutes': 60, 'priority': 10},
+      {'id': 3, 'done': 0, 'minutes': 20, 'priority': 5},
+    ];
+    final plan = previewLocalTasks(start, end, rows);
+    expect(plan.blocks.map((b) => b.id).toList(), ['2', '3']);
+    expect(plan.deferred, ['1']);
+    expect(rows[1]['minutes'], 60);
+  });
+
+  test('legacy rows use provisional duration and zero priority', () {
+    final rows = <Map<String, Object?>>[
+      {'id': 1, 'done': 0},
+      {'id': 2, 'done': 0, 'minutes': 10, 'priority': 10},
+    ];
+    final plan = previewLocalTasks(start, end, rows);
+    expect(plan.blocks.map((b) => b.id).toList(), ['2', '1']);
+  });
+
+  test('invalid planning metadata fails instead of silently scheduling', () {
+    for (final row in <Map<String, Object?>>[
+      {'id': 1, 'done': 0, 'minutes': 0},
+      {'id': 1, 'done': 0, 'minutes': 1441},
+      {'id': 1, 'done': 0, 'minutes': '30'},
+      {'id': 1, 'done': 0, 'priority': -1},
+      {'id': 1, 'done': 0, 'priority': 11},
+      {'id': 1, 'done': 0, 'priority': true},
+    ]) {
+      expect(() => previewLocalTasks(start, end, [row]), throwsFormatException);
+    }
+  });
+
 }
