@@ -46,6 +46,12 @@ class LocalTasks {
         where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<bool> delete(int id) async {
+    if (id <= 0) throw ArgumentError.value(id, 'id', 'Must be positive');
+    final db = await database;
+    return await db.delete('tasks', where: 'id = ?', whereArgs: [id]) == 1;
+  }
+
   Future<void> close() async {
     await _db?.close();
     _db = null;
@@ -123,6 +129,37 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 
+  Future<void> _confirmDelete(int id, String title) async {
+    if (_busy) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Aufgabe löschen?'),
+        content: Text('„$title“ wird dauerhaft aus diesem Gerät entfernt.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await _store.delete(id);
+      await _refresh();
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Aufgabe konnte nicht gelöscht werden.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _toggle(int id, bool done) async {
     try {
       await _store.setDone(id, done);
@@ -187,7 +224,13 @@ class _TaskScreenState extends State<TaskScreen> {
                         key: ValueKey(task['id']),
                         value: done,
                         title: Text(task['title'] as String),
-                        onChanged: (value) => _toggle(task['id'] as int, value ?? false),
+                        onChanged: _busy ? null : (value) => _toggle(task['id'] as int, value ?? false),
+                        secondary: IconButton(
+                          tooltip: 'Aufgabe löschen',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: _busy ? null : () => _confirmDelete(
+                            task['id'] as int, task['title'] as String),
+                        ),
                       );
                     },
                   )),
