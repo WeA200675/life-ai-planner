@@ -120,4 +120,33 @@ void main() {
         throwsFormatException);
   });
 
+  test('restore preview reports exact additions, changes and removals', () {
+    final current = [
+      task,
+      {...task, 'id': 2, 'title': 'Old title'},
+      {...task, 'id': 3, 'title': 'Removed'},
+    ];
+    final backup = decodeTaskBackup(encodeTaskBackup([
+      task,
+      {...task, 'id': 2, 'title': 'New title'},
+      {...task, 'id': 4, 'title': 'Added'},
+    ]));
+    final impact = previewTaskRestore(current, backup);
+    expect(impact.currentCount, 3);
+    expect(impact.backupCount, 3);
+    expect(impact.added, 1);
+    expect(impact.removed, 1);
+    expect(impact.changed, 1);
+    expect(impact.unchanged, 1);
+    expect(current[1]['title'], 'Old title');
+  });
+
+  test('restore preview handles empty backups without modifying tasks', () {
+    final impact = previewTaskRestore([task],
+        decodeTaskBackup(encodeTaskBackup([])));
+    expect(impact.removed, 1);
+    expect(impact.added, 0);
+    expect(impact.changed, 0);
+  });
+
 }
