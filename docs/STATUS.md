@@ -346,3 +346,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Vier synthetische Dart-Regressionstests hinzugefügt: fehlende/ungültige Frist, heute/morgen/später, überfällig und DST-Kalendertage. **GitHub-Commits bestätigt, Testausführung/Flutter-CI für neuen HEAD nicht bestätigt.** Keine Android-Geräteabnahme.
 - Blocker: Flutter-Toolchain und Gerätetests nicht in diesem Lauf verfügbar; rote Geräte-Assertion nach Lifecycle-Fix weiterhin nicht erneut nachgewiesen behoben; vollständige M1–M4-Abnahme offen.
 - Nächster Schritt: Flutter-CI für Test-Commit prüfen, bei Fehlschlag korrigieren; SQLite-Setter mit FFI-Integration testen, Fälligkeit in Tagesvorschau anzeigen, Android-APK am Gerät inklusive Lifecycle-Fehler prüfen. Keine personenbezogenen Testdaten oder Secrets.
+
+## Offline-Planungsintegrität – 2026-11-21 (Mittagslauf)
+- Ausgangs-HEAD: `662d554297893d5f0ca3b9db7c8af45873179c31`; offene Issues: 0, offene PRs: 0.
+- Ausgangs-CI: Scheduler tests für `662d554` erfolgreich ([Run 44895187501](https://github.com/WeA200675/life-ai-planner/actions/runs/44895187501)); Flutter offline MVP checks für vorherigen Code-HEAD `0569f866` erfolgreich ([Run 44895178023](https://github.com/WeA200675/life-ai-planner/actions/runs/44895178023)). Kein Flutter-CI-Nachweis für Ausgangs-Dokumentations-HEAD `662d554`.
+- Implementierung: `previewLocalTasks` verwirft doppelte SQLite-Task-IDs explizit, auch bei Kombination aus erledigten und offenen Aufgaben. Verhindert doppelte Planung bei beschädigten/inkonsistenten Eingaberows; kein Datenbank-Schreibzugriff.
+- Zwei Regressionstests für doppelte offene IDs und gemischte erledigte/offene IDs ergänzt.
+- Code-Commits: `1940240feaf7737a994d4f3a33071c8c688db344`, `43d3cbbf3f74747683f731180ef6ef9214daf987`.
+- **Testnachweis:** GitHub-Commits bestätigt; [Flutter-CI 44898255555](https://github.com/WeA200675/life-ai-planner/actions/runs/44898255555) und [Scheduler-CI 44898255599](https://github.com/WeA200675/life-ai-planner/actions/runs/44898255599) für `43d3cbb` waren bei Prüfung **queued**, kein erfolgreicher Lauf für die Änderung belegt. Lokaler Flutter-Test/Android-Gerätetest nicht ausgeführt.
+- **Blocker:** Android-Geräteabnahme und M1–M4-Gesamtabnahme offen; öffentliches Repo erfordert Verzicht auf private Daten und Secrets.
+- **Nächster Schritt:** CI-Ergebnisse für `43d3cbb` prüfen und ggf. korrigieren; danach SQLite-Deadline-Persistenz-Regression und Deadline-Konflikte in der Tagesvorschau weiter absichern.
