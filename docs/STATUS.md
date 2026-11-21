@@ -510,3 +510,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Testnachweis: GitHub-Commit bestätigt; reine Dokumentationsänderung, keine lokalen Tests. Erfolgreiche PR-CI ist nur für dessen SHA belegt, nicht als Android-Geräteabnahme.
 - Blocker: PR #1 noch offen; Android-Replanning-Bestätigung, Versionshistorie/Undo, Geräteabnahme und M1–M4-Gesamtabnahme ausstehend.
 - Nächster Schritt: PR #1 konfliktfrei prüfen/integrieren, anschließend Android-Replanning-UI inklusive Bestätigung/Undo und Widgettests als zusammenhängenden vertikalen Schnitt liefern.
+
+
+## Scheduler gap scan optimization — 2026-11-21
+- Ausgangs-HEAD `5bfc13ca0fe72dc989a3d49690947ab3a0ded39d`; PR #1 (SQLite-Replanning-Adapter) weiterhin offen, daher keine überlappende PR-Implementierung.
+- Code `30c45b22bee79e979af556891ed2f176258345be`: Scheduler berechnet die Task-Dauer einmal je Aufgabe und beendet den chronologischen Gap-Scan, sobald ein Deadline-Termin für alle folgenden Gaps unerreichbar ist. Fixblöcke, 70/30-Regel und deterministische Sortierung unverändert. Algorithmus bleibt im ungünstigsten Fall O(Tasks × Gaps); keine unbelegte Laufzeitverbesserung behauptet.
+- Regressionstests `406efbcd6118821bd72392143a7d0a0dc5a25bfa`: frühe Deadline trotz späterer freier Gaps; nachfolgende Aufgabe weiterhin planbar; exakte Deadline-Grenze zulässig.
+- **Verifikation:** GitHub-Commits bestätigt. Neue CI und Benchmark-Ergebnisse beim Schreiben noch nicht als erfolgreich belegt; kein lokaler Testlauf und keine Android-Geräteabnahme.
+- **Blocker:** M1–M4-Abnahme, Android-Gerätetest, offener PR #1. Nächster Schritt: Scheduler-CI auf Test-SHA kontrollieren; feste synthetische Benchmark-Baseline erfassen, dann PR #1 sicher integrieren und Android-Replanning-UI mit Undo fertigstellen.
