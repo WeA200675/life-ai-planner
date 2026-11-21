@@ -365,3 +365,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub-Commit und Branch-Update bestätigt. Die neuen Tests wurden in diesem Lauf **nicht lokal ausgeführt**; GitHub Actions für den neuen Code-HEAD muss separat abgeschlossen werden. Kein erfolgreicher Testlauf ohne passenden SHA behauptet.
 - **Blocker:** Android-Geräteabnahme einschließlich gemeldeter Flutter-Assertion weiterhin offen; vollständige M1–M4-Abnahme nicht belegt. Öffentliches Repository: ausschließlich synthetische Testdaten, keine Secrets.
 - **Nächster Schritt:** Flutter-CI für `f16a3f7` prüfen und Fehler beheben; danach echte Deadline-Setter-Persistenz mit injizierbarer DB testen, Fälligkeitskonflikte in Tagesvorschau erklären und Android-Gerätetest durchführen.
+
+
+## Offline-Tagesvorschau: erklärbare Zurückstellungen – 2026-11-21 (13:16 Europe/Berlin)
+- Vor der ersten Änderung verifizierter HEAD: `91d35829700f5f3c23999c1b449699de58797c52`; vor jedem weiteren Schreibzugriff HEAD erneut geprüft. Offene Issues/PRs: jeweils 0.
+- Ausgangs-CI: Flutter-Workflow [44900316721](https://github.com/WeA200675/life-ai-planner/actions/runs/44900316721) für `f16a3f7` **success**; Scheduler [44900326766](https://github.com/WeA200675/life-ai-planner/actions/runs/44900326766) für Ausgangs-HEAD **success**.
+- Neu: `deferred_task_explanation.dart` übersetzt die Scheduler-Konfliktgründe Planbudget und fehlendes Zeitfenster/Fälligkeit in verständliche Offline-Erklärungen; unbekannte Gründe erhalten einen sicheren Fallback. Die Tagesvorschau zeigt die Erklärung direkt neben jeder zurückgestellten Aufgabe, ohne Aufgaben zu verändern.
+- Vier neue synthetische Flutter-Tests prüfen Budget, Deadline, Nicht-Konflikt und unbekannten Grund.
+- Commits: `7a67258aef53b0c4e2fa162fa5847b02ffa311de` (Helfer), `96250c111e8777af1cf67a9b8480e954f346563d` (Tests), `66fdfc77f41094ece7a6896bc8c4999081adbb6c` (UI).
+- **Testnachweis:** GitHub-Commits bestätigt. Für den neuen UI-HEAD ist noch kein erfolgreicher Flutter-CI-Lauf belegt; lokale Flutter-Tests und Android-Geräteabnahme wurden nicht ausgeführt. Neue Tests sind implementiert, nicht als bestanden ausgegeben.
+- **Blocker:** Android-Geräteabnahme, vollständige M1–M4-Abnahme und End-to-End-Tests ausstehend. Öffentliches Repo: keine persönlichen Daten oder Secrets.
+- **Nächster Schritt:** Flutter-CI des neuen HEAD prüfen und Fehler beheben; danach UI-/Widget-Test für die Zurückstellungsanzeige und robuste Deadline-Setter-Persistenz mit injizierbarer Datenbank ergänzen.
