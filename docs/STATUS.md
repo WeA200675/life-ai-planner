@@ -544,3 +544,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** Workflow-Commit bestätigt; neuer CI-Lauf zum Dokumentationszeitpunkt noch nicht nachweislich erfolgreich. Kein gemessener Speedup und kein Android-Gerätetest behauptet.
 - **Blocker:** P0-Messwerte müssen aus dem neuen CI-Artefakt gelesen werden; Flutter-Replanning mit Bestätigung/Undo, M1–M4 und Geräteabnahme offen.
 - **Nächster Schritt:** CI-Lauf und JSON-Artefakt prüfen; aus den realen p95-Werten konkrete Engpässe bestimmen und dann P1-Optimierungen implementieren; parallel P4 Android-Integration.
+
+
+## M3 – Tagesverankerte Kalibrierung, 2026-11-21 (20:20 Europe/Berlin)
+- Vor Änderung HEAD `f5cf01a06d8800cbbb87e17e8c2967126cca9f96`; README, Implementierungsplan und Status gelesen. PR #1 (`4140265cc05e7d62f4fc61a9603700cc7f6f1f5b`) weiterhin offen und nicht verändert; keine eigenständigen offenen Issues (GitHub-Issue #1 ist der PR). CI des Ausgangs-HEAD: [44939900313](https://github.com/WeA200675/life-ai-planner/actions/runs/44939900313) **success**.
+- M3-Code `64276ca052129b8a5b9ccf4c829df0bafb4c6e60`: `calibrate(..., as_of=date)` verankert die 14-Tage-Auswertung an einem expliziten Konsolidierungsdatum und ignoriert zukünftige Beobachtungen; ohne `as_of` bleibt die bisherige API-Semantik erhalten. Ungültige Datumsanker werden abgelehnt. Damit ist die Berechnung bei gleichem Datenstand und Anker deterministisch, aber noch kein persistenter Nachtjob implementiert.
+- Tests `eda9cf6e28d4955fa80bc69644532626f28f2579`: vier neue Fälle für Zukunftsdaten, veraltete Daten, Reihenfolgeunabhängigkeit und ungültigen Anker.
+- **Tatsächliche Verifikation:** GitHub-Commits erfolgreich. CI [44940476986](https://github.com/WeA200675/life-ai-planner/actions/runs/44940476986) für Test-HEAD beim Prüfen **queued**; [44940467793](https://github.com/WeA200675/life-ai-planner/actions/runs/44940467793) für Code-HEAD **in_progress**. Keine neuen Tests als bestanden behauptet, kein lokaler Lauf/Android-Test.
+- **Blocker:** persistente idempotente Nachtkonsolidierung, Android Replanning-UI/Undo und Geräteabnahme fehlen; M1–M4 nicht abgenommen.
+- **Nächster Schritt:** CI des neuen HEAD kontrollieren und ggf. korrigieren; dann datumsgebundene persistente Konsolidierung mit Restart-/Idempotenztests, ohne PR #1 zu duplizieren.
