@@ -56,6 +56,22 @@ class LocalTasks {
     if (changed != 1) throw StateError('Task not found or update was not unique');
   }
 
+  /// Stores an optional deadline as UTC epoch milliseconds, without network.
+  /// Passing null explicitly clears an existing deadline.
+  Future<void> setDeadline(int id, DateTime? deadline) async {
+    if (id <= 0) throw ArgumentError.value(id, 'id', 'Must be positive');
+    final utcMs = deadline?.toUtc().millisecondsSinceEpoch;
+    if (utcMs != null && utcMs <= 0) {
+      throw ArgumentError.value(deadline, 'deadline', 'Must be after Unix epoch');
+    }
+    final db = await database;
+    final changed = await db.update(
+      'tasks', {'deadline_utc_ms': utcMs},
+      where: 'id = ?', whereArgs: [id],
+    );
+    if (changed != 1) throw StateError('Task not found or update was not unique');
+  }
+
   Future<void> rename(int id, String title) async {
     if (id <= 0) throw ArgumentError.value(id, 'id', 'Must be positive');
     final clean = title.trim();
