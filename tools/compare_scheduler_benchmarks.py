@@ -67,7 +67,7 @@ def compare(baseline: dict, candidate: dict, *, regression_limit: float = .10) -
             "baseline_p95_ms": a["p95_ms"],
             "candidate_p95_ms": b["p95_ms"],
             "change_percent": round(delta, 2),
-            "regression": delta > regression_limit * 100,
+            "regression": delta > regression_limit * 100 + 1e-9,
         })
     return {"comparable": True, "regression_limit_percent": regression_limit * 100,
             "regression_detected": any(x["regression"] for x in rows),
