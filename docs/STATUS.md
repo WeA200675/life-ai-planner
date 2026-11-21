@@ -133,3 +133,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Blocker:** fehlende Android-Plattformdateien, Flutter-/Android-Build- und Gerätetests; keine gemeinsame Datenbankschema-/Sync-Integration mit Python. Repo öffentlich; keine Secrets oder personenbezogenen Testdaten.
 - **Nächster Schritt:** Android-Plattformgerüst erzeugen; Flutter Analyze/Tests/Debug-APK in CI ausführen; Fehler korrigieren und anschließend lokale Tagesplanung mit Scheduler-Anbindung und Sprach-Textfallback erweitern.
 - **Abnahme:** M1–M4 weiterhin nicht vollständig.
+
+
+## Flutter-Testautomatisierung – 2026-11-21 (02:20 Europe/Berlin)
+- Ausgangs-HEAD `1b07d0fe22bfc3af839cf984e84d6b575bcbb55c`; offene Issues/PRs 0 laut GitHub-Suche.
+- `apps/mobile/test/offline_task_test.dart`: zwei Flutter-Testfälle für lokale Titelvalidierung ohne SQLite-Initialisierung und Sichtbarkeit der Offline-Texteingabe.
+- `.github/workflows/flutter.yml`: separater GitHub-Actions-Job für `flutter pub get`, `flutter analyze`, `flutter test` bei Mobile-Änderungen und manuellem Dispatch; kein Android-APK-Build vorgetäuscht.
+- Commits `b1eba6143f84fc7246e62503795e8bc2447af07a` (Tests), `a62e0bb93d56d04519edb02f33e63322c62e2556` (Workflow).
+- **Testnachweis:** Dateien erfolgreich über GitHub API committed. Flutter-Tests/Analyse und neuer CI-Lauf noch nicht als erfolgreich nachgewiesen; CI-Ergebnis nach Start abwarten und Fehler beheben.
+- **Blocker:** Android-Plattformgerüst und reproduzierbarer APK-Build fehlen; kein Gerätetest, keine Scheduler-Integration in Flutter. Repository öffentlich: keine Secrets oder personenbezogenen Daten.
+- **Nächster Schritt:** Flutter-Workflow-Ergebnis prüfen, Lint-/Testfehler beheben, Android-Plattformdateien mit passender Toolchain generieren und Debug-APK bauen; danach lokale Tagesansicht und Scheduler-Anbindung.
+- **Abnahme:** M1–M4 weiterhin offen.
