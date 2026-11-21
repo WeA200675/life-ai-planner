@@ -71,4 +71,41 @@ void main() {
       await dir.delete(recursive: true);
     }
   });
+  test('staged verification detects orphaned snapshot block foreign keys',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('stage-fk-check-');
+    final db = await openDatabase('${dir.path}/orphan.db');
+    try {
+      await createTaskSchema(db);
+      await createPlanSnapshotSchema(db);
+      // Simulate a damaged legacy database created without FK enforcement.
+      await db.insert('plan_snapshot_blocks', {
+        'snapshot_id': 987654,
+        'position': 0,
+        'task_id': '1',
+        'start_utc_ms': 1000,
+        'end_utc_ms': 2000,
+      });
+      final integrity = await db.rawQuery('PRAGMA integrity_check');
+      expect(integrity.single.values.single, 'ok');
+      await expectLater(verifyStagedDatabase(db), throwsStateError);
+    } finally {
+      await db.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('staged verification accepts consistent empty schema', () async {
+    final dir = await Directory.systemTemp.createTemp('stage-fk-valid-');
+    final db = await openDatabase('${dir.path}/valid.db');
+    try {
+      await createTaskSchema(db);
+      await createPlanSnapshotSchema(db);
+      await verifyStagedDatabase(db);
+    } finally {
+      await db.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
