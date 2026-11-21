@@ -76,4 +76,9 @@ void main() {
       await db.close();
     }
   });
+  test('backup rejects oversized input before decoding', () {
+    expect(() => decodeTaskBackup(' ' * (8 * 1024 * 1024 + 1)),
+        throwsFormatException);
+  });
+
 }
