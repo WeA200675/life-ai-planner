@@ -502,3 +502,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Nachweisstand bei Dokumentation:** Commits auf GitHub bestätigt; Flutter-CI für Test-HEAD [44936156398](https://github.com/WeA200675/life-ai-planner/actions/runs/44936156398) queued, Scheduler-CI [44936156351](https://github.com/WeA200675/life-ai-planner/actions/runs/44936156351) queued. **Kein erfolgreicher Testlauf für den neuen HEAD behauptet**, keine lokale Dart-/Android-Geräteausführung.
 - **Blocker:** Replanning noch nicht in die Android-Tagesansicht integriert; Persistenz, Versionskontrolle/Undo und Geräteabnahme fehlen. Vollständige M1–M4-Abnahme, Release-Build und End-to-End-Tests ausstehend.
 - **Nächster Schritt:** Flutter-CI des Test-HEAD prüfen, Fehler korrigieren, anschließend Replanning in Tagesvorschau mit expliziter Bestätigung und Widgettests einbinden.
+
+## M3: SQLite-Replanning-Adapter – 2026-11-21 (19:43 Europe/Berlin)
+- Vor Änderung verifizierter main-HEAD: `e7777bff279ae7dc1caeca75e9ab0360371c69cc`; offene PRs und Issues: jeweils 0. Vorherige Scheduler-/Flutter-CI auf `e7777bf` erfolgreich.
+- Konfliktvermeidung: isolierter Branch `feat/m3-sqlite-replanning-adapter-20261121`, keine gleichzeitigen Änderungen an main.
+- `apps/mobile/lib/offline_task_plan_adapter.dart`: Gemeinsame strikte SQLite-Zeilenkonvertierung für Tagesvorschau und neues `replanLocalTasks`; erledigte Zeilen werden ausgeschlossen, Fixtermine bleiben geschützt, keine SQLite-Mutation. Ungültige Datensätze, Duplikate und provisorische Dauer außerhalb 1–1440 werden zurückgewiesen.
+- `apps/mobile/test/sqlite_replanning_adapter_test.dart`: neue synthetische Regressionstests für erledigte Tasks, laufende Fixtermine, Puffer, ungültige Zeilen, Duplikate und Zeitfenster.
+- Implementierungs-Commit `7bbb3f0e3300054116c5abe04638564d7fe2fd9d`; Test-Commit `028dba58eef4bf24d5739b94bd1ea2bc60eadf9a`; HEAD vor Status-Commit `028dba58eef4bf24d5739b94bd1ea2bc60eadf9a`.
+- **Testnachweis:** Quellcode und Tests committed; kein lokaler Flutter-/Dart-Test in dieser Toolumgebung. Vorheriger CI-Erfolg gilt nicht als Nachweis für diese Änderungen; PR-CI muss geprüft werden.
+- **Blocker:** Android-Integration mit expliziter Bestätigung, persistente Planversion/Undo, Geräteabnahme, Release-Build und vollständige M1–M4-Abnahme fehlen.
+- **Nächster Schritt:** Flutter-CI des PR prüfen, Fehler korrigieren; danach Replanning in Android-Tagesansicht mit Widgettests und bestätigter Planversionierung integrieren.
