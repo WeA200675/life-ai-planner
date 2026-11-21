@@ -47,6 +47,19 @@ class LocalApiTests(unittest.TestCase):
     def test_bad_input(self):
         self.assertEqual(self.request("/tasks", {"id": "x", "title": "X", "minutes": -2})[0], 400)
 
+    def test_duplicate_json_keys_rejected_without_mutation(self):
+        for payload in (
+            b'{"id":"x","id":"y","title":"Example","minutes":30}',
+            b'{"id":"x","title":"Example","minutes":30,"extra":{"a":1,"a":2}}',
+        ):
+            req = Request(self.base + "/tasks", data=payload,
+                          headers={"Content-Type": "application/json"})
+            with self.assertRaises(HTTPError) as raised:
+                urlopen(req, timeout=3)
+            self.assertEqual(raised.exception.code, 400)
+        self.assertEqual(self.request("/tasks")[1]["tasks"], [])
+        self.assertEqual(self.request("/tasks", {"id": "ok", "title": "Example", "minutes": 30})[0], 200)
+
     def test_unknown_route(self):
         self.assertEqual(self.request("/missing")[0], 404)
 
