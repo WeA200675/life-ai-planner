@@ -14,6 +14,13 @@ DayPlan previewLocalTasks(
   if (provisionalMinutes <= 0 || provisionalMinutes > 1440) {
     throw ArgumentError.value(provisionalMinutes, 'provisionalMinutes');
   }
+  return planOfflineDay(start, end,
+      _parseLocalTasks(rows, provisionalMinutes), bufferRatio: bufferRatio);
+}
+
+/// Shared strict SQLite-row conversion for both preview and interruption flows.
+List<DayTask> _parseLocalTasks(
+    List<Map<String, Object?>> rows, int provisionalMinutes) {
   final tasks = <DayTask>[];
   final seenIds = <int>{};
   for (final row in rows) {
@@ -50,5 +57,25 @@ DayPlan previewLocalTasks(
       ));
     }
   }
-  return planOfflineDay(start, end, tasks, bufferRatio: bufferRatio);
+  return tasks;
 }
+
+/// Read-only replanning of remaining local tasks after an interruption.
+/// Completed SQLite rows are excluded by the shared parser. Nothing is saved
+/// until the caller explicitly chooses to persist a plan version.
+DayPlan replanLocalTasks(
+  DateTime now,
+  DateTime end,
+  List<Map<String, Object?>> rows, {
+  List<DayBlock> fixed = const [],
+  int provisionalMinutes = 30,
+  double bufferRatio = 0.30,
+}) {
+  if (provisionalMinutes < 1 || provisionalMinutes > 1440) {
+    throw ArgumentError.value(provisionalMinutes, 'provisionalMinutes');
+  }
+  return replanOfflineDay(now, end,
+      _parseLocalTasks(rows, provisionalMinutes),
+      fixed: fixed, bufferRatio: bufferRatio);
+}
+
