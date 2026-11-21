@@ -561,3 +561,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Tests `tests/test_compare_scheduler_benchmarks.py`, Commit `79b90ffb7767693f058b3f22c97dfb2a261f075c`: Regression, Verbesserung, Schwellenwert, Plattform- und Workload-Mismatch, Duplikate und nicht-endliche Werte. Testausführung für neue Commits noch nicht als erfolgreich bestätigt.
 - **Blocker:** CI für neuen HEAD und tatsächliche Baseline-/Candidate-JSON-Auswertung noch ausstehend. Android-Replanning mit Bestätigung/Undo, Geräteabnahme und M1–M4 weiterhin offen.
 - **Nächster Schritt:** neuen CI-Lauf prüfen und ggf. korrigieren; Benchmark-Artefakte von zwei vergleichbaren Läufen auswerten; P4 Android-UI fertigstellen.
+
+
+## Android Resttag-Neuplanung (read-only) – 2026-11-21
+- Ausgangs-HEAD `dd0cbefd14ff4474a7a8c22abd80cd39f4460889`; PR #1 weiterhin offen. Vorheriger Scheduler-CI [44940913062](https://github.com/WeA200675/life-ai-planner/actions/runs/44940913062) completed/success; CI des früheren Test-Commits `79b90ffb` war zunächst failure, Grenzwert-Fix `dd68bd3` danach success.
+- Adapter `a359c3a7714150503043f61416a2416d57a6bceb`: strikt validierte, rein lesende Resttag-Vorschau aus SQLite-Task-Zeilen, erledigte Aufgaben ausgeschlossen. UI `9bc1dae283008757af96722242d6decdf9bbd2da`: Button **Resttag neu planen**, Zeitfenster jetzt bis 18:00, Anzeige geplanter/verschobener Aufgaben; nach 18:00 explizite Fehlermeldung statt ungültiger Berechnung. Regressionstests `e75e37d49345205b82c38f9a80cbf3463dca0e78` für Restzeitbudget, erledigte Tasks, unveränderte Eingabedaten und Fehlerfälle.
+- **Wichtig:** UI ist nur eine Vorschau; **keine Bestätigung/Persistenz, Versionskontrolle oder Undo** implementiert. Keine stillschweigenden Kalenderänderungen. Kein tatsächlicher Performance-Gewinn behauptet.
+- **Verifikation:** Commits auf GitHub bestätigt; neue Flutter-CI und Android-Gerätetest beim Schreiben nicht als erfolgreich belegt.
+- **Blocker:** PR #1 muss konfliktfrei geprüft werden; Versionshistorie, Undo, Android-Geräteabnahme und M1–M4-Abnahme offen.
+- **Nächster Schritt:** Flutter-CI für Test-SHA prüfen und ggf. beheben; danach versionierte Planübernahme/Undo mit expliziter Bestätigung und Widgettests integrieren.
