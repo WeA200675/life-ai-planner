@@ -146,4 +146,22 @@ void main() {
     expect(await store.byId(99999), isNull);
   });
 
+  test('history traverses more than thirty versions without duplication', () async {
+    final ids = <int>[];
+    for (var i = 0; i < 67; i++) {
+      ids.add(await store.accept(plan('task-$i'), start, end));
+    }
+    final pages = <SavedPlan>[];
+    for (var offset = 0; ; offset += 30) {
+      final page = await store.history(limit: 30, offset: offset);
+      pages.addAll(page);
+      if (page.length < 30) break;
+    }
+    expect(pages.length, 67);
+    expect(pages.map((p) => p.id).toSet().length, 67);
+    expect(pages.first.id, ids.last);
+    expect(pages.last.id, ids.first);
+    expect((await store.latest())?.id, ids.last);
+  });
+
 }
