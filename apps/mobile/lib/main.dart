@@ -484,6 +484,67 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 
+  Future<void> _showSavedPlan() async {
+    if (_busy) return;
+    try {
+      final saved = await _store.latestPlan();
+      if (!mounted) return;
+      if (saved == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Noch kein Tagesplan gespeichert.')),
+        );
+        return;
+      }
+      final names = {
+        for (final task in _tasks) task['id'].toString(): task['title'] as String,
+      };
+      final undo = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text('Gespeicherter Plan #${saved.id}'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final block in saved.blocks)
+                  ListTile(
+                    title: Text(names[block.id] ?? block.id),
+                    subtitle: Text(
+                      '${TimeOfDay.fromDateTime(block.start.toLocal()).format(dialogContext)}'
+                      ' – ${TimeOfDay.fromDateTime(block.end.toLocal()).format(dialogContext)}',
+                    ),
+                  ),
+                if (saved.blocks.isEmpty)
+                  const Text('Dieser Plan enthält keine Zeitblöcke.'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Schließen'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Letzten Plan rückgängig machen'),
+            ),
+          ],
+        ),
+      );
+      if (undo != true || !mounted) return;
+      final removed = await _store.undoPlan(saved.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(removed
+            ? 'Vorheriger Plan wiederhergestellt.'
+            : 'Ein neuerer Plan wurde gespeichert; bitte erneut öffnen.'),
+      ));
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Gespeicherter Plan nicht verfügbar.');
+    }
+  }
+
   Future<void> _toggle(int id, bool done) async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -567,6 +628,14 @@ class _TaskScreenState extends State<TaskScreen> {
                 onPressed: _busy ? null : () => _showDayPreview(remaining: true),
                 icon: const Icon(Icons.update),
                 label: const Text('Resttag neu planen'),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _busy ? null : _showSavedPlan,
+                icon: const Icon(Icons.history),
+                label: const Text('Gespeicherten Plan anzeigen'),
               ),
             ),
             if (_error != null)
