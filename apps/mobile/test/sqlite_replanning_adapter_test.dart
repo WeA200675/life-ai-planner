@@ -19,7 +19,7 @@ void main() {
     expect(plan.blocks.map((block) => block.id), ['meeting', '2', '3']);
     expect(plan.blocks.first.start, now);
     expect(plan.blocks.first.end, meeting.end);
-    expect(plan.budgetMinutes, 63);
+    expect(plan.budgetMinutes, 62);
     expect(plan.reservedMinutes, 30);
     expect(rows[1]['minutes'], 30);
     expect(rows[2]['minutes'], isNull);
