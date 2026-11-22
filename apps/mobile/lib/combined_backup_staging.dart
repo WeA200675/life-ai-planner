@@ -24,8 +24,8 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
         'A new .db path is required');
   }
   final file = File(candidatePath);
-  if (await file.exists()) {
-    throw StateError('Staging destination already exists');
+  if (await _stagingFilesExist(candidatePath)) {
+    throw StateError('Staging destination or SQLite sidecar already exists');
   }
   // Do not create parent directories or alter any pre-existing destination.
   if (!await file.parent.exists()) {
@@ -37,8 +37,8 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
     // SQLite may create the destination on open. Check again immediately
     // before open; concurrent external writers remain outside this API's
     // guarantees, so use a private app-controlled directory.
-    if (await file.exists()) {
-      throw StateError('Staging destination already exists');
+    if (await _stagingFilesExist(candidatePath)) {
+      throw StateError('Staging destination or SQLite sidecar already exists');
     }
     created = true;
     db = await (factory ?? databaseFactory).openDatabase(candidatePath,
@@ -62,7 +62,10 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
     if (created) {
       await db?.close();
       db = null;
-      if (await file.exists()) await file.delete();
+      for (final suffix in ['', '-wal', '-shm', '-journal']) {
+        final candidate = File('$candidatePath$suffix');
+        if (await candidate.exists()) await candidate.delete();
+      }
     }
     rethrow;
   } finally {
@@ -129,4 +132,14 @@ Future<void> checkpointStagedDatabase(Database db) async {
           (log >= 0 && checkpointed >= 0 && log == checkpointed))) {
     throw StateError('Staged WAL checkpoint incomplete');
   }
+}
+
+/// SQLite may leave journal/WAL/SHM files even if the main database is absent.
+/// Never stage over an existing sidecar: it might belong to an interrupted
+/// operation and must not be silently destroyed.
+Future<bool> _stagingFilesExist(String path) async {
+  for (final suffix in ['', '-wal', '-shm', '-journal']) {
+    if (await File('$path$suffix').exists()) return true;
+  }
+  return false;
 }
