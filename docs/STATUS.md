@@ -1220,3 +1220,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Sicherheit: Release-Modus ist nicht gleich produktive Signatur. Debug-Signatur bleibt ausdrücklich nicht freigabefähig; keine Schlüssel im Repository.
 - Blocker: kein nachgewiesener Android-Gerätetest, keine produktive Signatur, kein vollständiger Crash-Rollback-Test. M1–M4 bleiben NICHT ABGENOMMEN.
 - Nächster Schritt: GitHub-Actions-Lauf für diesen HEAD auswerten und ggf. korrigieren; Release-Keystore außerhalb des Repos und Geräteabnahme separat nachweisen.
+
+
+## M4 – transaktionaler SQLite-Fehlerfall und Wiederholung (2026-11-22, Lauf 20)
+- README, Implementierungsplan, STATUS, HEAD, PRs/Issues und Flutter-/Release-CI-Definition gelesen. Ausgangs-HEAD `981dd7487a2e19726a407990649c8763248e9567`; PR #1 offen; keine separaten offenen Issues. Keine M1–M4-Gesamtabnahme.
+- **Priorität:** Datenverlustfreie Planannahme bei einem tatsächlichen SQLite-Schreibfehler nach bereits begonnener Transaktion. Der neue synthetische Integrationstest `SQLite trigger failure rolls back header, blocks and request key` in `apps/mobile/test/offline_sqlite_integration_release_test.dart` injiziert mit einem SQLite-Trigger einen Abbruch beim zweiten Blockinsert. Er fordert vollständiges Rollback aller Snapshot-/Block-/Idempotenz-Zeilen und unveränderte Aufgaben. Nach Entfernen des Triggers wird dieselbe Request-ID erneut versucht und die genau einmalige erfolgreiche Speicherung geprüft.
+- **Code-Commit:** `ca1b1c9737b1b554e28cb9ba8177d96c973222cd` (GitHub-Schreibbestätigung).
+- **Tatsächliche Prüfung:** `command -v flutter` und `command -v dart` lieferten keine Installation; `git ls-remote` scheiterte an DNS (`Could not resolve host: github.com`). Der GitHub-Connector lieferte für den vorherigen HEAD keine PR-gefilterten Workflow-Läufe, was Push-CI nicht abdeckt. Der neue Test wurde daher **NICHT AUSGEFÜHRT**, weder Flutter-CI noch APK oder Gerätetest wurden für den neuen Stand als erfolgreich bestätigt. Keine Erfolgskennzahlen behauptet.
+- **Blocker:** Flutter/Android-Toolchain bzw. verifizierbare Push-CI-Logs/Artefakte und Gerätezugriff fehlen; produktive Restore-Umschaltung, Crash-Rollback-Abnahme und Release-Signing bleiben offen.
+- **Nächster Schritt:** Neuen Flutter-Workflow auf Commit `ca1b1c9737b1b554e28cb9ba8177d96c973222cd` in GitHub Actions auswerten, Testausgabe prüfen und gegebenenfalls korrigieren; danach Restore-/Crash-Szenarien, APK-SHA-256, Signatur und Geräteabnahme verifizieren. Keine Secrets oder echten Nutzerdaten.
