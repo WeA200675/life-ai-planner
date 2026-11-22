@@ -55,7 +55,7 @@ jobs:
           flutter analyze --no-fatal-infos
       - name: Flutter tests
         run: flutter test --coverage --reporter expanded
-      - name: Build unsigned release candidate
+      - name: Build release-mode candidate (signing status unverified)
         run: |
           set -euo pipefail
           rm -f build/app/outputs/flutter-apk/app-release.apk
@@ -65,12 +65,24 @@ jobs:
           unzip -t "$apk" > /dev/null
           sha256sum "$apk" > "$apk.sha256"
           cat "$apk.sha256"
+      - name: Inspect candidate signing certificate
+        run: |
+          set -euo pipefail
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          # Release mode does not imply unsigned or production-signed. The
+          # generated Flutter Android scaffold may use the debug keystore.
+          keytool -printcert -jarfile "$apk" > build/app/outputs/flutter-apk/signing-certificate.txt
+          cat build/app/outputs/flutter-apk/signing-certificate.txt
+          if grep -Eiq 'CN=Android Debug|Android Debug' build/app/outputs/flutter-apk/signing-certificate.txt; then
+            echo '::warning::Release-mode APK uses a debug signing identity; NOT a production release.'
+          fi
       - name: Upload candidate and digest
         uses: actions/upload-artifact@v4
         with:
-          name: life-ai-planner-release-candidate-unsigned
+          name: life-ai-planner-release-mode-candidate-signing-unverified
           path: |
             apps/mobile/build/app/outputs/flutter-apk/app-release.apk
             apps/mobile/build/app/outputs/flutter-apk/app-release.apk.sha256
+            apps/mobile/build/app/outputs/flutter-apk/signing-certificate.txt
           if-no-files-found: error
           retention-days: 14
