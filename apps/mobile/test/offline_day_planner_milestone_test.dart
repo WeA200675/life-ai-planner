@@ -204,4 +204,31 @@ void main() {
     expect(result.reservedMinutes, 480);
   });
 
+
+  test('capacity, reserve and determinism across 600 planning windows', () {
+    for (var minutes = 1; minutes <= 600; minutes++) {
+      final windowEnd = start.add(Duration(minutes: minutes));
+      final tasks = [
+        const DayTask(id: 'alpha', minutes: 5, priority: 10),
+        const DayTask(id: 'beta', minutes: 7, priority: 3),
+        const DayTask(id: 'gamma', minutes: 11, priority: 1),
+      ];
+      final first = planOfflineDay(start, windowEnd, tasks);
+      final second = planOfflineDay(start, windowEnd, tasks);
+      expect(first.capacityMinutes, minutes);
+      expect(first.budgetMinutes, (minutes * 0.7).floor());
+      expect(first.blocks.map((b) => b.id).toList(),
+          second.blocks.map((b) => b.id).toList());
+      final used = first.blocks.fold<int>(0,
+          (sum, b) => sum + b.end.difference(b.start).inMinutes);
+      expect(used, lessThanOrEqualTo(first.budgetMinutes));
+      expect(first.reservedMinutes, minutes - used);
+      expect(first.deferred.length + first.blocks.length, tasks.length);
+      for (var i = 1; i < first.blocks.length; i++) {
+        expect(first.blocks[i - 1].end.isAfter(first.blocks[i].start), isFalse);
+      }
+    }
+  });
+
+
 }
