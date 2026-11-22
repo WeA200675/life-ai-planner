@@ -1150,3 +1150,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - `apps/mobile/test/offline_sqlite_integration_release_test.dart`: vier synthetische Tests für konkurrierende identische Anfragen, Schlüssel-Kollision, Undo/Retry und additive Schema-Erstellung. Commits: `d7cbbcebd436942d9cb8d8f64fe5c9463a2a303e`, `4aca21b7f18947f8c8eb17a2d00408c8af9c44a9`, `2057dff88e84c3f1d7f293863786c888dafe208e`.
 - **Nachweisgrenze:** GitHub-Commits bestätigt; Flutter-Tests, CI und APK für diesen Stand nicht erfolgreich nachgewiesen. Die neuen Testfälle sind noch nicht ausgeführt. Keine produktive Restore-Umschaltung oder Geräteabnahme.
 - **Nächster Schritt:** Flutter CI auf dem aktuellen HEAD ausführen und eventuelle Fehler korrigieren; requestKey bis zur UI durchreichen und bei Doppeltaps/retries stabil halten; SQLite-Migrations-/Restore-Tests, Android APK und reale Geräteabnahme.
+
+
+## M3 Release R1 – Android-UI-Idempotenz integriert (2026-11-22)
+- Vor Schreibvorgängen HEAD erneut geprüft; Ausgangs-HEAD `1d6ccd2858e2ea062df0c3c98b9e561629c3951a`. PR #1 weiterhin offen, keine eigenständigen offenen Issues bei letzter Abfrage.
+- `apps/mobile/lib/main.dart`: `LocalTasks.acceptPlan` reicht optionalen requestKey an `PlanSnapshotStore.accept` weiter. Die Tagesplan-/Resttag-Vorschau erzeugt einmalig einen 128-Bit-Schlüssel aus `Random.secure()` und verwendet diesen beim Übernehmen; neue Vorschauen bekommen eigene Schlüssel. Damit ist der Schlüssel an den UI-Bestätigungsvorgang gekoppelt und nicht global geteilt.
+- Commit `9190081bbed6ab7de5c398aa02ece2079cffc632`.
+- **Teststatus:** GitHub-Commit bestätigt; Flutter-Tests, CI und APK für diesen Stand nicht nachgewiesen. UI-Retry nach App-Neustart verwendet noch keine persistierte Operation-ID; keine Behauptung vollständiger Crash-Retry-Garantie. Keine produktive Restore-Umschaltung.
+- **Nächster Schritt:** Flutter CI tatsächlich prüfen, Test-/Buildfehler beheben, Widget-Test für Vorschau/Annahme ergänzen, APK-Artefakt erzeugen und Geräteabnahme durchführen.
