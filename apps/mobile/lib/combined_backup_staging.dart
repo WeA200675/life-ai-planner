@@ -180,3 +180,39 @@ Future<bool> _hasLinkedAncestor(Directory parent) async {
     current = next;
   }
 }
+
+/// Read-only activation preflight for an already staged candidate.
+///
+/// This is intentionally not an activation operation: the caller must close
+/// every active SQLite handle and implement a crash-safe swap separately.
+/// Refuse sidecars because a standalone .db must be self-contained.
+Future<void> inspectStagedCandidate(
+    String archive, String candidatePath, {
+    DatabaseFactory? factory,
+  }) async {
+  validateCombinedBackup(archive);
+  if (candidatePath.trim().isEmpty || !candidatePath.endsWith('.db')) {
+    throw ArgumentError.value(candidatePath, 'candidatePath',
+        'An existing .db candidate is required');
+  }
+  final file = File(candidatePath);
+  if (await _hasLinkedAncestor(file.parent) ||
+      await FileSystemEntity.type(candidatePath, followLinks: false) !=
+          FileSystemEntityType.file) {
+    throw StateError('Candidate must be a regular file in a non-linked path');
+  }
+  for (final suffix in ['-wal', '-shm', '-journal']) {
+    if (await FileSystemEntity.type('$candidatePath$suffix',
+            followLinks: false) != FileSystemEntityType.notFound) {
+      throw StateError('Candidate has an unresolved SQLite sidecar');
+    }
+  }
+  final db = await (factory ?? databaseFactory).openDatabase(candidatePath,
+      options: OpenDatabaseOptions(readOnly: true));
+  try {
+    await verifyStagedDatabase(db);
+    await verifyStagedArchive(db, archive);
+  } finally {
+    await db.close();
+  }
+}
