@@ -31,6 +31,15 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
   if (!await file.parent.exists()) {
     throw StateError('Staging parent directory does not exist');
   }
+  // Never follow a symbolic-link parent or candidate into a different
+  // location. Restore staging must remain in a caller-controlled directory.
+  // This also catches a dangling symlink that File.exists() would miss.
+  if (await FileSystemEntity.type(file.parent.path, followLinks: false) ==
+      FileSystemEntityType.link ||
+      await FileSystemEntity.type(candidatePath, followLinks: false) ==
+          FileSystemEntityType.link) {
+    throw StateError('Staging path must not be a symbolic link');
+  }
   Database? db;
   var created = false;
   try {
