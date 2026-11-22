@@ -52,6 +52,9 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
     final result = await restoreCombinedIntoEmptyDatabase(db, archive);
     await verifyStagedDatabase(db);
     await verifyStagedArchive(db, archive);
+    // A candidate must not depend on uncheckpointed WAL pages when it is
+    // eventually moved or reopened. Never attempt this on the active DB.
+    await checkpointStagedDatabase(db);
     return result;
   } catch (_) {
     // Only delete a destination created by this attempt, never a file that
@@ -100,5 +103,29 @@ Future<void> verifyStagedArchive(Database db, String archive) async {
       jsonEncode(expectedHistory.blocks) !=
           jsonEncode(actualHistory.blocks)) {
     throw StateError('Staged content does not match the backup');
+  }
+}
+
+/// Flush staged WAL pages into the main SQLite file before handing the
+/// candidate to any future activation process. A busy checkpoint is fatal:
+/// copying only the .db file while a WAL is pending would lose data.
+Future<void> checkpointStagedDatabase(Database db) async {
+  final mode = await db.rawQuery('PRAGMA journal_mode');
+  if (mode.length != 1) {
+    throw StateError('Cannot determine staged SQLite journal mode');
+  }
+  final journal = mode.single.values.single.toString().toLowerCase();
+  if (journal != 'wal') return; // DELETE/TRUNCATE journals are not WAL.
+  final rows = await db.rawQuery('PRAGMA wal_checkpoint(TRUNCATE)');
+  if (rows.length != 1) {
+    throw StateError('Staged WAL checkpoint returned no result');
+  }
+  final result = rows.single;
+  final busy = result['busy'];
+  final log = result['log'];
+  final checkpointed = result['checkpointed'];
+  if (busy != 0 || log is! int || checkpointed is! int ||
+      log < 0 || checkpointed < 0 || log != checkpointed) {
+    throw StateError('Staged WAL checkpoint incomplete');
   }
 }
