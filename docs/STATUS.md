@@ -889,3 +889,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächliche Verifikation:** Beide GitHub-Commits bestätigt; HEAD unmittelbar nach Test-Commit erneut geprüft. PR-gefilterte Workflow-Abfrage ergab keine Läufe, **kein** CI-Erfolg nachgewiesen. Keine lokale Flutter-Testausführung oder Geräteabnahme.
 - **Grenzen/Blocker:** Pfadprüfung ist kein atomarer Schutz gegen TOCTOU durch fremde Writer; nur private App-Verzeichnisse verwenden. Exklusiver SQLite-Lock, crash-durable Phasenpersistenz, Original-Sicherung, Rollback, UI-Freigabe und Android-Release-/Gerätetests fehlen. M1–M4 weiterhin nicht abgenommen.
 - **Nächster Schritt:** Flutter-CI des Test-Commits über GitHub Actions prüfen, bei Fehler korrigieren; danach isolierte atomare Journal-Phasenpersistenz mit Crash-Injektion implementieren, ohne produktive Aktivierung.
+
+
+## Recovery-Phasenjournal – 2026-11-22 (09:37 Europe/Berlin)
+- Ausgangs-HEAD laut Commit-Suche: `f9d73ee0fbd1632892ae73363515d53cf57768ec`. Offene PR: #1 (SQLite-Replanning); keine offenen eigenständigen Issues.
+- Neue isolierte Bibliothek `packages/storage/recovery_phase.py`: strikt validierte Phasenfolge `prepared → original_saved → candidate_activated → verified`, Restore-ID-Prüfung, Ablehnung fehlender/ungültiger/überlanger Journale und Symlink-Pfade, atomarer Ersatz mit Datei- und Verzeichnis-fsync. **Keine produktive Datenbankumschaltung aktiviert.**
+- Code-Commit: `19759b9ec64e809cfbd4bbee335ccbf5ec2eeee4`; fünf synthetische Regressionstests: `5a51abcbdc71383345f5845b9d48d26afe0363d6`.
+- **Testnachweis:** fünf Tests mit äquivalentem lokalem Modul in isolierter Python-3-Umgebung erfolgreich (`python -m unittest discover -s tests -p test_recovery_phase.py -v`: 5/5 OK). Repository-weite CI für die neuen Commits **nicht bestätigt**. Git-Klon per DNS-Fehler (`Could not resolve host: github.com`) blockiert; GitHub-Connector-Schreiboperationen erfolgreich.
+- **Wichtiger Blocker:** Der Phasenwechsel benötigt eine externe prozessübergreifende Sperre. Er ist keine Compare-and-swap-Operation; er darf erst mit einem getesteten Restore-Koordinator für exklusive SQLite-Verbindungen, WAL-Checkpoint, Backup, Crash-Recovery und Rollback verbunden werden. Plattform-/Geräteabnahme fehlt.
+- **Nächster Schritt:** CI für neuen HEAD prüfen; externen Restore-Lock und Unterbrechungs-/Rollbacktests implementieren, dann erst produktive Aktivierung freigeben.
+- **Abnahme:** M1–M4 weiterhin offen; keine vollständige Freigabe.
