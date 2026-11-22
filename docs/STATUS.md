@@ -726,3 +726,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Testnachweis:** Commits bestätigt; neue Flutter-CI für den letzten Code-HEAD noch zu verifizieren. Keine lokale Flutter-Ausführung behauptet.
 - **Blocker/weiter offen:** Kein aktivierter UI-Restore und keine sichere DB-Umschaltung/Recovery. Vor einer Aktivierung: Original-DB sichern, offene Handles schließen, SQLite-WAL/SHM behandeln, atomare Aktivierung/Rollback auf Android-Gerät testen. Release- und Geräteabnahme, vollständige M1–M4-Abnahme fehlen.
 - **Nächster Schritt:** neue Flutter-CI prüfen, danach isolierte Aktivierungsstrategie mit Crash-Recovery und expliziter Bestätigung implementieren.
+
+
+## M4 Staging: semantischer Backup-Abgleich – 2026-11-22 (01:20 Europe/Berlin)
+- Vor Änderung HEAD `0227909f50d6c8e020a5308d4dd2edd5c98a5388`; README, Implementierungsplan und STATUS gelesen. PR #1 offen (M3-Replanning), Issues-API enthält nur diesen PR, keine eigenständigen offenen Issues. Keine parallele PR-Arbeit verändert.
+- Ausgangs-CI: Scheduler für `0227909f` [44963305482](https://github.com/WeA200675/life-ai-planner/actions/runs/44963305482) **success**; Flutter für `4b06fdbe` [44963287609](https://github.com/WeA200675/life-ai-planner/actions/runs/44963287609) **success**.
+- Code `bb07bbfb85cece3533b3d51fa78c1f8c31bb5496`: Staging prüft nach SQLite `integrity_check` und `foreign_key_check` zusätzlich den **semantischen Inhalt** des wiederhergestellten Task- und Historienbestands gegen das strikt validierte Ursprungsarchiv. Zusätzliche, fehlende oder veränderte Datensätze verhindern eine Kandidatenfreigabe; Fehlerpfad verwirft die Kandidatendatei. Aktive Datenbank wird nicht verändert.
+- Tests `cc8087a5b1157ecc549ab7647264b8dafa755ef4`: SQLite-FFI-Regressionen für erfolgreichen Inhaltsabgleich, manipulierten Task-Titel bei weiterhin intakter SQLite-Struktur und unerwarteten zusätzlichen Task.
+- **Tatsächliche Prüfung:** GitHub-Commits bestätigt. Flutter [44966091001](https://github.com/WeA200675/life-ai-planner/actions/runs/44966091001) und Scheduler [44966090741](https://github.com/WeA200675/life-ai-planner/actions/runs/44966090741) für Test-HEAD beim Abruf **queued**; kein lokaler Testlauf, kein neuer grüner Build behauptet.
+- **Grenzen:** Noch keine Aktivierung des Staging-Kandidaten, keine UI-Freigabe, kein sicherer SQLite-WAL/SHM-Swap und keine Recovery nach Prozessabbruch. Reale Android-Geräteabnahme und Release-Build fehlen; M1–M4 weiterhin unvollständig.
+- **Nächster Schritt:** neue CI verifizieren, danach gesicherten, explizit bestätigten Aktivierungsprozess mit geschlossenem DB-Handle, Original-Sicherung, Crash-Recovery und Rollback testen, ohne produktive Daten automatisch zu überschreiben.
