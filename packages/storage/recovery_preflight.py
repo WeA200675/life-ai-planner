@@ -71,17 +71,19 @@ def inspect_candidate(path, *, expected_user_version=None, required_tables=(),
                 raise RecoveryPreflightError("SQLite integrity check failed")
             if db.execute("PRAGMA foreign_key_check").fetchone() is not None:
                 raise RecoveryPreflightError("SQLite foreign key check failed")
+            version = db.execute("PRAGMA user_version").fetchone()[0]
+            tables = sorted(row[0] for row in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            ))
             for table, columns in required_columns.items():
+                if table not in tables:
+                    raise RecoveryPreflightError("required application columns missing")
                 # Names are validated above; quote identifiers defensively.
                 present = {row[1] for row in db.execute(
                     'PRAGMA table_info("' + table + '")'
                 )}
                 if not set(columns).issubset(present):
                     raise RecoveryPreflightError("required application columns missing")
-            version = db.execute("PRAGMA user_version").fetchone()[0]
-            tables = sorted(row[0] for row in db.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-            ))
     except sqlite3.DatabaseError as exc:
         raise RecoveryPreflightError("invalid SQLite candidate") from exc
     # A WAL/journal appearing during the read invalidates the immutable snapshot.
