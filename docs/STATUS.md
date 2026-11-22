@@ -1186,3 +1186,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Abnahme:** M1–M4 noch nicht vollständig.
 
 - **CI-Korrektur desselben Laufs:** Android-Schema-Workflow [45062126699](https://github.com/WeA200675/life-ai-planner/actions/runs/45062126699) scheiterte nach erfolgreicher Syntaxprüfung mit Exit 2: YAML faltete zwei `python -m unittest`-Kommandos zu einem einzigen ungültigen Aufruf (`unrecognized arguments: -m`). Workflow-Skriptblock auf `run: |` korrigiert, Commit `af537467bf788dcdc73248ac5db5b5ecdf6fc78e`. Neuer CI-Lauf muss separat bestätigt werden.
+
+
+## M4 – realer SQLite-v3→v4-Upgrade-Test (2026-11-22, Lauf 20)
+- README, `docs/IMPLEMENTATION_PLAN.md`, STATUS, HEAD und offene PRs/Issues geprüft: Ausgangs-HEAD `bae5d3f57905d65cb137cb7f71bf7b959e0454aa`; PR #1 offen, keine separaten offenen Issues. M1–M4 nicht abgenommen. CI-Stand: dokumentierter fehlgeschlagener Android-Schema-Lauf `45062126699`; Korrektur `af537467bf788dcdc73248ac5db5b5ecdf6fc78e` ist noch nicht als erfolgreich verifiziert. PR-gefilterte Commit-Workflow-Abfrage für HEAD lieferte keine Läufe und ist keine vollständige Push-CI-Sicht.
+- **Neuer vertikaler Test:** `apps/mobile/test/offline_sqlite_integration_release_test.dart` legt eine temporäre echte SQLite-Datei als v3 mit synthetischer Task an, schließt sie, öffnet sie als v4 mit Upgrade-Callback erneut, erstellt die Snapshot-Struktur additiv und prüft Upgrade-Callback, unveränderte Tasks, akzeptierten Plan und Historie. Aufräumen im `finally`. Code-Commit `17abd83021f7aef06084ec704e6d11380bff5375`.
+- **Tatsächliche Testausführung:** Flutter/Dart im verfügbaren Container nicht installiert; `git ls-remote` scheiterte an DNS (`Could not resolve host: github.com`). GitHub-Connector bestätigte den Code-Commit, aber kein erfolgreicher Flutter-Test, CI-Lauf oder APK-Build für diesen Commit nachgewiesen. Teststatus **UNVERIFIZIERT**.
+- **Blocker:** Flutter-Laufzeit und vollständige GitHub-Actions-Push-Job-Einsicht fehlen hier; Geräteabnahme und produktive Restore-Umschaltung weiterhin offen. Keine Secrets/privaten Daten verwendet.
+- **Nächster Schritt:** GitHub Actions Flutter-Workflow auf aktuellem HEAD samt Job-Logs und APK-Artefakt verifizieren, Fehler beheben; danach echten Android-v4-Restore mit Crash-Rollback und Geräteabnahme prüfen.
