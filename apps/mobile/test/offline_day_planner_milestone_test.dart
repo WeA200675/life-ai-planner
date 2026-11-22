@@ -161,4 +161,21 @@ void main() {
     planOfflineDay(start, end, tasks);
     expect(tasks.map((t) => t.id).toList(), original);
   });
+  test('shared validator handles both planning entry points without recursion', () {
+    final tasks = [
+      const DayTask(id: 'done', minutes: 15),
+      const DayTask(id: 'remaining', minutes: 30),
+    ];
+    final initial = planOfflineDay(start, end, tasks);
+    expect(initial.blocks.length, 2);
+    final replanned = replanOfflineDay(start, end, tasks,
+        completedTaskIds: {'done'});
+    expect(replanned.blocks.map((block) => block.id).toList(),
+        ['remaining']);
+    expect(() => replanOfflineDay(start, end, [
+      const DayTask(id: 'duplicate', minutes: 10),
+      const DayTask(id: 'duplicate', minutes: 20),
+    ]), throwsArgumentError);
+  });
+
 }
