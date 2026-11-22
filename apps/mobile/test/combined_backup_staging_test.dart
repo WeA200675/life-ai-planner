@@ -487,4 +487,34 @@ void main() {
     }
   });
 
+  test('candidate recovery artifacts block preflight and remain untouched',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('candidate-recovery-');
+    final source = await openDatabase('${dir.path}/source.db');
+    try {
+      await createTaskSchema(source);
+      await createPlanSnapshotSchema(source);
+      final archive = await exportCombinedBackup(source);
+      final candidate = '${dir.path}/candidate.db';
+      await stageCombinedBackup(archive, candidate);
+      for (final suffix in [
+        '.restore-backup', '.restore-marker', '.restore-pending'
+      ]) {
+        final artifact = File('$candidate$suffix');
+        await artifact.writeAsString('PRESERVE');
+        await expectLater(
+            inspectStagedCandidate(archive, candidate), throwsStateError);
+        await expectLater(
+            inspectRestorePair(archive, '${dir.path}/source.db', candidate),
+            throwsStateError);
+        expect(await artifact.readAsString(), 'PRESERVE');
+        await artifact.delete();
+      }
+      await inspectStagedCandidate(archive, candidate);
+    } finally {
+      await source.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
