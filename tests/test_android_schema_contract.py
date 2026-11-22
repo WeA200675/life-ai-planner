@@ -86,6 +86,31 @@ class AndroidSchemaContractTests(unittest.TestCase):
             inspect_android_v4_candidate(self.path)
         self.assertEqual(sidecar.read_bytes(), b"synthetic")
 
+    def test_task_table_without_primary_key_rejected(self):
+        with sqlite3.connect(self.path) as db:
+            db.executescript("""
+                DROP TABLE tasks;
+                CREATE TABLE tasks (
+                    id INTEGER, title TEXT, done INTEGER, minutes INTEGER,
+                    priority INTEGER, deadline_utc_ms INTEGER
+                );
+            """)
+        with self.assertRaisesRegex(RecoveryPreflightError, "primary key"):
+            inspect_android_v4_candidate(self.path)
+
+    def test_reversed_composite_primary_key_rejected(self):
+        with sqlite3.connect(self.path) as db:
+            db.executescript("""
+                DROP TABLE plan_snapshot_blocks;
+                CREATE TABLE plan_snapshot_blocks (
+                    snapshot_id INTEGER, position INTEGER, task_id TEXT,
+                    start_utc_ms INTEGER, end_utc_ms INTEGER,
+                    PRIMARY KEY(position, snapshot_id)
+                );
+            """)
+        with self.assertRaisesRegex(RecoveryPreflightError, "primary key"):
+            inspect_android_v4_candidate(self.path)
+
 
 if __name__ == "__main__":
     unittest.main()
