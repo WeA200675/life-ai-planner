@@ -42,7 +42,19 @@ class LocalTasks {
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         // Idempotent additive schema for existing v4 installations.
         // Never drop or rewrite user tasks or accepted plans.
-        onOpen: (db) async => createPlanSnapshotSchema(db),
+        onOpen: (db) async {
+          await createPlanSnapshotSchema(db);
+          // Existing databases may contain orphaned rows from older builds
+          // that did not enable foreign keys. Fail closed rather than silently
+          // continuing to write to a corrupt relationship graph.
+          final violations = await db.rawQuery('PRAGMA foreign_key_check');
+          if (violations.isNotEmpty) {
+            throw StateError(
+              'Local SQLite foreign-key integrity check failed; '
+              'database left unchanged. Restore from a verified backup.',
+            );
+          }
+        },
         onCreate: (db, version) async {
           await createTaskSchema(db);
           await createPlanSnapshotSchema(db);
