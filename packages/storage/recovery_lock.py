@@ -40,7 +40,8 @@ def recovery_lock(path):
     locked = False
     try:
         metadata = os.fstat(fd)
-        if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+        if (not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1
+                or stat.S_IMODE(metadata.st_mode) & 0o077):
             raise RecoveryPhaseError("unsafe lock file")
         if os.stat(path, follow_symlinks=False).st_ino != metadata.st_ino:
             raise RecoveryPhaseError("lock file replaced")
