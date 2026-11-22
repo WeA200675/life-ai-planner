@@ -29,8 +29,21 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f services/api/requirements.txt ]; then pip install -r services/api/requirements.txt; fi
-      - name: Run repository regression tests
-        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Run repository regression tests and retain evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p acceptance-evidence
+          python -m compileall -q packages services tests 2>&1 | tee acceptance-evidence/python-compile.log
+          python -m unittest discover -s tests -p 'test_*.py' -v 2>&1 | tee acceptance-evidence/python-tests.log
+      - name: Upload backend test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: life-ai-planner-backend-test-evidence
+          path: acceptance-evidence/
+          if-no-files-found: warn
+          retention-days: 14
   android-release:
     needs: backend-tests
     runs-on: ubuntu-latest
@@ -59,7 +72,21 @@ jobs:
           flutter pub get
           flutter analyze --no-fatal-infos
       - name: Flutter tests
-        run: flutter test --coverage --reporter expanded
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p acceptance-evidence
+          flutter test --coverage --reporter expanded 2>&1 | tee acceptance-evidence/flutter-tests.log
+      - name: Upload Flutter test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: life-ai-planner-flutter-test-evidence
+          path: |
+            apps/mobile/acceptance-evidence/flutter-tests.log
+            apps/mobile/coverage/lcov.info
+          if-no-files-found: warn
+          retention-days: 14
       - name: Build release-mode candidate (signing status unverified)
         run: |
           set -euo pipefail
