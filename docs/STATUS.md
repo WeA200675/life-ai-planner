@@ -880,3 +880,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Testnachweis:** GitHub-Schreiboperationen bestätigt. Weder lokale Flutter-Tests noch ein abgeschlossener Actions-Lauf für den neuen Test-Commit nachgewiesen; **kein grüner CI-Status behauptet**. Letzter hier separat geprüfter Scheduler-Job [44988867490](https://github.com/WeA200675/life-ai-planner/actions/runs/44988867490) war erfolgreich, gehört aber zu einem älteren Stand.
 - **Blocker:** Keine sichere atomare Journal-Phasenpersistenz mit Crash-Recovery und Directory-fsync, kein exklusiver SQLite-Lock, kein produktiver Swap/Rollback, keine Android-Geräte- und Release-Abnahme. Repo öffentlich; keine privaten Testdaten.
 - **Nächster Schritt:** Aktuelle Flutter-CI des neuen HEAD prüfen und ggf. reparieren; danach sichere Phasenpersistenz in isoliertem Verzeichnis mit Fehler-Injektion, ohne produktive Datenbankaktivierung. M1–M4 weiterhin offen.
+
+
+## M4 Restore-Marker: Symlink-Pfadprüfung – 2026-11-22 (09:17 Europe/Berlin)
+- Vor Änderungen: GitHub-HEAD `906f2d83e2c2e083abe2cd66968b4b1341dec019`; README, Implementierungsplan, STATUS, offene PRs und Issues geprüft. PR #1 offen, keine eigenständigen Issues; keine vollständige Abnahme.
+- Code-Commit `e2032ff8e1b269b9bea8cf1206e8ca298f85a67e`: `RestoreJournalStore` verweigert nun beim Erstellen und Lesen symbolische Links im Markerpfad sowie in allen Vorfahren (nofollow). Kein produktiver Datenbanktausch.
+- Test-Commit `ee157a753a45ab95732b2d8e5fe6282eb8f13d7d`: zwei synthetische Dateisystem-Regressionstests für verlinkte Elternverzeichnisse und Markerdateien; auf Windows übersprungen.
+- **Tatsächliche Verifikation:** Beide GitHub-Commits bestätigt; HEAD unmittelbar nach Test-Commit erneut geprüft. PR-gefilterte Workflow-Abfrage ergab keine Läufe, **kein** CI-Erfolg nachgewiesen. Keine lokale Flutter-Testausführung oder Geräteabnahme.
+- **Grenzen/Blocker:** Pfadprüfung ist kein atomarer Schutz gegen TOCTOU durch fremde Writer; nur private App-Verzeichnisse verwenden. Exklusiver SQLite-Lock, crash-durable Phasenpersistenz, Original-Sicherung, Rollback, UI-Freigabe und Android-Release-/Gerätetests fehlen. M1–M4 weiterhin nicht abgenommen.
+- **Nächster Schritt:** Flutter-CI des Test-Commits über GitHub Actions prüfen, bei Fehler korrigieren; danach isolierte atomare Journal-Phasenpersistenz mit Crash-Injektion implementieren, ohne produktive Aktivierung.
