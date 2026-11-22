@@ -1,0 +1,76 @@
+name: Release acceptance candidate
+permissions:
+  contents: read
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - 'services/**'
+      - 'tests/**'
+      - '.github/workflows/release-acceptance.yml'
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f services/api/requirements.txt ]; then pip install -r services/api/requirements.txt; fi
+      - name: Run repository regression tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+  android-release:
+    needs: backend-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare Android project
+        run: |
+          set -euo pipefail
+          flutter --version
+          if [ ! -f android/app/build.gradle.kts ] && [ ! -f android/app/build.gradle ]; then
+            flutter create --no-pub --platforms=android --project-name life_ai_planner .
+            rm -f test/widget_test.dart
+          fi
+          test -f android/app/src/main/AndroidManifest.xml
+      - name: Dependencies and static analysis
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos
+      - name: Flutter tests
+        run: flutter test --coverage --reporter expanded
+      - name: Build unsigned release candidate
+        run: |
+          set -euo pipefail
+          rm -f build/app/outputs/flutter-apk/app-release.apk
+          flutter build apk --release --no-shrink
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          test -s "$apk"
+          unzip -t "$apk" > /dev/null
+          sha256sum "$apk" > "$apk.sha256"
+          cat "$apk.sha256"
+      - name: Upload candidate and digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: life-ai-planner-release-candidate-unsigned
+          path: |
+            apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+            apps/mobile/build/app/outputs/flutter-apk/app-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 14
