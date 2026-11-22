@@ -20,23 +20,37 @@ void main() {
 
 class LocalTasks {
   Database? _db;
+  Future<Database>? _opening;
 
-  Future<Database> get database async {
-    if (_db != null) return _db!;
-    final root = await getDatabasesPath();
-    return _db = await openDatabase(
-      p.join(root, 'life_ai_planner.db'),
-      version: 4,
-      onCreate: (db, version) async {
-        await createTaskSchema(db);
-        await createPlanSnapshotSchema(db);
-      },
-      onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) await migrateTasksV1ToV2(db);
-        if (oldVersion < 3) await migrateTasksV2ToV3(db);
-        if (oldVersion < 4) await createPlanSnapshotSchema(db);
-      },
-    );
+  /// Share the in-flight open so simultaneous callers cannot race migrations.
+  /// A failed open is not cached: the next request may retry offline.
+  Future<Database> get database {
+    final current = _db;
+    if (current != null) return Future.value(current);
+    return _opening ??= _openDatabase();
+  }
+
+  Future<Database> _openDatabase() async {
+    try {
+      final root = await getDatabasesPath();
+      final opened = await openDatabase(
+        p.join(root, 'life_ai_planner.db'),
+        version: 4,
+        onCreate: (db, version) async {
+          await createTaskSchema(db);
+          await createPlanSnapshotSchema(db);
+        },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) await migrateTasksV1ToV2(db);
+          if (oldVersion < 3) await migrateTasksV2ToV3(db);
+          if (oldVersion < 4) await createPlanSnapshotSchema(db);
+        },
+      );
+      _db = opened;
+      return opened;
+    } finally {
+      _opening = null;
+    }
   }
 
   Future<List<Map<String, Object?>>> all() async {
@@ -146,8 +160,18 @@ class LocalTasks {
       PlanSnapshotStore(await database).undoLatest(id);
 
   Future<void> close() async {
-    await _db?.close();
+    // Do not leave an in-flight open alive after closing the store.
+    final opening = _opening;
+    if (opening != null) {
+      try {
+        await opening;
+      } catch (_) {
+        // Opening failed; there is no database handle to close.
+      }
+    }
+    final db = _db;
     _db = null;
+    if (db != null) await db.close();
   }
 }
 
