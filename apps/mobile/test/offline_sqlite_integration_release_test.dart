@@ -1,0 +1,129 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:life_ai_planner/local_task_schema.dart';
+import 'package:life_ai_planner/offline_day_planner.dart';
+import 'package:life_ai_planner/plan_snapshot_store.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+/// Release R1: real SQLite transactions with synthetic, offline-only data.
+/// Never opens or modifies the user's installed application database.
+void main() {
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
+  late Database db;
+  late PlanSnapshotStore snapshots;
+  final start = DateTime.utc(2026, 11, 22, 8);
+  final end = DateTime.utc(2026, 11, 22, 18);
+
+  setUp(() async {
+    db = await openDatabase(inMemoryDatabasePath, version: 4,
+        onCreate: (database, version) async {
+      await createTaskSchema(database);
+      await createPlanSnapshotSchema(database);
+    });
+    snapshots = PlanSnapshotStore(db);
+  });
+
+  tearDown(() async => db.close());
+
+  Future<List<Map<String, Object?>>> seedTasks() async {
+    await db.insert('tasks', {
+      'title': 'Priority', 'done': 0, 'minutes': 40, 'priority': 10
+    });
+    await db.insert('tasks', {
+      'title': 'Normal', 'done': 0, 'minutes': 30, 'priority': 1
+    });
+    return db.query('tasks', orderBy: 'id ASC');
+  }
+
+  DayPlan preview(List<Map<String, Object?>> rows) {
+    final tasks = rows.map((row) => DayTask(
+      id: (row['id'] as int).toString(),
+      minutes: row['minutes'] as int,
+      priority: row['priority'] as int,
+    )).toList();
+    return planOfflineDay(start, end, tasks);
+  }
+
+  test('full offline preview, acceptance, history and undo preserve tasks',
+      () async {
+    final original = await seedTasks();
+    final plan = preview(original);
+    expect(plan.blocks.map((block) => block.id).toList(), ['1', '2']);
+    final first = await snapshots.accept(plan, start, end,
+        expectedTasks: original);
+    expect((await snapshots.latest())?.id, first);
+    expect((await snapshots.byId(first))?.blocks.length, 2);
+    expect((await snapshots.history()).single.id, first);
+    expect(await db.query('tasks', orderBy: 'id ASC'), original);
+    expect(await snapshots.undoLatest(first), isTrue);
+    expect(await snapshots.latest(), isNull);
+    expect(await db.query('tasks', orderBy: 'id ASC'), original);
+  });
+
+  test('stale preview cannot overwrite newer task metadata', () async {
+    final original = await seedTasks();
+    final plan = preview(original);
+    await db.update('tasks', {'minutes': 90},
+        where: 'id = ?', whereArgs: [1]);
+    await expectLater(
+      snapshots.accept(plan, start, end, expectedTasks: original),
+      throwsStateError,
+    );
+    expect(await snapshots.latest(), isNull);
+    expect((await db.query('tasks', where: 'id = ?', whereArgs: [1]))
+        .single['minutes'], 90);
+  });
+
+  test('concurrent accept with stale preview is serialized by SQLite',
+      () async {
+    final original = await seedTasks();
+    final plan = preview(original);
+    final accepted = await Future.wait([
+      snapshots.accept(plan, start, end, expectedTasks: original),
+      snapshots.accept(plan, start, end, expectedTasks: original),
+    ]);
+    expect(accepted.toSet().length, 2);
+    expect((await snapshots.history()).length, 2);
+    expect(await db.query('tasks', orderBy: 'id ASC'), original);
+    // Concurrent accept is append-only; it is NOT a unique-request guarantee.
+  });
+
+  test('invalid overlapping blocks roll back without partial writes',
+      () async {
+    final original = await seedTasks();
+    final invalid = DayPlan([
+      DayBlock('1', start, start.add(const Duration(minutes: 40))),
+      DayBlock('2', start.add(const Duration(minutes: 20)),
+          start.add(const Duration(minutes: 50))),
+    ], const [], const [], 600, 420, 530);
+    await expectLater(
+      snapshots.accept(invalid, start, end, expectedTasks: original),
+      throwsArgumentError,
+    );
+    expect(await db.query('plan_snapshots'), isEmpty);
+    expect(await db.query('plan_snapshot_blocks'), isEmpty);
+    expect(await db.query('tasks', orderBy: 'id ASC'), original);
+  });
+
+  test('schema upgrade from v3 retains tasks and adds snapshot history',
+      () async {
+    final path = await databaseFactoryFfi.getDatabasesPath();
+    // Exercise the same migration DDL in a private in-memory database.
+    final legacy = await openDatabase(inMemoryDatabasePath, version: 3,
+        onCreate: (database, version) async {
+      await createTaskSchema(database);
+    });
+    try {
+      await legacy.insert('tasks', {'title': 'Legacy', 'done': 0});
+      await createPlanSnapshotSchema(legacy);
+      final rows = await legacy.query('tasks');
+      expect(rows.single['title'], 'Legacy');
+      expect(await legacy.query('plan_snapshots'), isEmpty);
+      expect(await legacy.query('plan_snapshot_blocks'), isEmpty);
+    } finally {
+      await legacy.close();
+    }
+    expect(path, isNotEmpty);
+  });
+}
