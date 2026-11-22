@@ -216,3 +216,41 @@ Future<void> inspectStagedCandidate(
     await db.close();
   }
 }
+
+
+/// Conservative preflight for a future database activation.
+///
+/// The active database MUST already be closed by its owner. This method never
+/// performs a swap, backup, checkpoint or destructive filesystem operation.
+/// A live WAL/SHM/journal, linked path, missing file or colliding recovery
+/// artifact blocks activation until handled by a separate recovery protocol.
+Future<void> inspectClosedActiveDatabase(String activePath, {
+    DatabaseFactory? factory,
+  }) async {
+  if (activePath.trim().isEmpty || !activePath.endsWith('.db')) {
+    throw ArgumentError.value(activePath, 'activePath',
+        'An existing .db path is required');
+  }
+  final file = File(activePath);
+  if (await _hasLinkedAncestor(file.parent) ||
+      await FileSystemEntity.type(activePath, followLinks: false) !=
+          FileSystemEntityType.file) {
+    throw StateError('Active database must be a regular non-linked file');
+  }
+  // Never checkpoint or remove sidecars on behalf of the running app.
+  // Also reject artifacts of a previous interrupted activation attempt.
+  for (final suffix in ['-wal', '-shm', '-journal', '.restore-backup',
+      '.restore-marker', '.restore-pending']) {
+    if (await FileSystemEntity.type('$activePath$suffix',
+            followLinks: false) != FileSystemEntityType.notFound) {
+      throw StateError('Active database has sidecar or recovery artifact');
+    }
+  }
+  final db = await (factory ?? databaseFactory).openDatabase(activePath,
+      options: OpenDatabaseOptions(readOnly: true, singleInstance: false));
+  try {
+    await verifyStagedDatabase(db);
+  } finally {
+    await db.close();
+  }
+}
