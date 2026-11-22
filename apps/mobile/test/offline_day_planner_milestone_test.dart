@@ -178,4 +178,30 @@ void main() {
     ]), throwsArgumentError);
   });
 
+  test('fractional fixed appointments do not inflate 70/30 budget', () {
+    final hourStart = DateTime.utc(2026, 11, 22, 8);
+    final hourEnd = DateTime.utc(2026, 11, 22, 9);
+    final result = planOfflineDay(hourStart, hourEnd, const [], fixed: [
+      DayBlock('a', hourStart, hourStart.add(const Duration(seconds: 30))),
+      DayBlock('b', hourStart.add(const Duration(minutes: 30)),
+          hourStart.add(const Duration(minutes: 30, seconds: 30))),
+    ]);
+    // 60 min - 60 seconds = 59 min, then floor(59 * 0.7) = 41.
+    // The old per-appointment rounding incorrectly yielded 42.
+    expect(result.capacityMinutes, 60);
+    expect(result.budgetMinutes, 41);
+    expect(result.reservedMinutes, 59);
+  });
+
+  test('exact minute fixed appointments preserve existing budget', () {
+    final result = planOfflineDay(start, end, const [], fixed: [
+      DayBlock('a', DateTime.utc(2026, 11, 22, 9),
+          DateTime.utc(2026, 11, 22, 10)),
+      DayBlock('b', DateTime.utc(2026, 11, 22, 11),
+          DateTime.utc(2026, 11, 22, 12)),
+    ]);
+    expect(result.budgetMinutes, 336);
+    expect(result.reservedMinutes, 480);
+  });
+
 }
