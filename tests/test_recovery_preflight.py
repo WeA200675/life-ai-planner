@@ -139,6 +139,32 @@ class RecoveryPreflightTests(unittest.TestCase):
         self.assertTrue(all(connection.closed for connection in connections))
 
 
+    def test_same_size_write_with_restored_mtime_rejected(self):
+        # A concurrent writer can preserve size and restore mtime. ctime
+        # still changes on supported filesystems, invalidating preflight.
+        real_connect = sqlite3.connect
+        original = self.path.stat()
+        original_bytes = self.path.read_bytes()
+
+        def concurrent_write(*args, **kwargs):
+            connection = real_connect(*args, **kwargs)
+            with self.path.open("r+b") as handle:
+                handle.seek(200)
+                value = handle.read(1)
+                handle.seek(200)
+                handle.write(value)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.utime(self.path, ns=(original.st_atime_ns, original.st_mtime_ns))
+            return connection
+
+        with patch("packages.storage.recovery_preflight.sqlite3.connect",
+                   side_effect=concurrent_write):
+            with self.assertRaisesRegex(RecoveryPreflightError, "changed"):
+                inspect_candidate(self.path, expected_user_version=4)
+        self.assertEqual(self.path.read_bytes(), original_bytes)
+        self.assertEqual(self.path.stat().st_mtime_ns, original.st_mtime_ns)
+
     def test_candidate_disappearing_after_read_fails_closed(self):
         real_lstat = Path.lstat
         calls = 0
