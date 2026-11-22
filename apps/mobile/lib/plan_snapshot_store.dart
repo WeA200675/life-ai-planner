@@ -57,12 +57,21 @@ class PlanSnapshotStore {
         plan.reservedMinutes > plan.capacityMinutes) {
       throw ArgumentError('Invalid plan capacity');
     }
+    // A persisted snapshot must be internally coherent even when its caller
+    // bypasses the planner. Reject contradictory or duplicate deferred IDs.
+    final deferredIds = <String>{};
+    for (final id in plan.deferred) {
+      if (id.trim().isEmpty || id != id.trim() || !deferredIds.add(id)) {
+        throw ArgumentError('Invalid or duplicate deferred task id');
+      }
+    }
     final ordered = [...plan.blocks]..sort((a, b) =>
         a.start.compareTo(b.start));
     final ids = <String>{};
     for (var i = 0; i < ordered.length; i++) {
       final block = ordered[i];
-      if (block.id.trim().isEmpty || !ids.add(block.id) ||
+      if (block.id.trim().isEmpty || block.id != block.id.trim() ||
+          deferredIds.contains(block.id) || !ids.add(block.id) ||
           (i > 0 && ordered[i - 1].end.isAfter(block.start))) {
         throw ArgumentError('Duplicate or overlapping plan blocks');
       }
