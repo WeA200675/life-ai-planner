@@ -50,6 +50,25 @@ class RecoveryPreflightTests(unittest.TestCase):
         with self.assertRaisesRegex(RecoveryPreflightError, "symlink"):
             inspect_candidate(link)
 
+    def test_orphaned_foreign_key_rejected_without_modifying_candidate(self):
+        with sqlite3.connect(self.path) as db:
+            db.execute("CREATE TABLE parents (id INTEGER PRIMARY KEY)")
+            db.execute("CREATE TABLE children (parent_id INTEGER REFERENCES parents(id))")
+            db.execute("INSERT INTO children(parent_id) VALUES (999)")
+        before = self.path.read_bytes()
+        with self.assertRaisesRegex(RecoveryPreflightError, "foreign key"):
+            inspect_candidate(self.path, expected_user_version=4)
+        self.assertEqual(self.path.read_bytes(), before)
+
+    def test_valid_foreign_key_relationship_accepted(self):
+        with sqlite3.connect(self.path) as db:
+            db.execute("CREATE TABLE parents (id INTEGER PRIMARY KEY)")
+            db.execute("CREATE TABLE children (parent_id INTEGER REFERENCES parents(id))")
+            db.execute("INSERT INTO parents(id) VALUES (1)")
+            db.execute("INSERT INTO children(parent_id) VALUES (1)")
+        result = inspect_candidate(self.path, expected_user_version=4)
+        self.assertEqual(result["tables"], ["children", "parents", "tasks"])
+
     def test_missing_and_invalid_version_rejected(self):
         with self.assertRaises(RecoveryPreflightError):
             inspect_candidate(Path(self.tmp.name) / "missing.db")
