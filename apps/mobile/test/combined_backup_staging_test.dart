@@ -108,4 +108,50 @@ void main() {
     }
   });
 
+  test('semantic verification detects modified task content after staging',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('stage-content-');
+    final source = await openDatabase('${dir.path}/source.db');
+    final staged = await openDatabase('${dir.path}/staged.db');
+    try {
+      for (final db in [source, staged]) {
+        await createTaskSchema(db);
+        await createPlanSnapshotSchema(db);
+        await db.insert('tasks', {'id': 9, 'title': 'Original', 'done': 0});
+      }
+      final archive = await exportCombinedBackup(source);
+      await verifyStagedArchive(staged, archive);
+      await staged.update('tasks', {'title': 'Altered'},
+          where: 'id = ?', whereArgs: [9]);
+      // SQLite remains structurally sound, but semantic comparison must fail.
+      await verifyStagedDatabase(staged);
+      await expectLater(verifyStagedArchive(staged, archive), throwsStateError);
+      expect((await source.query('tasks')).single['title'], 'Original');
+    } finally {
+      await source.close();
+      await staged.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('semantic verification rejects unexpected extra staged task',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('stage-extra-');
+    final source = await openDatabase('${dir.path}/source.db');
+    final staged = await openDatabase('${dir.path}/staged.db');
+    try {
+      for (final db in [source, staged]) {
+        await createTaskSchema(db);
+        await createPlanSnapshotSchema(db);
+      }
+      final archive = await exportCombinedBackup(source);
+      await staged.insert('tasks', {'id': 2, 'title': 'Unexpected', 'done': 0});
+      await expectLater(verifyStagedArchive(staged, archive), throwsStateError);
+    } finally {
+      await source.close();
+      await staged.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
