@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'restore_journal.dart';
@@ -10,6 +11,9 @@ import 'restore_journal.dart';
 /// This is NOT a crash-durable swap protocol (directory fsync is unavailable).
 class RestoreJournalStore {
   const RestoreJournalStore();
+
+  // Recovery metadata is small; never load unbounded attacker-controlled files.
+  static const int maxMarkerBytes = 16384;
 
   Future<void> create(File marker, RestoreJournal journal) async {
     final validated = RestoreJournal.decode(journal.encode());
@@ -33,6 +37,11 @@ class RestoreJournalStore {
         FileSystemEntityType.file) {
       throw StateError('Restore marker missing or not a regular file');
     }
-    return RestoreJournal.decode(await marker.readAsString());
+    // Bound memory even when the file changes after the initial type check.
+    final bytes = await marker.openRead(0, maxMarkerBytes + 1).expand((b) => b).toList();
+    if (bytes.length > maxMarkerBytes) {
+      throw const FormatException('Restore marker exceeds size limit');
+    }
+    return RestoreJournal.decode(utf8.decode(bytes));
   }
 }
