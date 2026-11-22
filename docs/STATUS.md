@@ -862,3 +862,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub-Commits bestätigt. Für den neuen Test-Commit liefert die verfügbare PR-Workflow-Abfrage keine Läufe; das ist **kein** grüner CI-Nachweis. Keine lokale Dart-/Flutter-Ausführung in diesem Lauf, keine Android-Geräteprüfung.
 - **Grenzen:** Exklusives Erstellen + Flush allein garantiert keine Directory-fsync-Dauerhaftigkeit, keine atomare mehrstufige Aktivierung, keinen Lock über andere DB-Nutzer und keinen Rollback. Bei Schreibfehlern bleibt ein möglicherweise partieller Marker absichtlich bestehen (fail closed). Nur private App-Verzeichnisse verwenden; keine automatischen produktiven Änderungen.
 - **Nächster Schritt:** Flutter-CI der Commits prüfen und ggf. korrigieren. Danach isolierte Recovery-/Crash-Injektionstests und eine sichere Journal-Phasenpersistenz mit ausdrücklich bestätigter, exklusiver Aktivierung entwickeln. M1–M4 weiterhin **nicht abgenommen**.
+
+
+## M4 Begrenztes Restore-Marker-Lesen – 2026-11-22 (08:16 Europe/Berlin)
+- Ausgangs-HEAD vor Codeänderung: `26f300aa0bc1821de05dd24177aa49e90775de0c`; README, Implementierungsplan, STATUS sowie offene PRs/Issues geprüft: PR #1 offen, keine eigenständigen offenen Issues.
+- Implementierung `88c10b1fe22573f7990d7c84d9b7ac7f7dee38bf`: Restore-Marker werden beim Lesen auf maximal 16.384 Bytes begrenzt. Überlange Dateien werden abgelehnt, ohne sie zu ändern; unbeschränktes Einlesen entfällt. Keine Aktivierung oder produktive SQLite-Mutation.
+- Regressionstest `d879ff93eaf0b572ca143f7956bf291b335f2ea2`: synthetischer überlanger Marker muss FormatException auslösen, unverändert bleiben und darf nicht überschrieben werden.
+- **Tatsächliche Tests:** GitHub-Commits bestätigt. PR-gefilterte Workflow-Abfrage für Test-Commit ergab keine Läufe; **kein erfolgreicher Flutter-Test, Analyze oder APK-Build für diesen Commit nachgewiesen**. Keine lokale Dart-Toolchain-Ausführung in diesem Lauf.
+- **Blocker:** GitHub-Actions-Ergebnis prüfen; Symlink-/TOCTOU-Risiken bei Marker-Dateien, atomare Phasenpersistenz, exklusiver Datenbank-Lock, Crash-Recovery, Rollback und Android-Geräteabnahme bleiben offen. M1–M4 nicht vollständig abgenommen.
+- **Nächster Schritt:** CI des neuen HEAD auswerten und bei Fehler korrigieren; anschließend atomare Journal-Phasenpersistenz und gezielte Crash-Injektionstests implementieren, ohne produktive Datenbank automatisch auszutauschen.
