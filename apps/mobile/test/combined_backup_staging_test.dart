@@ -154,4 +154,40 @@ void main() {
     }
   });
 
+  test('checkpoint preserves staged data after closing and reopening WAL DB',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('stage-wal-');
+    final path = '${dir.path}/candidate.db';
+    var db = await openDatabase(path);
+    try {
+      await createTaskSchema(db);
+      await createPlanSnapshotSchema(db);
+      await db.rawQuery('PRAGMA journal_mode=WAL');
+      await db.insert('tasks', {'id': 17, 'title': 'Synthetic WAL', 'done': 0});
+      await checkpointStagedDatabase(db);
+      await db.close();
+      db = await openDatabase(path);
+      expect((await db.query('tasks')).single['title'], 'Synthetic WAL');
+      await verifyStagedDatabase(db);
+    } finally {
+      await db.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('checkpoint is safe for non-WAL staged databases', () async {
+    final dir = await Directory.systemTemp.createTemp('stage-journal-');
+    final db = await openDatabase('${dir.path}/candidate.db');
+    try {
+      await createTaskSchema(db);
+      await createPlanSnapshotSchema(db);
+      await db.rawQuery('PRAGMA journal_mode=DELETE');
+      await checkpointStagedDatabase(db);
+      await verifyStagedDatabase(db);
+    } finally {
+      await db.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
