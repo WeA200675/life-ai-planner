@@ -29,7 +29,7 @@ def _regular_private_file(path):
     return path, info
 
 
-def inspect_candidate(path, *, expected_user_version=None):
+def inspect_candidate(path, *, expected_user_version=None, required_tables=()):
     """Read-only validation; reject sidecars rather than ignore WAL data.
 
     Caller must separately hold an exclusive application-wide database lock.
@@ -39,6 +39,12 @@ def inspect_candidate(path, *, expected_user_version=None):
         type(expected_user_version) is not int or expected_user_version < 0
     ):
         raise RecoveryPreflightError("invalid expected schema version")
+    if not isinstance(required_tables, (tuple, list, frozenset, set)) or any(
+        not isinstance(name, str) or not name or
+        not name.isascii() or not all(ch.isalnum() or ch == "_" for ch in name)
+        for name in required_tables
+    ):
+        raise RecoveryPreflightError("invalid required table names")
     for suffix in ("-wal", "-shm", "-journal"):
         if os.path.lexists(str(candidate) + suffix):
             raise RecoveryPreflightError("candidate has SQLite sidecar")
@@ -63,4 +69,6 @@ def inspect_candidate(path, *, expected_user_version=None):
         raise RecoveryPreflightError("candidate changed during inspection")
     if expected_user_version is not None and version != expected_user_version:
         raise RecoveryPreflightError("unexpected schema version")
+    if not set(required_tables).issubset(tables):
+        raise RecoveryPreflightError("required application tables missing")
     return {"user_version": version, "tables": tables, "size_bytes": after.st_size}
