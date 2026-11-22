@@ -66,10 +66,14 @@ DayPlan planOfflineDay(DateTime start, DateTime end, List<DayTask> tasks,
     }
   }
   // DateTime.difference uses elapsed time and remains safe across DST changes.
+  // Compute capacity from the actual free gaps, not by subtracting
+  // individually truncated appointment durations. For appointments with
+  // seconds, truncation per block would overstate free capacity.
   final capacity = end.difference(start).inMinutes;
-  final occupied = protected.fold<int>(0,
-      (sum, b) => sum + b.end.difference(b.start).inMinutes);
-  final available = capacity - occupied;
+  final freeDuration = end.difference(start) -
+      protected.fold<Duration>(Duration.zero,
+          (sum, b) => sum + b.end.difference(b.start));
+  final available = freeDuration.inMinutes;
   final budget = (available * (1 - bufferRatio)).floor();
   final gaps = <({DateTime start, DateTime end})>[];
   var cursor = start;
