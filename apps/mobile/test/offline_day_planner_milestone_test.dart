@@ -127,6 +127,31 @@ void main() {
     expect(result.blocks.single.start, now);
   });
 
+  test('completed invalid task metadata cannot bypass validation', () {
+    expect(() => replanOfflineDay(start, end, [
+      const DayTask(id: 'completed', minutes: 0),
+      const DayTask(id: 'todo', minutes: 30),
+    ], completedTaskIds: {'completed'}), throwsArgumentError);
+    expect(() => replanOfflineDay(start, end, [
+      const DayTask(id: 'completed', minutes: 30, priority: 11),
+    ], completedTaskIds: {'completed'}), throwsArgumentError);
+  });
+
+  test('completed invalid IDs cannot bypass validation', () {
+    expect(() => replanOfflineDay(start, end, [
+      const DayTask(id: ' completed ', minutes: 30),
+    ], completedTaskIds: {' completed '}), throwsArgumentError);
+  });
+
+  test('valid completed tasks remain excluded from rest-of-day plan', () {
+    final result = replanOfflineDay(start, end, [
+      const DayTask(id: 'done', minutes: 30, priority: 10),
+      const DayTask(id: 'todo', minutes: 45, priority: 1),
+    ], completedTaskIds: {'done'});
+    expect(result.blocks.map((b) => b.id).toList(), ['todo']);
+    expect(result.deferred, isEmpty);
+  });
+
   test('planner leaves caller inputs unchanged', () {
     final tasks = [
       const DayTask(id: 'b', minutes: 30, priority: 1),
