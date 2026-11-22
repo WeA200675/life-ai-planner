@@ -30,7 +30,7 @@ def _regular_private_file(path):
 
 
 def inspect_candidate(path, *, expected_user_version=None, required_tables=(),
-                      required_columns=None):
+                      required_columns=None, required_primary_keys=None):
     """Read-only validation; reject sidecars rather than ignore WAL data.
 
     Caller must separately hold an exclusive application-wide database lock.
@@ -57,6 +57,15 @@ def inspect_candidate(path, *, expected_user_version=None, required_tables=(),
         for table, columns in required_columns.items()
     ):
         raise RecoveryPreflightError("invalid required column names")
+    if required_primary_keys is None:
+        required_primary_keys = {}
+    if not isinstance(required_primary_keys, dict) or any(
+        not isinstance(table, str) or not table.isidentifier() or not table.isascii() or
+        not isinstance(keys, (tuple, list)) or not keys or
+        any(not isinstance(key, str) or not key.isidentifier() or not key.isascii() for key in keys)
+        for table, keys in required_primary_keys.items()
+    ):
+        raise RecoveryPreflightError("invalid required primary keys")
     for suffix in ("-wal", "-shm", "-journal"):
         if os.path.lexists(str(candidate) + suffix):
             raise RecoveryPreflightError("candidate has SQLite sidecar")
@@ -84,6 +93,13 @@ def inspect_candidate(path, *, expected_user_version=None, required_tables=(),
                 )}
                 if not set(columns).issubset(present):
                     raise RecoveryPreflightError("required application columns missing")
+            for table, keys in required_primary_keys.items():
+                if table not in tables:
+                    raise RecoveryPreflightError("required primary key table missing")
+                info = db.execute('PRAGMA table_info("' + table + '")').fetchall()
+                actual = tuple(row[1] for row in sorted(info, key=lambda row: row[5]) if row[5] > 0)
+                if actual != tuple(keys):
+                    raise RecoveryPreflightError("required primary key mismatch")
     except sqlite3.DatabaseError as exc:
         raise RecoveryPreflightError("invalid SQLite candidate") from exc
     # A WAL/journal appearing during the read invalidates the immutable snapshot.
