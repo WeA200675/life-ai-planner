@@ -13,6 +13,7 @@ ANDROID_REQUIRED_COLUMNS = {
         "id", "created_utc_ms", "window_start_utc_ms", "window_end_utc_ms",
         "budget_minutes", "reserved_minutes",
     ),
+    "plan_accept_requests": ("request_key", "snapshot_id", "payload_fingerprint"),
     "plan_snapshot_blocks": (
         "snapshot_id", "position", "task_id", "start_utc_ms", "end_utc_ms",
     ),
@@ -22,6 +23,7 @@ ANDROID_REQUIRED_COLUMNS = {
 ANDROID_REQUIRED_PRIMARY_KEYS = {
     "tasks": ("id",),
     "plan_snapshots": ("id",),
+    "plan_accept_requests": ("request_key",),
     "plan_snapshot_blocks": ("snapshot_id", "position"),
 }
 
@@ -35,10 +37,12 @@ ANDROID_REQUIRED_NOT_NULL = {
     "plan_snapshot_blocks": (
         "snapshot_id", "position", "task_id", "start_utc_ms", "end_utc_ms",
     ),
+    "plan_accept_requests": ("request_key", "snapshot_id", "payload_fingerprint"),
 }
 
 ANDROID_REQUIRED_FOREIGN_KEYS = {
     "plan_snapshot_blocks": (("snapshot_id", "plan_snapshots", "id"),),
+    "plan_accept_requests": (("snapshot_id", "plan_snapshots", "id"),),
 }
 
 
