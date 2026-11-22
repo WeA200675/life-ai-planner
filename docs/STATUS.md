@@ -1114,3 +1114,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Nachweisgrenze:** GitHub-Schreiboperationen bestätigt; lokaler Klon scheitert an DNS (`Could not resolve host: github.com`). Neue Tests und CI für diesen Stand **nicht** als bestanden bestätigt. Die Commit-bezogene Actions-Abfrage für den Ausgangs-HEAD lieferte keine PR-Workflow-Runs, was keinen CI-Erfolg belegt.
 - **Nächster Schritt:** Tests und CI für den neuen HEAD ausführen, bei Fehlern korrigieren; danach vollständigen Android-v4-Schemaabgleich und gesperrten Restore-/Rollback-Koordinator prüfen. Kein produktiver Restore aktiviert.
 - **Abnahme:** M1–M4 offen, Android-Release-/Geräteabnahme fehlt. Keine personenbezogenen Testdaten oder Secrets verwendet.
+
+
+## M4 SQLite Android-v4 NOT-NULL-/FK-Preflight – 2026-11-22 (19:44 CET)
+- Vorab README, Implementierungsplan, STATUS, HEAD `a25461146044431d5a66a5e0c713d6000ed421c2`, Issues und PRs geprüft. PR #1 weiterhin offen; der Issue #1 ist mit dem PR verknüpft. Ausgangs-CI Scheduler [45056368598](https://github.com/WeA200675/life-ai-planner/actions/runs/45056368598) erfolgreich.
+- `9e179772e77ccd4adb631e372878c90147fbeb81`: optionaler, fail-closed SQLite-Schema-Vertrag für explizite NOT-NULL-Spalten und deklarierte FK-Kanten in `inspect_candidate`. Bestehende Aufrufer ohne optionale Parameter bleiben kompatibel.
+- `55fdf2e307002366eedd599e8145edc065b4cb59`: Android-v4-Vertrag fordert NOT NULL für die in Flutter deklarierten Pflichtfelder sowie `plan_snapshot_blocks.snapshot_id -> plan_snapshots.id`.
+- `6058666e7fbab5f6d68a422a2c5d56fe1e99bd8f`: drei neue synthetische Negativtests (nullable Titel, fehlender FK, falsches FK-Ziel).
+- **Nachweis:** GitHub-Commits bestätigt; neue Scheduler-CI [45056821027](https://github.com/WeA200675/life-ai-planner/actions/runs/45056821027) und Android-v4-Vertrag-CI [45056820926](https://github.com/WeA200675/life-ai-planner/actions/runs/45056820926) beim letzten Abruf queued. Tests für den neuen Stand nicht als erfolgreich behauptet. Während der Änderungen erschien ein paralleler Commit `a7ae0c671`; HEAD muss vor weiteren Änderungen neu gelesen werden.
+- **Grenzen:** Schema-Prüfung ist read-only und keine produktive Restore-Aktivierung. CHECK-Constraints, Transaktions-/WAL-Rollback und exklusiver Android-DB-Zugriff weiterhin nicht nachgewiesen. Flutter-Geräteabnahme, Release-Build und M1–M4-Abnahme ausstehend.
+- **Nächster Schritt:** CI prüfen und ggf. Fehler reparieren; danach CHECK-Constraint-/Index-Validierung und sicherer exklusiver Restore-Koordinator mit Fault-Injection, ohne produktive Daten umzuschalten.
