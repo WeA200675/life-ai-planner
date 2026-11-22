@@ -974,3 +974,10 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub bestätigte beide Commits. Der Repository-Klon scheiterte lokal erneut an DNS (`Could not resolve host: github.com`); die neue Testdatei wurde **nicht ausgeführt**. Die verfügbare Commit-Workflow-Abfrage liefert ausschließlich PR-getriggerte Läufe und gab für den Test-SHA keine Treffer zurück; **kein CI-Erfolg nachgewiesen**.
 - **Grenzen:** ctime-Erkennung ist keine vollständige TOCTOU-Sicherung; Zeitstempelauflösung, privilegierte Manipulationen und unkooperative Schreiber bleiben Risiken. Exklusive SQLite-Handles, WAL-Checkpoint, Original-Sicherung, Crash-Recovery und Rollback fehlen. Produktive Aktivierung bleibt deaktiviert.
 - **Nächster Schritt:** CI/Repository-Regression auf dem Test-SHA ausführen und ggf. korrigieren; anschließend Restore-Koordinator mit exklusiver Sperre und Fault-Injection/Crash-Rollback implementieren. Android-Release und Geräteabnahme fehlen. M1–M4 weiterhin nicht abgenommen.
+
+## M2 SQLite-Planannahme: widersprüchliche Aufgaben-IDs – 2026-11-22
+- Vor Änderung README, IMPLEMENTATION_PLAN, STATUS, HEAD, PRs und Issues gelesen; Ausgangs-HEAD `813369df8d72a5c6c0a36b11de078bf22910ee48`; PR #1 offen, keine eigenständigen offenen Issues.
+- Code-Commit `18ce309487f037cfbf331e5b5fa05319d05390b9`: `PlanSnapshotStore.accept` lehnt vor Beginn der SQLite-Transaktion doppelte, leere oder nicht normalisierte zurückgestellte Task-IDs sowie IDs ab, die zugleich als Zeitblock eingeplant sind. Der vorhandene atomare Schreibpfad bleibt unverändert.
+- **Verifikation:** GitHub-Commit bestätigt. Flutter-/Dart-Tests wurden in diesem Lauf nicht ausgeführt; kein CI-/APK-Erfolg bestätigt. Ein dedizierter Regressionstest für die neue Guard-Bedingung ist noch nachzureichen.
+- **Blocker:** PR #1 nicht integriert; Android-Widgettests, Release-Build und Geräteabnahme fehlen. Kein produktiver Restore-Koordinator.
+- **Nächster Schritt:** Pure-Dart-Validierung in eigenständige testbare Funktion extrahieren, Unit-Tests für widersprüchliche IDs ergänzen und Flutter-CI prüfen; danach Android-Release und manuelle Geräteabnahme.
