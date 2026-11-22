@@ -319,4 +319,76 @@ void main() {
     expect(await db.query('tasks', orderBy: 'id ASC'), original);
   });
 
+  test('foreign key enforcement rejects orphaned plan children', () async {
+    final directory = await Directory.systemTemp.createTemp('planner-fk-');
+    final file = '${directory.path}/foreign-keys.db';
+    Database? disk;
+    try {
+      disk = await openDatabase(file, version: 4,
+          onConfigure: (database) async {
+        await database.execute('PRAGMA foreign_keys = ON');
+      }, onCreate: (database, version) async {
+        await createTaskSchema(database);
+        await createPlanSnapshotSchema(database);
+      });
+      final pragma = await disk.rawQuery('PRAGMA foreign_keys');
+      expect(pragma.single.values.single, 1);
+      await expectLater(
+        disk.insert('plan_snapshot_blocks', {
+          'snapshot_id': 9999, 'position': 0, 'task_id': 'synthetic',
+          'start_utc_ms': start.millisecondsSinceEpoch,
+          'end_utc_ms': start.add(const Duration(minutes: 5))
+              .millisecondsSinceEpoch,
+        }),
+        throwsA(isA<Exception>()),
+      );
+      await expectLater(
+        disk.insert('plan_accept_requests', {
+          'request_key': 'orphan-key', 'snapshot_id': 9999,
+          'payload_fingerprint': 'synthetic',
+        }),
+        throwsA(isA<Exception>()),
+      );
+      expect(await disk.query('plan_snapshot_blocks'), isEmpty);
+      expect(await disk.query('plan_accept_requests'), isEmpty);
+    } finally {
+      if (disk != null) await disk.close();
+      await directory.delete(recursive: true);
+    }
+  });
+
+  test('foreign key cascade deletes snapshot children atomically', () async {
+    final directory = await Directory.systemTemp.createTemp('planner-fk-cascade-');
+    final file = '${directory.path}/cascade.db';
+    Database? disk;
+    try {
+      disk = await openDatabase(file, version: 4,
+          onConfigure: (database) async {
+        await database.execute('PRAGMA foreign_keys = ON');
+      }, onCreate: (database, version) async {
+        await createTaskSchema(database);
+        await createPlanSnapshotSchema(database);
+      });
+      await disk.insert('tasks', {
+        'title': 'Synthetic', 'done': 0, 'minutes': 30, 'priority': 5
+      });
+      final before = await disk.query('tasks');
+      final plan = planOfflineDay(start, end, [
+        DayTask(id: (before.single['id'] as int).toString(),
+            minutes: 30, priority: 5),
+      ]);
+      final id = await PlanSnapshotStore(disk).accept(plan, start, end,
+          expectedTasks: before, requestKey: 'cascade-request');
+      expect((await disk.query('plan_snapshot_blocks')).length, 1);
+      expect((await disk.query('plan_accept_requests')).length, 1);
+      await disk.delete('plan_snapshots', where: 'id = ?', whereArgs: [id]);
+      expect(await disk.query('plan_snapshot_blocks'), isEmpty);
+      expect(await disk.query('plan_accept_requests'), isEmpty);
+      expect(await disk.query('tasks'), before);
+    } finally {
+      if (disk != null) await disk.close();
+      await directory.delete(recursive: true);
+    }
+  });
+
 }
