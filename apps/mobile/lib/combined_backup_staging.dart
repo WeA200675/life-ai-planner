@@ -201,7 +201,10 @@ Future<void> inspectStagedCandidate(
           FileSystemEntityType.file) {
     throw StateError('Candidate must be a regular file in a non-linked path');
   }
-  for (final suffix in ['-wal', '-shm', '-journal']) {
+  // A previous interrupted restore may have left recovery metadata beside
+  // the candidate. Refuse it rather than treating it as a clean snapshot.
+  for (final suffix in ['-wal', '-shm', '-journal', '.restore-backup',
+      '.restore-marker', '.restore-pending']) {
     if (await FileSystemEntity.type('$candidatePath$suffix',
             followLinks: false) != FileSystemEntityType.notFound) {
       throw StateError('Candidate has an unresolved SQLite sidecar');
