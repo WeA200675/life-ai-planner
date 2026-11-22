@@ -241,4 +241,47 @@ void main() {
     }
   });
 
+  test('real SQLite v3 to v4 migration retains task and supports acceptance',
+      () async {
+    final directory = await Directory.systemTemp.createTemp('planner-upgrade-');
+    final file = '${directory.path}/upgrade.db';
+    Database? disk;
+    try {
+      disk = await openDatabase(file, version: 3,
+          onCreate: (database, version) async {
+        await createTaskSchema(database);
+      });
+      await disk.insert('tasks', {
+        'title': 'Legacy synthetic task', 'done': 0,
+        'minutes': 25, 'priority': 8
+      });
+      final before = await disk.query('tasks');
+      await disk.close();
+      disk = null;
+
+      var upgradeCalled = false;
+      disk = await openDatabase(file, version: 4,
+          onUpgrade: (database, oldVersion, newVersion) async {
+        expect(oldVersion, 3);
+        expect(newVersion, 4);
+        upgradeCalled = true;
+        await createPlanSnapshotSchema(database);
+      },
+          onOpen: createPlanSnapshotSchema);
+      expect(upgradeCalled, isTrue);
+      expect(await disk.query('tasks'), before);
+      final plan = planOfflineDay(start, end, [
+        DayTask(id: (before.single['id'] as int).toString(),
+            minutes: 25, priority: 8),
+      ]);
+      final id = await PlanSnapshotStore(disk).accept(plan, start, end,
+          expectedTasks: before, requestKey: 'upgrade-test-key');
+      expect((await PlanSnapshotStore(disk).latest())?.id, id);
+      expect(await disk.query('tasks'), before);
+    } finally {
+      if (disk != null) await disk.close();
+      await directory.delete(recursive: true);
+    }
+  });
+
 }
