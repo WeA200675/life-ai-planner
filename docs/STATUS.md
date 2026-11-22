@@ -1158,3 +1158,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Commit `9190081bbed6ab7de5c398aa02ece2079cffc632`.
 - **Teststatus:** GitHub-Commit bestätigt; Flutter-Tests, CI und APK für diesen Stand nicht nachgewiesen. UI-Retry nach App-Neustart verwendet noch keine persistierte Operation-ID; keine Behauptung vollständiger Crash-Retry-Garantie. Keine produktive Restore-Umschaltung.
 - **Nächster Schritt:** Flutter CI tatsächlich prüfen, Test-/Buildfehler beheben, Widget-Test für Vorschau/Annahme ergänzen, APK-Artefakt erzeugen und Geräteabnahme durchführen.
+
+
+## Release R1 – Testabdeckung und CI-Sichtung (2026-11-22)
+- Aktuellen HEAD vor Änderungen geprüft. `apps/mobile/test/offline_sqlite_integration_release_test.dart` um zwei Tests erweitert: erneute idempotente Annahme nach Neuerstellen des `PlanSnapshotStore` mit derselben SQLite-Verbindung; ungültige Request-Schlüssel (leer, Whitespace, über 128 Zeichen) werden ohne Schreiboperation abgewiesen.
+- Commits `6e3c3c37d04d85955f2d7eb8d40fad4be511adf1`, `7bd39a257d2736d8c017ad8690974efaadef5eab` (gültige Dart-Erzeugung des langen Testschlüssels).
+- `.github/workflows/flutter.yml` geprüft: Flutter analyze, Tests mit Coverage, Debug-APK-Build, ZIP-Integritätsprüfung, SHA-256 und Upload sind definiert. `fetch_commit_workflow_runs` lieferte für den zuvor geprüften HEAD keine PR-Workflow-Läufe; dieser Endpunkt deckt Push-Läufe nicht vollständig ab. **Keine Behauptung, dass CI grün oder eine APK vorhanden ist.**
+- **Noch nicht ausgeführt:** Flutter-Tests, APK-Build und Geräteabnahme. Store-Neuerstellung ist kein Prozessneustart oder SQLite-Datei-Neuöffnung; dafür ist weitere Persistenzprüfung erforderlich.
+- **Nächster Schritt:** Tatsächliche CI-Logs/Build-Artefakte verifizieren, Fehler korrigieren, persistente SQLite-Datei-Neuöffnung und Crash-/Restore-Abnahme ergänzen.
