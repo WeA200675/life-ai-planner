@@ -125,7 +125,8 @@ Future<void> checkpointStagedDatabase(Database db) async {
   final log = result['log'];
   final checkpointed = result['checkpointed'];
   if (busy != 0 || log is! int || checkpointed is! int ||
-      log < 0 || checkpointed < 0 || log != checkpointed) {
+      !((log == -1 && checkpointed == -1) ||
+          (log >= 0 && checkpointed >= 0 && log == checkpointed))) {
     throw StateError('Staged WAL checkpoint incomplete');
   }
 }
