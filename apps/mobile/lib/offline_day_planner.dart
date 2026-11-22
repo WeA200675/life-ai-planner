@@ -74,7 +74,8 @@ DayPlan planOfflineDay(DateTime start, DateTime end, List<DayTask> tasks,
       protected.fold<Duration>(Duration.zero,
           (sum, b) => sum + b.end.difference(b.start));
   final available = freeDuration.inMinutes;
-  final budget = (available * (1 - bufferRatio)).floor();
+  final budget = (freeDuration.inMicroseconds /
+          Duration.microsecondsPerMinute * (1 - bufferRatio)).floor();
   final gaps = <({DateTime start, DateTime end})>[];
   var cursor = start;
   for (final block in protected) {
