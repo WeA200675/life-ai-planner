@@ -1229,3 +1229,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächliche Prüfung:** `command -v flutter` und `command -v dart` lieferten keine Installation; `git ls-remote` scheiterte an DNS (`Could not resolve host: github.com`). Der GitHub-Connector lieferte für den vorherigen HEAD keine PR-gefilterten Workflow-Läufe, was Push-CI nicht abdeckt. Der neue Test wurde daher **NICHT AUSGEFÜHRT**, weder Flutter-CI noch APK oder Gerätetest wurden für den neuen Stand als erfolgreich bestätigt. Keine Erfolgskennzahlen behauptet.
 - **Blocker:** Flutter/Android-Toolchain bzw. verifizierbare Push-CI-Logs/Artefakte und Gerätezugriff fehlen; produktive Restore-Umschaltung, Crash-Rollback-Abnahme und Release-Signing bleiben offen.
 - **Nächster Schritt:** Neuen Flutter-Workflow auf Commit `ca1b1c9737b1b554e28cb9ba8177d96c973222cd` in GitHub Actions auswerten, Testausgabe prüfen und gegebenenfalls korrigieren; danach Restore-/Crash-Szenarien, APK-SHA-256, Signatur und Geräteabnahme verifizieren. Keine Secrets oder echten Nutzerdaten.
+
+
+## Release-CI: Testbelege auch bei Fehlschlägen – 2026-11-22
+- Ausgangs-HEAD `27caf245d3e758a0350aaeb5cd218967c227d113`; README, Implementierungsplan, STATUS und Release-CI geprüft. GitHub-Issue-Suche ergab keine offenen Issues/PRs zum Abfragezeitpunkt.
+- Implementierung: `.github/workflows/release-acceptance.yml` bewahrt Python-Kompilierungs- und unittest-Ausgaben sowie Flutter-Testausgabe und Coverage als GitHub-Actions-Artefakte auf, **auch wenn der jeweilige Testschritt fehlschlägt**. `set -euo pipefail` verhindert, dass `tee` fehlgeschlagene Tests als erfolgreich maskiert. Commit `bd7027844265ec130fd296bc091476e70ba7d992`.
+- Testnachweis: GitHub-Schreiboperation bestätigt. Weder CI-Ausführung noch Flutter/Android-Geräteprüfung für diesen Commit in diesem Lauf nachgewiesen. Der GitHub-Connector stellt keine vollständige Liste von Push-Workflow-Runs bereit. **Keine Testfreigabe**.
+- Blocker: CI-Logs/Artefakte müssen aus Actions geprüft werden; produktives Signing, Restore-Rollback und echte Geräteabnahme fehlen. M1–M4 bleiben offen.
+- Nächster Schritt: Release-Actions-Lauf auf neuem HEAD prüfen, Artefakte auswerten und konkrete Fehler korrigieren; danach signierten Android-Build und Gerätetest abnehmen.
