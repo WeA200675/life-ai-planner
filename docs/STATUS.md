@@ -756,3 +756,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Prüfstatus:** Commits bestätigt; neue Flutter-CI für `42c95488` noch abzuwarten. Kein lokaler Testlauf, keine Android-Geräteabnahme behauptet.
 - **Grenzen:** TOCTOU-Risiko bei externen Prozessen im Kandidatenverzeichnis bleibt; nur private app-kontrollierte Pfade zulässig. Kein aktiver DB-Swap, kein UI-Restore, kein Crash-Recovery oder Release-/Gerätetest. M1–M4 nicht vollständig abgenommen.
 - **Nächster Schritt:** Flutter-CI für `42c95488` prüfen; dann Aktivierungsprotokoll mit exklusivem DB-Handle, WAL-Checkpoint, Original-Backup, Marker, Wiederanlauf und Rollback vor Freigabe implementieren.
+
+
+## Durable Staging Reopen – 2026-11-22 (02:35 Europe/Berlin)
+- Ausgangs-HEAD `5b25986025ee38e7dd81a33ba789d8798b5888e6`; offene PRs: #1 (SQLite Replanning), keine unabhängigen Issues (GitHub Issues listet PR #1 mit).
+- Vorheriger Flutter-Lauf [44970965518](https://github.com/WeA200675/life-ai-planner/actions/runs/44970965518) für `42c95488` **success**; Scheduler-Lauf [44970976030](https://github.com/WeA200675/life-ai-planner/actions/runs/44970976030) für `5b259860` **success**. Diese Erfolge gelten **nicht** als Testnachweis für den neuen Code.
+- Code-Commit `14ece4f08ee5d0ddb473ffcbcaabe3002eeaa2c8`: Nach erfolgreichem WAL-Checkpoint wird der Staging-Writer geschlossen, der Kandidat **read-only** erneut geöffnet und Struktur sowie semantischer Archivinhalt nochmals verifiziert. Bei Fehler wird der selbst angelegte Kandidat verworfen. Die aktive DB bleibt unangetastet.
+- Test-Commit `2b0563165e1352bedf4361c697cfba1c65b1aa1a`: unabhängiger Read-only-Reopen-Test mit synthetischen Daten.
+- **Verifikation:** GitHub-Commits vorhanden; Flutter-CI für die neue Änderung noch nicht nachweislich abgeschlossen (vorheriger Workflow [44972215456](https://github.com/WeA200675/life-ai-planner/actions/runs/44972215456) beim Abruf queued). Keine lokale Android-/Flutter-Ausführung behauptet.
+- **Blocker:** Staging-Aktivierung/Crash-Recovery weiterhin nicht implementiert; kein vollständiger M1–M4-Abnahmenachweis, keine manuelle Android-Geräteabnahme oder Release-Freigabe.
+- **Nächster Schritt:** CI des letzten Code-HEAD prüfen, Fehler beheben, danach Aktivierung nur bei geschlossenen SQLite-Verbindungen mit expliziter Bestätigung, Original-Backup, Crash-Recovery und WAL-Sidecar-Schutz entwerfen und testen.
