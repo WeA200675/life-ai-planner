@@ -1048,3 +1048,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächliche Verifikation:** Beide GitHub-Schreiboperationen bestätigt. Vorherige PR-gefilterte GitHub-Workflow-Abfrage für Ausgangs-HEAD ergab `workflow_runs: []`; das ist **kein** Beleg für einen fehlgeschlagenen oder erfolgreichen Push-Workflow. Flutter-/Dart-SDK im ausführbaren Lauf nicht bereitgestellt, daher **keine tatsächliche Flutter-Testausführung**, kein grüner CI-Lauf, kein APK-/Gerätetest nachgewiesen. Coverage-Upload ist eine Pipeline-Konfiguration, noch kein erzeugtes Artefakt.
 - **Blocker:** Flutter-Workflow auf dem neuen SHA ausführen und die Ergebnisse auswerten, offene PR #1 nach CI prüfen, SQLite-Widget-Integration und Android-Geräteabnahme; Restore-/Rollback-Koordinator weiterhin offen.
 - **Nächster Schritt:** GitHub-Actions-Push-Lauf prüfen, `flutter analyze`, `flutter test --coverage --reporter expanded` und Debug-APK nachweisbar grün bekommen; anschließend auf reale SQLite-/Widget-Integration und Gerätetest konzentrieren.
+
+## Flutter CI-Fehlerbehebung – 2026-11-22 (16:45 Europe/Berlin)
+- Verifizierter Ausgangs-HEAD: `a9aee844533bb03492bfaffe021ccdac6a4ff641`.
+- Offene PRs: #1 (SQLite-Replanning); eigenständige offene Issues: 0.
+- Scheduler-CI für Ausgangs-HEAD: Run [45037539440](https://github.com/WeA200675/life-ai-planner/actions/runs/45037539440) **success**.
+- Flutter-CI Run [45037515646](https://github.com/WeA200675/life-ai-planner/actions/runs/45037515646) **failure** im Schritt `flutter analyze --no-fatal-infos`. Job-Log: `FileMode.writeOnlyExclusive` existiert in Dart nicht (`lib/restore_journal_store.dart:47`); Tests und APK-Build wurden übersprungen. Die übrigen Analyzer-Meldungen waren Hinweise, nicht der belegte Blocker.
+- Fix: exklusives, atomisches No-Clobber-Anlegen des Markers mit `File.create(exclusive: true)`, danach Schreiben und Flush über `FileMode.writeOnly`. Bestehende Marker werden nicht überschrieben; unvollständige Marker werden beim Lesen weiterhin abgelehnt. Annahme: privates Restore-Verzeichnis ohne fremde Schreibberechtigung; kein vollständiges crash-durables Restore-Protokoll.
+- Code-Commit: `3a063ade028949f73117b863f961c80073ffa89d`.
+- Verifikation: GitHub-Commit bestätigt; Flutter-Run [45040107426](https://github.com/WeA200675/life-ai-planner/actions/runs/45040107426) und Scheduler-Run [45040107518](https://github.com/WeA200675/life-ai-planner/actions/runs/45040107518) zum Zeitpunkt der Kontrolle **queued**. Kein lokaler Flutter-Lauf oder APK-Nachweis. Der neue CI-Lauf muss erst erfolgreich abschließen.
+- Nächster Schritt: Flutter-Analyzer/Test/APK-Ergebnisse des neuen HEAD auswerten; bei Erfolg zusätzliche Konkurrenz-/Absturztests für die Marker-Erstellung und Restore-Sperren; danach Android-Geräte- und Release-Abnahme.
+- M1–M4 nicht vollständig abgenommen. Produktive Restore-Umschaltung bleibt deaktiviert.
