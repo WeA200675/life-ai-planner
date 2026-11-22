@@ -825,3 +825,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** Code und Tests auf GitHub committed. Der neue Flutter-CI-Lauf ist zum Dokumentationszeitpunkt noch nicht als erfolgreich bestätigt; keine lokale Flutter-Ausführung oder Geräteabnahme behauptet.
 - **Blocker:** Die Prüfung kann nicht beweisen, dass fremde Prozesse/Handles geschlossen sind; TOCTOU bleibt. Ein exklusiver Aktivierungs-Lock, atomarer Swap mit persistentem Marker, Rollback und explizite UI-Freigabe fehlen. M1–M4 nicht vollständig abgenommen.
 - **Nächster Schritt:** Flutter-CI des Test-Commits prüfen, ggf. Fehler beheben; danach isoliertes Recovery-Protokoll mit Crash-Injektion und dauerhaftem Original-Backup entwickeln, ohne automatische produktive Umschaltung.
+
+
+## M4 Read-only Restore-Paarprüfung – 2026-11-22 (06:18 Europe/Berlin)
+- Ausgangs-HEAD `40b98429639d71e7464ad5b9c2f2e7c463eeb139`; README, IMPLEMENTATION_PLAN, STATUS, PRs, Issues und CI geprüft. PR #1 offen, keine eigenständigen offenen Issues. Keine vollständige M1–M4-Abnahme.
+- Ausgangs-CI: Flutter für `c403ab77` **success**, Scheduler für `40b98429` **success** (GitHub Actions API).
+- Implementierung `5063293a643cd1e29bae6720217e00c50bbe5474`: `inspectRestorePair` prüft beide vorhandenen Datenbanken ohne Schreiboperation, weist gleiche Dateisystemidentität (auch Alias/Hardlink) vor Öffnung zurück und führt die vorhandenen Einzel-Preflights aus. Kein Swap und keine automatische Aktivierung.
+- Tests `0ec8a783ed7dab01e477f0ceb9e014d2119f467a`: synthetischer Alias-Ablehnungstest und erfolgreicher Read-only-Paarcheck; keine privaten Daten.
+- **Verifikation:** Commits auf GitHub bestätigt. Neue CI-Ergebnisse zum Test-HEAD siehe GitHub Actions; zum Zeitpunkt des Schreibens noch nicht als erfolgreich belegt. Kein lokaler Flutter-Lauf, keine Android-Geräteabnahme behauptet.
+- **Blocker:** Exklusiver DB-Lock, dauerhaftes Original-Backup, atomarer Swap mit persistentem Recovery-Marker, Crash-Injektion, Rollback und UI-Bestätigung fehlen. TOCTOU durch fremde Prozesse bleibt; nur private App-Verzeichnisse.
+- **Nächster Schritt:** Neue Flutter-CI auswerten; bei Fehler korrigieren. Anschließend isoliertes Recovery-Protokoll mit absturzsicherem Original-Backup und Fehler-Injektion implementieren, ohne die produktive DB automatisch zu ersetzen.
