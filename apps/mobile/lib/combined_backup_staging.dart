@@ -34,8 +34,7 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
   // Never follow a symbolic-link parent or candidate into a different
   // location. Restore staging must remain in a caller-controlled directory.
   // This also catches a dangling symlink that File.exists() would miss.
-  if (await FileSystemEntity.type(file.parent.path, followLinks: false) ==
-      FileSystemEntityType.link ||
+  if (await _hasLinkedAncestor(file.parent) ||
       await FileSystemEntity.type(candidatePath, followLinks: false) ==
           FileSystemEntityType.link) {
     throw StateError('Staging path must not be a symbolic link');
@@ -166,4 +165,18 @@ Future<bool> _stagingFilesExist(String path) async {
         FileSystemEntityType.notFound) return true;
   }
   return false;
+}
+
+/// Check every lexical ancestor, not just the immediate parent. This protects
+/// against a link several directories above the candidate. It does not remove
+/// TOCTOU risks from other processes; only private directories are supported.
+Future<bool> _hasLinkedAncestor(Directory parent) async {
+  var current = parent.absolute;
+  while (true) {
+    if (await FileSystemEntity.type(current.path, followLinks: false) ==
+        FileSystemEntityType.link) return true;
+    final next = current.parent;
+    if (next.path == current.path) return false;
+    current = next;
+  }
 }
