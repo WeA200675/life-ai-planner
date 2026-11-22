@@ -981,3 +981,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub-Commit bestätigt. Flutter-/Dart-Tests wurden in diesem Lauf nicht ausgeführt; kein CI-/APK-Erfolg bestätigt. Ein dedizierter Regressionstest für die neue Guard-Bedingung ist noch nachzureichen.
 - **Blocker:** PR #1 nicht integriert; Android-Widgettests, Release-Build und Geräteabnahme fehlen. Kein produktiver Restore-Koordinator.
 - **Nächster Schritt:** Pure-Dart-Validierung in eigenständige testbare Funktion extrahieren, Unit-Tests für widersprüchliche IDs ergänzen und Flutter-CI prüfen; danach Android-Release und manuelle Geräteabnahme.
+
+## M2/M3 größerer Test-Meilenstein: Offline-Tagesplanung – 2026-11-22
+- Nutzerpriorität: künftig größere zusammenhängende Implementierungsschritte mit Android-Nutzbarkeit, nicht nur einzelne Restore-Guards.
+- README, Implementierungsplan, STATUS, aktueller HEAD, PR #1 und offene Issues geprüft. Ausgangs-HEAD `120dbb08509063740ce26e4794d281d61c41f592`. PR #1 weiterhin offen; keine eigenständigen Issues. Keine vollständige Abnahme.
+- Bereits vorhandene M2-Änderung `18ce309487f037cfbf331e5b5fa05319d05390b9` verhindert widersprüchliche oder doppelte Deferred-IDs vor atomarer Planübernahme; dokumentiert in `120dbb0`. Keine erneute Änderung daran.
+- Test-Commit `9c868276d8ead5ac8456193ef73d5b674e27510f`: neue Flutter-Testdatei `apps/mobile/test/offline_day_planner_milestone_test.dart` mit **neun** Szenarien: 70/30-Kapazität, Prioritäten, unveränderliche Fixtermine, Budgetüberschreitung, Deadline-Konflikte, Resttag-Neuplanung, Fixtermin-Überlappung, doppelte/ungültige IDs, unbekannte erledigte IDs sowie unveränderte Eingaben (ein Szenario umfasst mehrere Assertions).
+- **Verifikation:** GitHub bestätigt den Test-Commit. Flutter-Tests konnten in diesem Lauf nicht ausgeführt werden; CI-/APK-/Geräte-Erfolg nicht nachgewiesen. Tests sind neue Prüffälle, kein Beleg für grüne Tests.
+- **Blocker:** Vollständige Android-Integration, Flutter-Testlauf, offener M3-PR #1, reproduzierbarer APK-Build, Geräteabnahme, Restore-Koordinator und Rollback fehlen.
+- **Nächster großer Schritt:** Flutter-Testumgebung/CI bereitstellen und diese neun Szenarien tatsächlich ausführen; anschließend Android-Widget- und SQLite-Integrationstests mit Installations-APK in einem gebündelten Meilenstein umsetzen.
