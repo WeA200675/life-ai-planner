@@ -10,6 +10,11 @@ on:
       - 'services/**'
       - 'tests/**'
       - '.github/workflows/release-acceptance.yml'
+      - 'docs/STATUS.md'
+      - 'docs/RELEASE_ACCEPTANCE_*.md'
+concurrency:
+  group: release-acceptance-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
@@ -75,7 +80,7 @@ jobs:
           test -n "$sdk"
           mapfile -t signers < <(find "$sdk/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V)
           test "${#signers[@]}" -gt 0
-          "${signers[${#signers[@]}-1]}" verify --print-certs "$apk" > build/app/outputs/flutter-apk/signing-certificate.txt
+          "${signers[${#signers[@]}-1]}" verify --verbose --print-certs "$apk" > build/app/outputs/flutter-apk/signing-certificate.txt
           cat build/app/outputs/flutter-apk/signing-certificate.txt
           if grep -Eiq 'CN=Android Debug|Android Debug' build/app/outputs/flutter-apk/signing-certificate.txt; then
             echo '::warning::Release-mode APK uses a debug signing identity; NOT a production release.'
