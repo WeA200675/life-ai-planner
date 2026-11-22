@@ -1194,3 +1194,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächliche Testausführung:** Flutter/Dart im verfügbaren Container nicht installiert; `git ls-remote` scheiterte an DNS (`Could not resolve host: github.com`). GitHub-Connector bestätigte den Code-Commit, aber kein erfolgreicher Flutter-Test, CI-Lauf oder APK-Build für diesen Commit nachgewiesen. Teststatus **UNVERIFIZIERT**.
 - **Blocker:** Flutter-Laufzeit und vollständige GitHub-Actions-Push-Job-Einsicht fehlen hier; Geräteabnahme und produktive Restore-Umschaltung weiterhin offen. Keine Secrets/privaten Daten verwendet.
 - **Nächster Schritt:** GitHub Actions Flutter-Workflow auf aktuellem HEAD samt Job-Logs und APK-Artefakt verifizieren, Fehler beheben; danach echten Android-v4-Restore mit Crash-Rollback und Geräteabnahme prüfen.
+
+
+## M4 – Restore-Schema der idempotenten Planannahme (2026-11-22)
+- Ausgangs-HEAD: `cf7019a89cd4aa26acc8c0acc0e24fbf88ad7f94`; PR #1 offen, keine eigenständigen offenen Issues. README, Implementierungsplan und STATUS gelesen.
+- **Fehlerbild:** Der Android-v4-Restore-Preflight prüfte bisher nur drei Tabellen. Die seitdem produktiv verwendete Tabelle `plan_accept_requests` fehlte im Restore-Vertrag; ein Backup ohne diese Tabelle hätte die Prüfung bestehen können und spätere idempotente Planannahmen gefährdet.
+- **Korrektur:** `packages/storage/android_schema_contract.py` verlangt nun die vierte Tabelle samt Spalten, Primärschlüssel, NOT-NULL-Feldern und Fremdschlüssel auf `plan_snapshots`. Commit `63925ffb4bd8be824f0cf2f21c3012655d6ddb3f`.
+- **Tests:** Bestehende synthetische v4-Fixture um die vierte Tabelle erweitert; drei Regressionstests für fehlende Tabelle, Fingerprint-Spalte und Fremdschlüssel ergänzt. Commit `476534926e78fd18f23578a803b62c17af4c4f51`.
+- **Nachweisgrenze:** GitHub bestätigte die Schreiboperationen. Ein erfolgreicher Python-/Flutter-Testlauf oder CI-Lauf für diesen Stand ist **nicht** belegt. Der GitHub-Connector liefert bei `fetch_commit_workflow_runs` nur PR-gefilterte Ergebnisse; leere Resultate belegen keinen Push-CI-Erfolg. Die produktive Restore-Umschaltung bleibt deaktiviert.
+- **Nächster Schritt:** Android-Schema-Workflow auf dem neuen HEAD mit Logs prüfen und gegebenenfalls reparieren; danach vollständige SQLite-v4-Wiederherstellung mit exklusivem Koordinator, Crash-Rollback und Android-Geräteabnahme. M1–M4 nicht vollständig abgenommen.
