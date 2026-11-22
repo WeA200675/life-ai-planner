@@ -126,4 +126,61 @@ void main() {
     }
   });
 
+
+  test('concurrent creators never replace the winning marker', () async {
+    final dir = await Directory.systemTemp.createTemp('journal-race-test-');
+    try {
+      final marker = File('${dir.path}/restore.marker');
+      final attempts = await Future.wait(List.generate(12, (_) async {
+        try {
+          await store.create(marker, journal);
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }));
+      expect(attempts.where((success) => success).length, 1);
+      expect((await store.read(marker)).operationId, journal.operationId);
+      expect(await marker.length(), greaterThan(0));
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('empty and truncated markers fail closed and remain on disk', () async {
+    final dir = await Directory.systemTemp.createTemp('journal-crash-test-');
+    try {
+      for (final value in <String>['', '{', '{"version":']) {
+        final marker = File('${dir.path}/restore.marker');
+        await marker.writeAsString(value, flush: true);
+        await expectLater(store.read(marker), throwsFormatException);
+        expect(await marker.readAsString(), value);
+        await expectLater(store.create(marker, journal), throwsStateError);
+        await marker.delete();
+      }
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('distinct restore operations cannot overwrite an existing marker',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('journal-identity-test-');
+    try {
+      final marker = File('${dir.path}/restore.marker');
+      await store.create(marker, journal);
+      const second = RestoreJournal(
+        operationId: 'synthetic_operation_003',
+        phase: RestorePhase.prepared,
+        activePath: '/isolated/active.db',
+        candidatePath: '/isolated/candidate.db',
+        backupPath: '/isolated/backup.db',
+      );
+      await expectLater(store.create(marker, second), throwsStateError);
+      expect((await store.read(marker)).operationId, journal.operationId);
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
