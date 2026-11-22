@@ -1,0 +1,30 @@
+name: Android SQLite v4 contract
+on:
+  push:
+    paths:
+      - 'packages/storage/**'
+      - 'tests/test_android_schema_contract.py'
+      - 'tests/test_recovery_preflight.py'
+      - '.github/workflows/android-schema-contract.yml'
+  pull_request:
+    paths:
+      - 'packages/storage/**'
+      - 'tests/test_android_schema_contract.py'
+      - 'tests/test_recovery_preflight.py'
+      - '.github/workflows/android-schema-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android-schema-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify Python syntax
+        run: python -m compileall -q packages/storage tests/test_android_schema_contract.py tests/test_recovery_preflight.py
+      - name: Run Android schema and restore preflight regression tests
+        run: python -m unittest -v tests.test_android_schema_contract tests.test_recovery_preflight
