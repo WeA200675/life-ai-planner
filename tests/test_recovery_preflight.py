@@ -139,5 +139,26 @@ class RecoveryPreflightTests(unittest.TestCase):
         self.assertTrue(all(connection.closed for connection in connections))
 
 
+    def test_candidate_disappearing_after_read_fails_closed(self):
+        real_lstat = Path.lstat
+        calls = 0
+
+        def disappearing_lstat(path, *args, **kwargs):
+            nonlocal calls
+            if path == self.path:
+                calls += 1
+                # _regular_private_file checks the candidate twice; the
+                # third call is the post-inspection identity check.
+                if calls >= 3:
+                    raise FileNotFoundError("simulated concurrent removal")
+            return real_lstat(path, *args, **kwargs)
+
+        with patch("packages.storage.recovery_preflight.Path.lstat",
+                   autospec=True, side_effect=disappearing_lstat):
+            with self.assertRaisesRegex(RecoveryPreflightError, "vanished"):
+                inspect_candidate(self.path, expected_user_version=4)
+        self.assertTrue(self.path.exists())
+
+
 if __name__ == "__main__":
     unittest.main()
