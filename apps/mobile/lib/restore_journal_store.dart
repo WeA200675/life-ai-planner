@@ -43,8 +43,12 @@ class RestoreJournalStore {
     }
     RandomAccessFile? handle;
     try {
-      // Exclusive creation prevents replacing an existing regular file.
-      handle = await marker.open(mode: FileMode.writeOnlyExclusive);
+      // Dart FileMode has no writeOnlyExclusive. File.create(exclusive: true)
+      // performs the atomic no-clobber creation; only then open the new file.
+      // A crash between these operations leaves an invalid marker, which
+      // read() rejects. The private restore directory excludes hostile writers.
+      await marker.create(exclusive: true);
+      handle = await marker.open(mode: FileMode.writeOnly);
       await handle.writeString(encoded);
       await handle.flush();
     } finally {
