@@ -924,3 +924,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Nachweis:** GitHub-Commit bestätigt. Keine Flutter-Toolchain-/Widgettest-Ausführung und kein grüner CI-/APK-Nachweis für diesen Commit. Keine Geräteabnahme.
 - **Blocker:** Eine echte Integration der offenen M3-PR #1, automatisierte Flutter-Widgettests, Android-Release und Gerätetest stehen aus; M1–M4 nicht vollständig abgenommen.
 - **Nächster Schritt:** Flutter-CI auf dem neuen HEAD prüfen, Widgettests für Vorschau, veraltete Übernahme und Undo ergänzen; danach Android-Build und Geräteprüfung.
+
+
+## M4 Restore-Preflight: Fremdschlüsselprüfung – 2026-11-22
+- Vor Änderung letzter Commit laut GitHub-Suche: `2f27f7c13994265454a1ce0689645d1d6e90cb53`. README, Implementierungsplan, Status, PRs und Issues gelesen: PR #1 offen; keine eigenständigen offenen Issues.
+- Code-Commit `e7693406a83130c88931ea060bfbbcc22267356c`: `inspect_candidate` prüft zusätzlich zu `PRAGMA integrity_check` nun `PRAGMA foreign_key_check` und verweigert Kandidaten mit verwaisten Fremdschlüsselreferenzen. Keine produktive Datenbankänderung oder automatische Umschaltung.
+- Test-Commit `801ef8f4f82eabbd850ddc12279e13aa87992a7c`: zwei synthetische Regressionstests für ungültige und gültige Fremdschlüssel sowie unveränderte Kandidatendatei im Fehlerfall.
+- **Verifikation:** GitHub bestätigte beide Schreiboperationen. Isolierter Python-3/SQLite-Nachweis für zwei Fälle (verwaister und gültiger Fremdschlüssel): 2/2 erfolgreich. **Kein Repository-Testlauf**: Git-Klon blockiert durch DNS `Could not resolve host: github.com`. GitHub-Actions-Erfolg für neuen HEAD nicht bestätigt.
+- **Blocker:** End-to-End-Backup-Aktivierung, exklusive SQLite-Verbindungen, WAL/Crash-Rollback, Android-Geräte-/Release-Abnahme ausstehend. Öffentliches Repo: keine persönlichen Testdaten oder Secrets.
+- **Nächster Schritt:** GitHub-Actions-Lauf für neuen HEAD prüfen, Repository-Regressionstests ausführen; danach Restore-Koordinator mit Fail-Closed-Lock, Original-Sicherung und Fault-Injection integrieren. M1–M4 nicht abgenommen.
