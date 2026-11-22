@@ -332,4 +332,51 @@ void main() {
     }
   });
 
+  test('activation preflight accepts intact staged candidate read-only',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('preflight-valid-');
+    final source = await openDatabase('${dir.path}/source.db');
+    try {
+      await createTaskSchema(source);
+      await createPlanSnapshotSchema(source);
+      await source.insert('tasks', {'id': 101, 'title': 'Synthetic', 'done': 0});
+      final archive = await exportCombinedBackup(source);
+      final path = '${dir.path}/candidate.db';
+      await stageCombinedBackup(archive, path);
+      await inspectStagedCandidate(archive, path);
+      expect((await source.query('tasks')).single['title'], 'Synthetic');
+    } finally {
+      await source.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('activation preflight rejects modified staged content and sidecars',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('preflight-reject-');
+    final source = await openDatabase('${dir.path}/source.db');
+    try {
+      await createTaskSchema(source);
+      await createPlanSnapshotSchema(source);
+      await source.insert('tasks', {'id': 102, 'title': 'Original', 'done': 0});
+      final archive = await exportCombinedBackup(source);
+      final path = '${dir.path}/candidate.db';
+      await stageCombinedBackup(archive, path);
+      final sidecar = File('$' + '{path}-wal');
+      await sidecar.writeAsString('DO NOT REMOVE');
+      await expectLater(inspectStagedCandidate(archive, path), throwsStateError);
+      expect(await sidecar.readAsString(), 'DO NOT REMOVE');
+      await sidecar.delete();
+      final candidate = await openDatabase(path);
+      await candidate.update('tasks', {'title': 'Tampered'},
+          where: 'id = ?', whereArgs: [102]);
+      await candidate.close();
+      await expectLater(inspectStagedCandidate(archive, path), throwsStateError);
+      expect((await source.query('tasks')).single['title'], 'Original');
+    } finally {
+      await source.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
