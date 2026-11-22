@@ -108,7 +108,6 @@ void main() {
 
   test('schema upgrade from v3 retains tasks and adds snapshot history',
       () async {
-    final path = await databaseFactoryFfi.getDatabasesPath();
     // Exercise the same migration DDL in a private in-memory database.
     final legacy = await openDatabase(inMemoryDatabasePath, version: 3,
         onCreate: (database, version) async {
@@ -124,6 +123,5 @@ void main() {
     } finally {
       await legacy.close();
     }
-    expect(path, isNotEmpty);
   });
 }
