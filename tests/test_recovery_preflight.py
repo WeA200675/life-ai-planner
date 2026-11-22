@@ -69,6 +69,23 @@ class RecoveryPreflightTests(unittest.TestCase):
         result = inspect_candidate(self.path, expected_user_version=4)
         self.assertEqual(result["tables"], ["children", "parents", "tasks"])
 
+    def test_required_tables_present(self):
+        result = inspect_candidate(
+            self.path, expected_user_version=4, required_tables=("tasks",))
+        self.assertIn("tasks", result["tables"])
+
+    def test_missing_application_table_rejected_without_mutation(self):
+        before = self.path.read_bytes()
+        with self.assertRaisesRegex(RecoveryPreflightError, "required application"):
+            inspect_candidate(self.path, required_tables=("tasks", "plan_snapshots"))
+        self.assertEqual(self.path.read_bytes(), before)
+
+    def test_invalid_required_table_names_rejected(self):
+        for names in (("tasks; DROP TABLE tasks",), ("",), ("tâsk",), "tasks"):
+            with self.subTest(names=names):
+                with self.assertRaisesRegex(RecoveryPreflightError, "table names"):
+                    inspect_candidate(self.path, required_tables=names)
+
     def test_missing_and_invalid_version_rejected(self):
         with self.assertRaises(RecoveryPreflightError):
             inspect_candidate(Path(self.tmp.name) / "missing.db")
