@@ -899,3 +899,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Wichtiger Blocker:** Der Phasenwechsel benötigt eine externe prozessübergreifende Sperre. Er ist keine Compare-and-swap-Operation; er darf erst mit einem getesteten Restore-Koordinator für exklusive SQLite-Verbindungen, WAL-Checkpoint, Backup, Crash-Recovery und Rollback verbunden werden. Plattform-/Geräteabnahme fehlt.
 - **Nächster Schritt:** CI für neuen HEAD prüfen; externen Restore-Lock und Unterbrechungs-/Rollbacktests implementieren, dann erst produktive Aktivierung freigeben.
 - **Abnahme:** M1–M4 weiterhin offen; keine vollständige Freigabe.
+
+
+## M4 Exklusiver Recovery-Journal-Lock – 2026-11-22 (Folgelauf)
+- README, docs/IMPLEMENTATION_PLAN.md und docs/STATUS.md gelesen. Ausgangs-HEAD vor Änderung: `525786e6baf93850b4878e2156147e2a1af5e270`. PR #1 offen, keine separaten offenen Issues. PR-gefilterte Actions-Abfrage für `5a51abc...` lieferte keine Läufe und ist **kein** CI-Erfolgsnachweis.
+- Code-Commit `1036eaae8d1a419166fb98a1a859ad938b4581e9`: `packages/storage/recovery_lock.py` mit POSIX-`flock` (exklusiv, nicht blockierend), Symlink-/Inode-Prüfung, verweigert nicht-reguläre Lockdateien, behält Lock-Inode nach Freigabe bei; `advance_phase_locked` kapselt den bestehenden Phasenwechsel unter der Sperre. Auf nicht unterstützten Plattformen wird sicher abgebrochen.
+- Test-Commit `24b855287f9c28bb9cf6cc94769ec4d0c477ccd5`: vier synthetische Tests für Sperrkonflikt, erneute Sperre, Journal-Fortschritt, Symlink-Schutz und unveränderten Lock-Inode.
+- **Tatsächliche Verifikation:** GitHub bestätigte beide Commits. Lokaler Repository-Klon scheiterte mit `Could not resolve host: github.com`; deshalb **keine lokale Testausführung**, kein bestätigter CI-Erfolg und keine Android-Abnahme für diese Änderung. Die Tests sind geschrieben, aber noch nicht als bestanden nachgewiesen.
+- **Grenzen:** Advisory Lock schützt nur kooperierende Prozesse mit identischem Lockpfad. Bestehende ungesperrte `advance_phase`-Aufrufer bleiben möglich; kein SQLite-Handle-Lock, keine produktive Datenbankaktivierung, kein Rollback. Windows wird bewusst nicht unterstützt, statt eine falsche Sicherheit zu suggerieren. M1–M4 nicht abgenommen.
+- **Nächster Schritt:** CI für `24b8552` über Actions prüfen, Fehler korrigieren, Lock in einen vollständigen Restore-Koordinator mit WAL-Checkpoint, Original-Backup, Crash-Recovery und Rollback integrieren; erst nach Geräte-/Release-Abnahme aktivieren.
