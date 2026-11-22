@@ -107,3 +107,27 @@ class BackupTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "foreign key"):
             restore_database(self.backup, target)
         self.assertFalse(target.exists())
+
+    def test_backup_rejects_symlinked_source(self):
+        alias = self.root / "source-alias.db"
+        alias.symlink_to(self.source)
+        with self.assertRaisesRegex(ValueError, "single regular"):
+            backup_database(alias, self.backup)
+        self.assertFalse(self.backup.exists())
+
+    def test_restore_rejects_symlinked_backup(self):
+        backup_database(self.source, self.backup)
+        alias = self.root / "backup-alias.db"
+        alias.symlink_to(self.backup)
+        target = self.root / "restored.db"
+        with self.assertRaisesRegex(ValueError, "single regular"):
+            restore_database(alias, target)
+        self.assertFalse(target.exists())
+
+    def test_backup_rejects_hardlinked_source(self):
+        alias = self.root / "hardlink.db"
+        import os
+        os.link(self.source, alias)
+        with self.assertRaisesRegex(ValueError, "single regular"):
+            backup_database(alias, self.backup)
+        self.assertFalse(self.backup.exists())
