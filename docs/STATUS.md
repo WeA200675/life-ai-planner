@@ -1184,3 +1184,5 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Grenze:** Die neue Prüfung schützt gegen bereits vorhandene Symlinks/Hardlinks, ist aber keine vollständige Race-/TOCTOU-Sicherung gegen konkurrierende Pfadänderungen. Produktive Restore-Umschaltung bleibt deaktiviert.
 - **Nächster Schritt:** GitHub Actions für neuen HEAD prüfen, ggf. Fehler beheben; anschließend sichere Deskriptor-basierte Pfadöffnung und Flutter-/Android-Release-/Geräteabnahme.
 - **Abnahme:** M1–M4 noch nicht vollständig.
+
+- **CI-Korrektur desselben Laufs:** Android-Schema-Workflow [45062126699](https://github.com/WeA200675/life-ai-planner/actions/runs/45062126699) scheiterte nach erfolgreicher Syntaxprüfung mit Exit 2: YAML faltete zwei `python -m unittest`-Kommandos zu einem einzigen ungültigen Aufruf (`unrecognized arguments: -m`). Workflow-Skriptblock auf `run: |` korrigiert, Commit `af537467bf788dcdc73248ac5db5b5ecdf6fc78e`. Neuer CI-Lauf muss separat bestätigt werden.
