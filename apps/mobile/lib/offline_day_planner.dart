@@ -30,16 +30,6 @@ class DayPlan {
 /// Validate all task records, including records later excluded as completed.
 /// Otherwise corrupt completed rows can silently bypass the planner contract.
 Set<String> _validateTasks(List<DayTask> tasks) {
-  final ids = _validateTasks(tasks);
-  return ids;
-}
-
-DayPlan planOfflineDay(DateTime start, DateTime end, List<DayTask> tasks,
-    {List<DayBlock> fixed = const [], double bufferRatio = 0.30}) {
-  if (!start.isBefore(end) || !bufferRatio.isFinite ||
-      bufferRatio < 0 || bufferRatio >= 1) {
-    throw ArgumentError('Invalid planning window or buffer');
-  }
   final ids = <String>{};
   for (final task in tasks) {
     if (task.id.trim().isEmpty || task.id != task.id.trim() ||
@@ -49,6 +39,16 @@ DayPlan planOfflineDay(DateTime start, DateTime end, List<DayTask> tasks,
       throw ArgumentError('Invalid or duplicate task');
     }
   }
+  return ids;
+}
+
+DayPlan planOfflineDay(DateTime start, DateTime end, List<DayTask> tasks,
+    {List<DayBlock> fixed = const [], double bufferRatio = 0.30}) {
+  if (!start.isBefore(end) || !bufferRatio.isFinite ||
+      bufferRatio < 0 || bufferRatio >= 1) {
+    throw ArgumentError('Invalid planning window or buffer');
+  }
+  final ids = _validateTasks(tasks);
   final fixedIds = <String>{};
   for (final block in fixed) {
     if (block.id.trim().isEmpty || block.id != block.id.trim() ||
