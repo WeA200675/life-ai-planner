@@ -3,6 +3,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from packages.storage.recovery_preflight import RecoveryPreflightError, inspect_candidate
 
@@ -38,6 +39,21 @@ class RecoveryPreflightTests(unittest.TestCase):
         with self.assertRaisesRegex(RecoveryPreflightError, "sidecar"):
             inspect_candidate(self.path)
         self.assertEqual(sidecar.read_bytes(), b"synthetic")
+
+    def test_sidecar_appearing_during_inspection_rejected(self):
+        real_connect = sqlite3.connect
+        sidecar = Path(str(self.path) + "-wal")
+
+        def concurrent_sidecar(*args, **kwargs):
+            connection = real_connect(*args, **kwargs)
+            sidecar.write_bytes(b"synthetic concurrent sidecar")
+            return connection
+
+        with patch("packages.storage.recovery_preflight.sqlite3.connect",
+                   side_effect=concurrent_sidecar):
+            with self.assertRaisesRegex(RecoveryPreflightError, "sidecar"):
+                inspect_candidate(self.path)
+        self.assertEqual(sidecar.read_bytes(), b"synthetic concurrent sidecar")
 
     def test_symlink_rejected(self):
         if not hasattr(os, "symlink"):
