@@ -176,4 +176,31 @@ void main() {
     expect(await db.query('plan_accept_requests'), isEmpty);
   });
 
+  test('idempotency persists when the snapshot store is recreated', () async {
+    final original = await seedTasks();
+    final plan = preview(original);
+    final first = await snapshots.accept(plan, start, end,
+        expectedTasks: original, requestKey: 'persistent-key');
+    final reopenedStore = PlanSnapshotStore(db);
+    final retried = await reopenedStore.accept(plan, start, end,
+        expectedTasks: original, requestKey: 'persistent-key');
+    expect(retried, first);
+    expect((await reopenedStore.history()).length, 1);
+    expect((await db.query('plan_accept_requests')).single['snapshot_id'], first);
+  });
+
+  test('invalid idempotency keys fail before any database mutation', () async {
+    final original = await seedTasks();
+    final plan = preview(original);
+    for (final key in ['', ' leading', 'trailing ', 'x' * 129]) {
+      await expectLater(
+        snapshots.accept(plan, start, end,
+            expectedTasks: original, requestKey: key),
+        throwsArgumentError,
+      );
+    }
+    expect(await db.query('plan_snapshots'), isEmpty);
+    expect(await db.query('plan_accept_requests'), isEmpty);
+  });
+
 }
