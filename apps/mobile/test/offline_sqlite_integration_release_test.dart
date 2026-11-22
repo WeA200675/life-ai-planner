@@ -192,7 +192,7 @@ void main() {
   test('invalid idempotency keys fail before any database mutation', () async {
     final original = await seedTasks();
     final plan = preview(original);
-    for (final key in ['', ' leading', 'trailing ', 'x' * 129]) {
+    for (final key in ['', ' leading', 'trailing ', List.filled(129, 'x').join()]) {
       await expectLater(
         snapshots.accept(plan, start, end,
             expectedTasks: original, requestKey: key),
