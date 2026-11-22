@@ -55,6 +55,17 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
     // A candidate must not depend on uncheckpointed WAL pages when it is
     // eventually moved or reopened. Never attempt this on the active DB.
     await checkpointStagedDatabase(db);
+    // Validate the durable on-disk state after closing the writer.
+    await db.close();
+    db = null;
+    final reopened = await (factory ?? databaseFactory).openDatabase(
+        candidatePath, options: OpenDatabaseOptions(readOnly: true));
+    try {
+      await verifyStagedDatabase(reopened);
+      await verifyStagedArchive(reopened, archive);
+    } finally {
+      await reopened.close();
+    }
     return result;
   } catch (_) {
     // Only delete a destination created by this attempt, never a file that
