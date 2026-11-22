@@ -27,5 +27,6 @@ jobs:
       - name: Verify Python syntax
         run: python -m compileall -q packages/storage tests/test_android_schema_contract.py tests/test_recovery_preflight.py
       - name: Run Android schema and restore preflight regression tests
-        run: python -m unittest discover -s tests -p 'test_android_schema_contract.py' -v
+        run: |
+          python -m unittest discover -s tests -p 'test_android_schema_contract.py' -v
           python -m unittest discover -s tests -p 'test_recovery_preflight.py' -v
