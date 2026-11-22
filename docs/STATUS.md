@@ -835,3 +835,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** Commits auf GitHub bestätigt. Neue CI-Ergebnisse zum Test-HEAD siehe GitHub Actions; zum Zeitpunkt des Schreibens noch nicht als erfolgreich belegt. Kein lokaler Flutter-Lauf, keine Android-Geräteabnahme behauptet.
 - **Blocker:** Exklusiver DB-Lock, dauerhaftes Original-Backup, atomarer Swap mit persistentem Recovery-Marker, Crash-Injektion, Rollback und UI-Bestätigung fehlen. TOCTOU durch fremde Prozesse bleibt; nur private App-Verzeichnisse.
 - **Nächster Schritt:** Neue Flutter-CI auswerten; bei Fehler korrigieren. Anschließend isoliertes Recovery-Protokoll mit absturzsicherem Original-Backup und Fehler-Injektion implementieren, ohne die produktive DB automatisch zu ersetzen.
+
+
+## M4 Restore-Kandidaten: Recovery-Artefakte verweigern – 2026-11-22 (06:40 Europe/Berlin)
+- Ausgangs-HEAD: `f757cec4a110bd159416d07fd894de0a443e9b44`; README, Implementierungsplan, Status, offene PRs/Issues und Actions geprüft. PR #1 offen; keine unabhängigen offenen Issues.
+- Ausgangs-CI: Scheduler [44988867490](https://github.com/WeA200675/life-ai-planner/actions/runs/44988867490) für Ausgangs-HEAD **success**. Ein neuer Flutter-Erfolg für die hier vorgenommenen Änderungen ist noch nicht bestätigt.
+- Code-Commit `36f4d7ae9afc526ab2a05cdf3b78f4ff0dd1b34a`: `inspectStagedCandidate` lehnt zusätzlich vorhandene `.restore-backup`, `.restore-marker` und `.restore-pending`-Artefakte ab; kein automatisches Löschen und keine Aktivierung. Damit gilt die Recovery-Artefakt-Sperre auch für den Kandidaten des Restore-Paars.
+- Test-Commit `91984bd3630734c59ee887f5a840ca628aed3c73`: synthetischer SQLite-FFI-Test für alle drei Artefakte, unveränderte Artefakte, Ablehnung sowohl des Kandidaten- als auch Paar-Preflights und erfolgreichen erneuten Kandidaten-Preflight nach manueller Bereinigung.
+- **Verifikation:** GitHub-Schreiboperationen erfolgreich. Flutter-CI für den neuen Test-HEAD noch nicht als erfolgreich nachgewiesen; keine lokale Testausführung, kein Android-Geräte-/Release-Test behauptet.
+- **Blocker:** Produktive Aktivierung bleibt deaktiviert: exklusive geschlossene DB-Handles, persistenter Recovery-Marker, Original-Backup, Crash-Recovery, Rollback und ausdrückliche Freigabe fehlen. M1–M4 nicht abgenommen.
+- **Nächster Schritt:** Flutter-CI für Test-HEAD prüfen und ggf. reparieren. Danach nicht-destruktive Recovery-Protokolltests mit simuliertem Abbruch vor einer späteren Aktivierung.
