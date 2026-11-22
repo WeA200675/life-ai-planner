@@ -124,4 +124,56 @@ void main() {
       await legacy.close();
     }
   });
+  test('same request key is idempotent across concurrent acceptance', () async {
+    final original = await seedTasks();
+    final plan = preview(original);
+    final ids = await Future.wait([
+      snapshots.accept(plan, start, end,
+          expectedTasks: original, requestKey: 'synthetic-request-1'),
+      snapshots.accept(plan, start, end,
+          expectedTasks: original, requestKey: 'synthetic-request-1'),
+    ]);
+    expect(ids[0], ids[1]);
+    expect((await snapshots.history()).length, 1);
+    expect((await db.query('plan_accept_requests')).length, 1);
+  });
+
+  test('request key collision with different payload fails closed', () async {
+    final original = await seedTasks();
+    final first = preview(original);
+    await snapshots.accept(first, start, end,
+        expectedTasks: original, requestKey: 'collision');
+    final changed = DayPlan(const [], const [], const [], 600, 420, 600);
+    await expectLater(
+      snapshots.accept(changed, start, end,
+          expectedTasks: original, requestKey: 'collision'),
+      throwsStateError,
+    );
+    expect((await snapshots.history()).length, 1);
+  });
+
+  test('undo removes idempotency mapping and permits safe retry', () async {
+    final original = await seedTasks();
+    final plan = preview(original);
+    final first = await snapshots.accept(plan, start, end,
+        expectedTasks: original, requestKey: 'retry-after-undo');
+    expect(await snapshots.undoLatest(first), isTrue);
+    expect(await db.query('plan_accept_requests'), isEmpty);
+    final second = await snapshots.accept(plan, start, end,
+        expectedTasks: original, requestKey: 'retry-after-undo');
+    expect(second, isNot(first));
+    expect((await snapshots.history()).length, 1);
+  });
+
+  test('additive schema initialization preserves existing snapshots', () async {
+    final original = await seedTasks();
+    final plan = preview(original);
+    final first = await snapshots.accept(plan, start, end,
+        expectedTasks: original);
+    await createPlanSnapshotSchema(db);
+    expect((await snapshots.latest())?.id, first);
+    expect(await db.query('tasks', orderBy: 'id ASC'), original);
+    expect(await db.query('plan_accept_requests'), isEmpty);
+  });
+
 }
