@@ -112,5 +112,49 @@ class AndroidSchemaContractTests(unittest.TestCase):
             inspect_android_v4_candidate(self.path)
 
 
+    def test_missing_required_not_null_rejected(self):
+        with sqlite3.connect(self.path) as db:
+            db.executescript("""
+                DROP TABLE tasks;
+                CREATE TABLE tasks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT, done INTEGER NOT NULL,
+                    minutes INTEGER, priority INTEGER NOT NULL,
+                    deadline_utc_ms INTEGER
+                );
+            """)
+        with self.assertRaisesRegex(RecoveryPreflightError, "NOT NULL"):
+            inspect_android_v4_candidate(self.path)
+
+    def test_missing_snapshot_foreign_key_rejected(self):
+        with sqlite3.connect(self.path) as db:
+            db.executescript("""
+                DROP TABLE plan_snapshot_blocks;
+                CREATE TABLE plan_snapshot_blocks (
+                    snapshot_id INTEGER NOT NULL, position INTEGER NOT NULL,
+                    task_id TEXT NOT NULL, start_utc_ms INTEGER NOT NULL,
+                    end_utc_ms INTEGER NOT NULL,
+                    PRIMARY KEY(snapshot_id, position)
+                );
+            """)
+        with self.assertRaisesRegex(RecoveryPreflightError, "foreign key"):
+            inspect_android_v4_candidate(self.path)
+
+    def test_wrong_snapshot_foreign_key_target_rejected(self):
+        with sqlite3.connect(self.path) as db:
+            db.executescript("""
+                DROP TABLE plan_snapshot_blocks;
+                CREATE TABLE plan_snapshot_blocks (
+                    snapshot_id INTEGER NOT NULL, position INTEGER NOT NULL,
+                    task_id TEXT NOT NULL, start_utc_ms INTEGER NOT NULL,
+                    end_utc_ms INTEGER NOT NULL,
+                    PRIMARY KEY(snapshot_id, position),
+                    FOREIGN KEY(snapshot_id) REFERENCES tasks(id)
+                );
+            """)
+        with self.assertRaisesRegex(RecoveryPreflightError, "foreign key"):
+            inspect_android_v4_candidate(self.path)
+
+
 if __name__ == "__main__":
     unittest.main()
