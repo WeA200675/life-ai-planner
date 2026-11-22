@@ -240,4 +240,45 @@ void main() {
     }
   });
 
+  test('symlink staging parent is rejected without writing target', () async {
+    if (Platform.isWindows) return; // Symlink privileges differ on Windows.
+    final dir = await Directory.systemTemp.createTemp('stage-link-parent-');
+    final source = await openDatabase('${dir.path}/source.db');
+    try {
+      await createTaskSchema(source);
+      await createPlanSnapshotSchema(source);
+      final archive = await exportCombinedBackup(source);
+      final actual = await Directory('${dir.path}/real').create();
+      final alias = Link('${dir.path}/alias');
+      await alias.create(actual.path);
+      await expectLater(
+          stageCombinedBackup(archive, '${alias.path}/candidate.db'),
+          throwsStateError);
+      expect(await File('${actual.path}/candidate.db').exists(), isFalse);
+    } finally {
+      await source.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('dangling symlink candidate is rejected and preserved', () async {
+    if (Platform.isWindows) return;
+    final dir = await Directory.systemTemp.createTemp('stage-link-file-');
+    final source = await openDatabase('${dir.path}/source.db');
+    try {
+      await createTaskSchema(source);
+      await createPlanSnapshotSchema(source);
+      final archive = await exportCombinedBackup(source);
+      final candidate = Link('${dir.path}/candidate.db');
+      await candidate.create('${dir.path}/missing-target.db');
+      await expectLater(stageCombinedBackup(archive, candidate.path),
+          throwsStateError);
+      expect(await candidate.exists(), isTrue);
+      expect(await File('${dir.path}/missing-target.db').exists(), isFalse);
+    } finally {
+      await source.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
