@@ -42,6 +42,23 @@ class RecoveryLockTests(unittest.TestCase):
                     pass
             self.assertEqual(target.read_text(), "unchanged")
 
+    def test_existing_world_readable_lock_rejected_without_chmod(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "restore.lock"
+            path.write_text("synthetic")
+            path.chmod(0o644)
+            with self.assertRaisesRegex(RecoveryPhaseError, "unsafe lock file"):
+                with recovery_lock(path):
+                    pass
+            self.assertEqual(path.stat().st_mode & 0o777, 0o644)
+            self.assertEqual(path.read_text(), "synthetic")
+
+    def test_new_lock_is_private(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "restore.lock"
+            with recovery_lock(path):
+                self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+
     def test_lock_file_is_not_deleted(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "restore.lock"
