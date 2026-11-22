@@ -84,6 +84,47 @@ void main() {
         completedTaskIds: {'unknown'}), throwsArgumentError);
   });
 
+  test('replanning rejects overlapping past appointments', () {
+    final now = DateTime.utc(2026, 11, 22, 12);
+    expect(() => replanOfflineDay(now, end, const [], fixed: [
+      DayBlock('a', DateTime.utc(2026, 11, 22, 8),
+          DateTime.utc(2026, 11, 22, 10)),
+      DayBlock('b', DateTime.utc(2026, 11, 22, 9),
+          DateTime.utc(2026, 11, 22, 11)),
+    ]), throwsArgumentError);
+  });
+
+  test('replanning rejects duplicate past appointment identifiers', () {
+    final now = DateTime.utc(2026, 11, 22, 12);
+    expect(() => replanOfflineDay(now, end, const [], fixed: [
+      DayBlock('duplicate', DateTime.utc(2026, 11, 22, 8),
+          DateTime.utc(2026, 11, 22, 9)),
+      DayBlock('duplicate', DateTime.utc(2026, 11, 22, 10),
+          DateTime.utc(2026, 11, 22, 11)),
+    ]), throwsArgumentError);
+  });
+
+  test('replanning rejects fixed IDs belonging to completed tasks', () {
+    expect(() => replanOfflineDay(start, end, [
+      const DayTask(id: 'completed', minutes: 20),
+    ], completedTaskIds: {'completed'}, fixed: [
+      DayBlock('completed', DateTime.utc(2026, 11, 22, 9),
+          DateTime.utc(2026, 11, 22, 10)),
+    ]), throwsArgumentError);
+  });
+
+  test('replanning keeps valid past appointments out of new plan', () {
+    final now = DateTime.utc(2026, 11, 22, 12);
+    final result = replanOfflineDay(now, end, [
+      const DayTask(id: 'todo', minutes: 20),
+    ], fixed: [
+      DayBlock('past', DateTime.utc(2026, 11, 22, 8),
+          DateTime.utc(2026, 11, 22, 9)),
+    ]);
+    expect(result.blocks.map((b) => b.id).toList(), ['todo']);
+    expect(result.blocks.single.start, now);
+  });
+
   test('planner leaves caller inputs unchanged', () {
     final tasks = [
       const DayTask(id: 'b', minutes: 30, priority: 1),
