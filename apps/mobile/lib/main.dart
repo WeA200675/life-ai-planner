@@ -37,6 +37,9 @@ class LocalTasks {
       final opened = await openDatabase(
         p.join(root, 'life_ai_planner.db'),
         version: 4,
+        // SQLite foreign keys are connection-scoped and must be enabled
+        // before schema creation or any transaction on every app open.
+        onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         // Idempotent additive schema for existing v4 installations.
         // Never drop or rewrite user tasks or accepted plans.
         onOpen: (db) async => createPlanSnapshotSchema(db),
