@@ -281,4 +281,31 @@ void main() {
     }
   });
 
+  test('dangling symlink sidecars reject staging and remain untouched',
+      () async {
+    if (Platform.isWindows) return;
+    final dir = await Directory.systemTemp.createTemp('stage-link-sidecar-');
+    final source = await openDatabase('${dir.path}/source.db');
+    try {
+      await createTaskSchema(source);
+      await createPlanSnapshotSchema(source);
+      final archive = await exportCombinedBackup(source);
+      final candidate = '${dir.path}/candidate.db';
+      for (final suffix in ['-wal', '-shm', '-journal']) {
+        final target = '${dir.path}/absent$suffix';
+        final sidecar = Link('$candidate$suffix');
+        await sidecar.create(target);
+        await expectLater(stageCombinedBackup(archive, candidate),
+            throwsStateError);
+        expect(await sidecar.exists(), isTrue);
+        expect(await File(target).exists(), isFalse);
+        expect(await File(candidate).exists(), isFalse);
+        await sidecar.delete();
+      }
+    } finally {
+      await source.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
