@@ -1132,3 +1132,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Nachweis:** GitHub hat beide Schreiboperationen bestätigt. Weder ein erfolgreicher Workflow-Lauf noch Testausgaben, Flutter-Build, APK oder Gerätetest wurden in diesem Lauf nachgewiesen. Workflow-Prüfung kann bei CI-Fehlern weitere Anpassungen erfordern.
 - **Blocker:** Kein verfügbarer lokaler Flutter-/Android-Build mit Gerätezugriff; Android-v4-Restore-Koordinator mit exklusivem Lock, Original-Backup und Crash-Rollback weiterhin ausstehend. Kein produktiver Restore aktiviert.
 - **Nächster Schritt:** Neuen Python-Workflow tatsächlich ausführen/Ergebnis prüfen und Fehler korrigieren; anschließend Android SQLite Widget-/Integrationstests, reproduzierbare APK und Geräteabnahme priorisieren. HEAD vor jedem Schreibvorgang neu prüfen und konkurrierende Automationen berücksichtigen.
+
+
+## Release R1 – Offline-Planung und SQLite-Integration (2026-11-22)
+- Vor Schreibvorgängen HEAD geprüft; Integrationsarbeit auf dem aktuellen Default-Branch, PR #1 bleibt offen. Keine vollständige M1–M4-Abnahme.
+- Neue Datei `apps/mobile/test/offline_sqlite_integration_release_test.dart`: fünf synthetische Flutter/sqflite-ffi-Integrationstests für Vorschau→atomare Snapshot-Annahme→Verlauf→Undo ohne Task-Mutation, veraltete Vorschau, zwei konkurrierende append-only-Annahmen, überlappende Blöcke ohne Teilpersistenz und Schema-v3-Datenübernahme in Snapshot-Tabellen.
+- Code-Commits `628b15178b9fddfb3c0a4725bf9d61f9316128f1`, `1d7657314a3b02a2685fd24ffb05d84f947cf161` (plattformunabhängiger In-Memory-Test).
+- **Wichtig:** Konkurrenztest beweist keine Request-Idempotenz; derzeit werden zwei gültige Accepts als zwei Versionen gespeichert. Migrationstest prüft Schema-DDL und Datenerhalt, nicht den kompletten onUpgrade-Callback. Keine produktive Restore-Aktivierung.
+- **Testnachweis:** GitHub-Commits bestätigt. Flutter-Tests in diesem Lauf nicht ausgeführt; CI-Lauf und APK nicht bestätigt. Neue Tests gelten ausdrücklich als UNVERIFIZIERT, bis Flutter CI erfolgreich läuft.
+- **Nächster Schritt:** Flutter-CI und APK-Artefakt prüfen, ggf. fehlschlagende Tests korrigieren; anschließend echte Upgrade-/Restore-/Crash-Integration, UI-Widget-Tests und Geräteabnahme. Keine Secrets oder privaten Daten.
