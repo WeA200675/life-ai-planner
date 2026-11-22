@@ -38,6 +38,13 @@ class AndroidSchemaContractTests(unittest.TestCase):
                     PRIMARY KEY(snapshot_id, position),
                     FOREIGN KEY(snapshot_id) REFERENCES plan_snapshots(id)
                 );
+                CREATE TABLE plan_accept_requests (
+                    request_key TEXT PRIMARY KEY NOT NULL,
+                    snapshot_id INTEGER NOT NULL,
+                    payload_fingerprint TEXT NOT NULL,
+                    FOREIGN KEY(snapshot_id) REFERENCES plan_snapshots(id)
+                        ON DELETE CASCADE
+                );
                 PRAGMA user_version=4;
                 INSERT INTO tasks(title, done, priority)
                 VALUES ('synthetic', 0, 0);
@@ -47,7 +54,7 @@ class AndroidSchemaContractTests(unittest.TestCase):
         original = self.path.read_bytes()
         result = inspect_android_v4_candidate(self.path)
         self.assertEqual(result["user_version"], 4)
-        self.assertEqual(len(result["tables"]), 3)
+        self.assertEqual(len(result["tables"]), 4)
         self.assertEqual(self.path.read_bytes(), original)
 
     def test_wrong_schema_version_rejected(self):
@@ -150,6 +157,39 @@ class AndroidSchemaContractTests(unittest.TestCase):
                     end_utc_ms INTEGER NOT NULL,
                     PRIMARY KEY(snapshot_id, position),
                     FOREIGN KEY(snapshot_id) REFERENCES tasks(id)
+                );
+            """)
+        with self.assertRaisesRegex(RecoveryPreflightError, "foreign key"):
+            inspect_android_v4_candidate(self.path)
+
+
+    def test_missing_acceptance_idempotency_table_rejected(self):
+        with sqlite3.connect(self.path) as db:
+            db.execute("DROP TABLE plan_accept_requests")
+        with self.assertRaises(RecoveryPreflightError):
+            inspect_android_v4_candidate(self.path)
+
+    def test_missing_acceptance_fingerprint_rejected(self):
+        with sqlite3.connect(self.path) as db:
+            db.executescript("""
+                DROP TABLE plan_accept_requests;
+                CREATE TABLE plan_accept_requests (
+                    request_key TEXT PRIMARY KEY NOT NULL,
+                    snapshot_id INTEGER NOT NULL,
+                    FOREIGN KEY(snapshot_id) REFERENCES plan_snapshots(id)
+                );
+            """)
+        with self.assertRaisesRegex(RecoveryPreflightError, "columns"):
+            inspect_android_v4_candidate(self.path)
+
+    def test_acceptance_foreign_key_rejected_when_missing(self):
+        with sqlite3.connect(self.path) as db:
+            db.executescript("""
+                DROP TABLE plan_accept_requests;
+                CREATE TABLE plan_accept_requests (
+                    request_key TEXT PRIMARY KEY NOT NULL,
+                    snapshot_id INTEGER NOT NULL,
+                    payload_fingerprint TEXT NOT NULL
                 );
             """)
         with self.assertRaisesRegex(RecoveryPreflightError, "foreign key"):
