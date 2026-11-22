@@ -21,6 +21,12 @@ jobs:
         with:
           channel: stable
           cache: true
+      # Reuse resolved Gradle artifacts across builds to reduce Maven Central
+      # requests and mitigate transient HTTP 429 responses. A cache miss still
+      # uses normal Gradle resolution and must never turn a failure green.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Report toolchain versions
         run: |
           flutter --version
