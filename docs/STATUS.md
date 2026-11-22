@@ -1247,3 +1247,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächlich ausgeführt:** Container hat kein `flutter` und kein `dart`. Python-SQLite-Sanitycheck auf SQLite 3.46.1: `PRAGMA foreign_keys` vor Aktivierung = 0, nach Aktivierung = 1. Dies bestätigt nur die SQLite-Eigenschaft, **nicht** die Flutter-Tests. GitHub bestätigte beide Code-Commits. CI, APK und Android-Geräteabnahme für diese Commits **UNVERIFIZIERT**.
 - **Grenzen:** Vorhandene verwaiste Altzeilen werden durch Aktivierung nicht automatisch bereinigt; produktive Datenbank vor Restore/Release mit `PRAGMA foreign_key_check` prüfen und bei Befund ohne Datenverlust abbrechen. Produktive Restore-Umschaltung und Release-Signing weiterhin offen.
 - **Nächster Schritt:** Flutter-/Release-CI auf neuem HEAD mit tatsächlichen Logs/Artefakten prüfen und Testfehler beheben; anschließend FK-Integritäts-Preflight für bestehende Datenbanken, Crash-Restore/Undo und APK-/Geräteabnahme.
+
+
+## M4 – Android Legacy-FK-Preflight (2026-11-23)
+- Ausgangs-HEAD `226204e945abb632614d9736b914a4dc228338ef`; README, Implementierungsplan, STATUS und Release-CI geprüft. GitHub-Issue-Suche `is:open`: keine Treffer (einschließlich PRs).
+- Befund: `PRAGMA foreign_keys=ON` schützt künftige Schreiboperationen, entdeckt aber bereits bestehende verwaiste Zeilen nicht automatisch.
+- Implementierung: `apps/mobile/lib/main.dart` prüft in `onOpen` nach additiver Schemaerstellung `PRAGMA foreign_key_check`. Bei Befund wird mit `StateError` ohne automatische Löschung oder Restore-Umschaltung abgebrochen. Code-Commit `16e484282b7526f322403fbe1b155ac0f2513d87`.
+- Nachweis: GitHub-Änderung bestätigt; **keine Flutter-Testausführung, kein grüner Push-CI-Lauf, kein Android-Release-Build und keine Geräteabnahme für diesen Stand nachgewiesen**. Der Connector für Commit-Workflow-Runs filtert nur PR-Events; klassische Combined-Statuschecks sind kein vollständiger Actions-Nachweis.
+- Blocker: Verifikation mit Flutter-Toolchain und CI-Logs/Artefakten; sichere Restore-/Crash-Rollback-Abnahme; Release-Signing und reale Geräteprüfung. M1–M4 NICHT ABGENOMMEN.
+- Nächster Schritt: gezielten Regressionstest für das Öffnen einer Legacy-Datenbank mit verwaisten Kindzeilen hinzufügen und ausführen; CI-Fehler beheben, dann signierten Release-Build und Geräteabnahme belegen.
