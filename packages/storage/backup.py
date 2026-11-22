@@ -4,6 +4,7 @@ Backup uses SQLite's online backup API, not a raw copy (safe with WAL writers).
 Restore is deliberately offline-only and refuses to overwrite any existing DB.
 """
 from pathlib import Path
+import stat
 import os
 import sqlite3
 import tempfile
@@ -31,7 +32,16 @@ def _check_database(path: Path) -> None:
 
 def backup_database(source: str | Path, destination: str | Path) -> Path:
     """Create a consistent snapshot; never replace an existing backup."""
-    source, destination = Path(source).resolve(), Path(destination).resolve()
+    # Refuse symlinked inputs before resolve() erases that evidence.
+    # This keeps backup/restore from silently following redirected database paths.
+    source_input = Path(source).absolute()
+    try:
+        source_info = source_input.lstat()
+    except FileNotFoundError as exc:
+        raise ValueError("source database missing") from exc
+    if not stat.S_ISREG(source_info.st_mode) or source_info.st_nlink != 1:
+        raise ValueError("source must be a single regular database file")
+    source, destination = source_input.resolve(), Path(destination).resolve()
     if not source.is_file() or source == destination:
         raise ValueError("source database missing or destination equals source")
     if destination.exists():
@@ -54,7 +64,14 @@ def backup_database(source: str | Path, destination: str | Path) -> Path:
 
 def restore_database(backup: str | Path, destination: str | Path) -> Path:
     """Restore into a NEW location only. Caller must close all DB connections."""
-    backup, destination = Path(backup).resolve(), Path(destination).resolve()
+    backup_input = Path(backup).absolute()
+    try:
+        backup_info = backup_input.lstat()
+    except FileNotFoundError as exc:
+        raise ValueError("backup missing") from exc
+    if not stat.S_ISREG(backup_info.st_mode) or backup_info.st_nlink != 1:
+        raise ValueError("backup must be a single regular database file")
+    backup, destination = backup_input.resolve(), Path(destination).resolve()
     if backup == destination or not backup.is_file():
         raise ValueError("backup missing or destination equals backup")
     _check_database(backup)
