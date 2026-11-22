@@ -48,6 +48,8 @@ def inspect_candidate(path, *, expected_user_version=None):
             integrity = db.execute("PRAGMA integrity_check").fetchall()
             if integrity != [("ok",)]:
                 raise RecoveryPreflightError("SQLite integrity check failed")
+            if db.execute("PRAGMA foreign_key_check").fetchone() is not None:
+                raise RecoveryPreflightError("SQLite foreign key check failed")
             version = db.execute("PRAGMA user_version").fetchone()[0]
             tables = sorted(row[0] for row in db.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
