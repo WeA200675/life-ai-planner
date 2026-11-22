@@ -362,7 +362,7 @@ void main() {
       final archive = await exportCombinedBackup(source);
       final path = '${dir.path}/candidate.db';
       await stageCombinedBackup(archive, path);
-      final sidecar = File('$' + '{path}-wal');
+      final sidecar = File('${path}-wal');
       await sidecar.writeAsString('DO NOT REMOVE');
       await expectLater(inspectStagedCandidate(archive, path), throwsStateError);
       expect(await sidecar.readAsString(), 'DO NOT REMOVE');
