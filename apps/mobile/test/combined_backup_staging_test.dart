@@ -190,4 +190,27 @@ void main() {
     }
   });
 
+  test('orphan SQLite sidecar blocks staging without changing it', () async {
+    final dir = await Directory.systemTemp.createTemp('stage-sidecar-');
+    final source = await openDatabase('${dir.path}/source.db');
+    try {
+      await createTaskSchema(source);
+      await createPlanSnapshotSchema(source);
+      final archive = await exportCombinedBackup(source);
+      for (final suffix in ['-wal', '-shm', '-journal']) {
+        final candidate = '${dir.path}/candidate.db';
+        final sidecar = File('$candidate$suffix');
+        await sidecar.writeAsString('PRESERVE SIDECAR');
+        await expectLater(stageCombinedBackup(archive, candidate),
+            throwsStateError);
+        expect(await sidecar.readAsString(), 'PRESERVE SIDECAR');
+        expect(await File(candidate).exists(), isFalse);
+        await sidecar.delete();
+      }
+    } finally {
+      await source.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
