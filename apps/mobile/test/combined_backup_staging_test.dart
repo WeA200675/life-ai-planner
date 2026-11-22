@@ -379,4 +379,65 @@ void main() {
     }
   });
 
+  test('closed active database preflight is read-only', () async {
+    final dir = await Directory.systemTemp.createTemp('active-preflight-');
+    final path = '${dir.path}/active.db';
+    final writer = await openDatabase(path);
+    try {
+      await createTaskSchema(writer);
+      await createPlanSnapshotSchema(writer);
+      await writer.insert('tasks', {'id': 6, 'title': 'Synthetic', 'done': 0});
+    } finally {
+      await writer.close();
+    }
+    try {
+      await inspectClosedActiveDatabase(path);
+      final reader = await databaseFactoryFfi.openDatabase(path,
+          options: OpenDatabaseOptions(readOnly: true, singleInstance: false));
+      try {
+        expect((await reader.query('tasks')).single['title'], 'Synthetic');
+      } finally {
+        await reader.close();
+      }
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('active preflight rejects recovery artifacts without deleting them',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('active-artifact-');
+    final path = '${dir.path}/active.db';
+    final db = await openDatabase(path);
+    await createTaskSchema(db);
+    await createPlanSnapshotSchema(db);
+    await db.close();
+    try {
+      for (final suffix in ['-wal', '-shm', '-journal',
+          '.restore-backup', '.restore-marker', '.restore-pending']) {
+        final artifact = File('$path$suffix');
+        await artifact.writeAsString('KEEP');
+        await expectLater(inspectClosedActiveDatabase(path), throwsStateError);
+        expect(await artifact.readAsString(), 'KEEP');
+        await artifact.delete();
+      }
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('active preflight rejects missing and invalid database paths',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('active-missing-');
+    try {
+      await expectLater(inspectClosedActiveDatabase('${dir.path}/missing.db'),
+          throwsStateError);
+      await expectLater(inspectClosedActiveDatabase('${dir.path}/bad.txt'),
+          throwsArgumentError);
+      expect(await File('${dir.path}/missing.db').exists(), isFalse);
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
