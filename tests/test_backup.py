@@ -83,3 +83,27 @@ class BackupTests(unittest.TestCase):
         finally:
             writer.rollback()
         self.assertIsNone(TaskStore(self.backup).get("pending"))
+
+    def test_backup_rejects_orphaned_foreign_key_rows(self):
+        # quick_check alone accepts this database; foreign_key_check must reject it.
+        with sqlite3.connect(self.source) as db:
+            db.execute("PRAGMA foreign_keys=OFF")
+            db.execute("CREATE TABLE parent (id INTEGER PRIMARY KEY)")
+            db.execute("CREATE TABLE child (parent_id INTEGER REFERENCES parent(id))")
+            db.execute("INSERT INTO child(parent_id) VALUES (999)")
+        with self.assertRaisesRegex(ValueError, "foreign key"):
+            backup_database(self.source, self.backup)
+        self.assertFalse(self.backup.exists())
+
+    def test_restore_rejects_orphaned_foreign_key_rows(self):
+        with sqlite3.connect(self.source) as db:
+            db.execute("CREATE TABLE parent (id INTEGER PRIMARY KEY)")
+            db.execute("CREATE TABLE child (parent_id INTEGER REFERENCES parent(id))")
+            db.execute("INSERT INTO child(parent_id) VALUES (999)")
+        # Build an intentionally invalid candidate without using guarded backup.
+        with sqlite3.connect(self.source) as src, sqlite3.connect(self.backup) as dst:
+            src.backup(dst)
+        target = self.root / "restored.db"
+        with self.assertRaisesRegex(ValueError, "foreign key"):
+            restore_database(self.backup, target)
+        self.assertFalse(target.exists())
