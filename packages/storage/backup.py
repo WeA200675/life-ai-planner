@@ -16,6 +16,10 @@ def _check_database(path: Path) -> None:
     with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True) as db:
         if db.execute("PRAGMA quick_check").fetchone()[0] != "ok":
             raise ValueError("SQLite integrity check failed")
+        # quick_check does not detect broken foreign-key relationships.
+        # Validate all tables, including optional future extension tables.
+        if db.execute("PRAGMA foreign_key_check").fetchone() is not None:
+            raise ValueError("SQLite foreign key check failed")
         version = db.execute("PRAGMA user_version").fetchone()[0]
         if version != CURRENT_VERSION:
             raise ValueError(f"unsupported schema version: {version}")
