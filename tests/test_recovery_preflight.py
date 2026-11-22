@@ -186,5 +186,40 @@ class RecoveryPreflightTests(unittest.TestCase):
         self.assertTrue(self.path.exists())
 
 
+    def test_required_columns_present_and_read_only(self):
+        before = self.path.read_bytes()
+        result = inspect_candidate(self.path, expected_user_version=4,
+                                   required_columns={"tasks": ("id", "title")})
+        self.assertEqual(result["tables"], ["tasks"])
+        self.assertEqual(self.path.read_bytes(), before)
+
+    def test_missing_columns_and_tables_fail_closed(self):
+        before = self.path.read_bytes()
+        for contract in ({"tasks": ("id", "missing")},
+                         {"missing_table": ("id",)}):
+            with self.subTest(contract=contract):
+                with self.assertRaisesRegex(RecoveryPreflightError,
+                                            "required application columns"):
+                    inspect_candidate(self.path, required_columns=contract)
+        self.assertEqual(self.path.read_bytes(), before)
+
+    def test_invalid_column_contracts_rejected_without_sql_execution(self):
+        for contract in ({"tasks": ("title; DROP TABLE tasks",)},
+                         {"tasks": ()}, {"tasks": "title"},
+                         {"tasks": ("",)}, {"bad-table": ("id",)},
+                         {"tasks": (1,)}, ["tasks"]):
+            with self.subTest(contract=contract):
+                with self.assertRaisesRegex(RecoveryPreflightError,
+                                            "required column names"):
+                    inspect_candidate(self.path, required_columns=contract)
+        self.assertEqual(inspect_candidate(self.path)["tables"], ["tasks"])
+
+    def test_column_contract_does_not_accept_index_or_view_as_table(self):
+        with sqlite3.connect(self.path) as db:
+            db.execute("CREATE VIEW task_view AS SELECT id, title FROM tasks")
+        with self.assertRaisesRegex(RecoveryPreflightError, "required application"):
+            inspect_candidate(self.path, required_tables=("task_view",))
+
+
 if __name__ == "__main__":
     unittest.main()
