@@ -121,4 +121,26 @@ void main() {
     ]), throwsArgumentError);
   });
 
+  test('fractional free minutes apply buffer before rounding once', () {
+    final shortEnd = start.add(const Duration(minutes: 2, seconds: 59));
+    final plan = planOfflineDay(start, shortEnd,
+        [const DayTask(id: 'two-minute', minutes: 2)]);
+    expect(plan.capacityMinutes, 2);
+    expect(plan.budgetMinutes, 2);
+    expect(plan.blocks.map((block) => block.id), ['two-minute']);
+    expect(plan.reservedMinutes, 0);
+  });
+
+  test('fractional fixed appointment keeps exact free-time budget', () {
+    final shortEnd = start.add(const Duration(minutes: 4));
+    final fixed = DayBlock('fixed', start,
+        start.add(const Duration(minutes: 1, seconds: 1)));
+    final plan = planOfflineDay(start, shortEnd,
+        [const DayTask(id: 'two-minute', minutes: 2)], fixed: [fixed]);
+    expect(plan.capacityMinutes, 4);
+    expect(plan.budgetMinutes, 2);
+    expect(plan.blocks.last.id, 'two-minute');
+    expect(plan.blocks.last.start, fixed.end);
+  });
+
 }
