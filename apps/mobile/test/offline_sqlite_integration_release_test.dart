@@ -284,4 +284,39 @@ void main() {
     }
   });
 
+  test('SQLite trigger failure rolls back header, blocks and request key',
+      () async {
+    final original = await seedTasks();
+    final plan = preview(original);
+    // Fail the second block insert, after the header and first block have
+    // already been written inside the same transaction.
+    await db.execute('''
+      CREATE TRIGGER reject_second_snapshot_block
+      BEFORE INSERT ON plan_snapshot_blocks
+      WHEN NEW.position = 1
+      BEGIN
+        SELECT RAISE(ABORT, 'synthetic disk write failure');
+      END
+    ''');
+    await expectLater(
+      snapshots.accept(plan, start, end,
+          expectedTasks: original, requestKey: 'atomic-failure'),
+      throwsA(isA<Exception>()),
+    );
+    expect(await db.query('plan_snapshots'), isEmpty);
+    expect(await db.query('plan_snapshot_blocks'), isEmpty);
+    expect(await db.query('plan_accept_requests'), isEmpty);
+    expect(await db.query('tasks', orderBy: 'id ASC'), original);
+
+    // A failed request must be safely retryable after the fault disappears.
+    await db.execute('DROP TRIGGER reject_second_snapshot_block');
+    final recovered = await snapshots.accept(plan, start, end,
+        expectedTasks: original, requestKey: 'atomic-failure');
+    expect(recovered, greaterThan(0));
+    expect((await snapshots.history()).length, 1);
+    expect((await db.query('plan_snapshot_blocks')).length, 2);
+    expect((await db.query('plan_accept_requests')).length, 1);
+    expect(await db.query('tasks', orderBy: 'id ASC'), original);
+  });
+
 }
