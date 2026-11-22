@@ -746,3 +746,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Nachweis:** Code-/Test-Commits auf GitHub bestätigt; neue Flutter-CI [44967631566](https://github.com/WeA200675/life-ai-planner/actions/runs/44967631566) und Scheduler-CI [44967631573](https://github.com/WeA200675/life-ai-planner/actions/runs/44967631573) beim Abruf **queued**. Keine lokale Ausführung oder grüner neuer APK-Build behauptet.
 - **Blocker:** Noch keine produktive Aktivierung, kein WAL-sicherer atomarer Austausch mit Original-Backup/Crash-Recovery, keine explizite UI-Freigabe. Keine reale Geräte- oder Release-Abnahme; M1–M4 offen.
 - **Nächster Schritt:** CI für `0e002f14` prüfen und ggf. Fehler beheben; anschließend kontrollierte Aktivierungsstrategie mit geschlossenem DB-Handle, Backup/Recovery-Marker und Gerätetest implementieren. Keine automatische Umschaltung ohne geprüften Rollback.
+
+
+## M4 Staging-Sidecar-Schutz – 2026-11-22 (02:20 Europe/Berlin)
+- Vor Änderung HEAD `215488cf355f6a089022983b7eeb5025f995b950`. README, Implementierungsplan, STATUS, PRs, Issues und CI gelesen. PR #1 weiter offen; keine separaten Issues.
+- Vorherige CI: Flutter für `0e002f14` [44967631566](https://github.com/WeA200675/life-ai-planner/actions/runs/44967631566) **success**; Scheduler für `215488cf` **success**.
+- `1b06a8efb439cf430411130fac4ed517d942d8a4`: isoliertes Staging lehnt vorhandene SQLite-Sidecars (`-wal`, `-shm`, `-journal`) auch ohne Hauptdatei ab. Fehler-Cleanup entfernt nach geschlossenem Handle die vom Versuch angelegten Kandidaten-/Sidecar-Dateien; bereits vorhandene Sidecars werden vor dem Versuch nicht berührt. Aktive DB bleibt unverändert.
+- `42c95488bc3157e821f920cb797f24a549fbd58d`: SQLite-FFI-Regressionstest stellt sicher, dass alle drei verwaisten Sidecar-Typen unangetastet bleiben und kein Kandidat erstellt wird.
+- **Prüfstatus:** Commits bestätigt; neue Flutter-CI für `42c95488` noch abzuwarten. Kein lokaler Testlauf, keine Android-Geräteabnahme behauptet.
+- **Grenzen:** TOCTOU-Risiko bei externen Prozessen im Kandidatenverzeichnis bleibt; nur private app-kontrollierte Pfade zulässig. Kein aktiver DB-Swap, kein UI-Restore, kein Crash-Recovery oder Release-/Gerätetest. M1–M4 nicht vollständig abgenommen.
+- **Nächster Schritt:** Flutter-CI für `42c95488` prüfen; dann Aktivierungsprotokoll mit exklusivem DB-Handle, WAL-Checkpoint, Original-Backup, Marker, Wiederanlauf und Rollback vor Freigabe implementieren.
