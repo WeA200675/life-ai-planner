@@ -27,6 +27,13 @@ class DayPlan {
   final int reservedMinutes;
 }
 
+/// Validate all task records, including records later excluded as completed.
+/// Otherwise corrupt completed rows can silently bypass the planner contract.
+Set<String> _validateTasks(List<DayTask> tasks) {
+  final ids = _validateTasks(tasks);
+  return ids;
+}
+
 DayPlan planOfflineDay(DateTime start, DateTime end, List<DayTask> tasks,
     {List<DayBlock> fixed = const [], double bufferRatio = 0.30}) {
   if (!start.isBefore(end) || !bufferRatio.isFinite ||
@@ -133,9 +140,8 @@ DayPlan replanOfflineDay(
   if (!now.isBefore(end)) {
     throw ArgumentError('Invalid remaining planning window');
   }
-  final taskIds = tasks.map((task) => task.id).toSet();
-  if (taskIds.length != tasks.length ||
-      !completedTaskIds.every(taskIds.contains)) {
+  final taskIds = _validateTasks(tasks);
+  if (!completedTaskIds.every(taskIds.contains)) {
     throw ArgumentError('Duplicate task or unknown completed task id');
   }
   // Validate the *entire* original set before clipping. Otherwise an
