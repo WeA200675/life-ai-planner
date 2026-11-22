@@ -20,6 +20,11 @@ Future<void> createPlanSnapshotSchema(DatabaseExecutor db) async {
       'end_utc_ms INTEGER NOT NULL, '
       'PRIMARY KEY(snapshot_id, position), '
       'FOREIGN KEY(snapshot_id) REFERENCES plan_snapshots(id) ON DELETE CASCADE)');
+  await db.execute('CREATE TABLE IF NOT EXISTS plan_accept_requests ('
+      'request_key TEXT PRIMARY KEY NOT NULL, '
+      'snapshot_id INTEGER NOT NULL, '
+      'payload_fingerprint TEXT NOT NULL, '
+      'FOREIGN KEY(snapshot_id) REFERENCES plan_snapshots(id) ON DELETE CASCADE)');
   await db.execute('CREATE INDEX IF NOT EXISTS idx_snapshot_blocks_snapshot '
       'ON plan_snapshot_blocks(snapshot_id)');
 }
@@ -49,7 +54,13 @@ class PlanSnapshotStore {
   /// Atomic, append-only acceptance. No task table is ever changed.
   Future<int> accept(DayPlan plan, DateTime start, DateTime end, {
     List<Map<String, Object?>>? expectedTasks,
+    String? requestKey,
   }) async {
+    if (requestKey != null &&
+        (requestKey.isEmpty || requestKey != requestKey.trim() ||
+         requestKey.length > 128)) {
+      throw ArgumentError('Invalid plan acceptance request key');
+    }
     if (!start.isBefore(end)) throw ArgumentError('Invalid window');
     if (plan.capacityMinutes < 0 || plan.budgetMinutes < 0 ||
         plan.reservedMinutes < 0 ||
@@ -82,7 +93,27 @@ class PlanSnapshotStore {
         throw ArgumentError('Invalid plan block');
       }
     }
+    final fingerprint = jsonEncode({
+      'start': start.toUtc().millisecondsSinceEpoch,
+      'end': end.toUtc().millisecondsSinceEpoch,
+      'budget': plan.budgetMinutes,
+      'reserve': plan.reservedMinutes,
+      'blocks': plan.blocks.map((block) => [block.id,
+        block.start.toUtc().millisecondsSinceEpoch,
+        block.end.toUtc().millisecondsSinceEpoch]).toList(),
+      'deferred': plan.deferred.toList()..sort(),
+    });
     return db.transaction((txn) async {
+      if (requestKey != null) {
+        final existing = await txn.query('plan_accept_requests',
+          where: 'request_key = ?', whereArgs: [requestKey], limit: 1);
+        if (existing.isNotEmpty) {
+          if (existing.single['payload_fingerprint'] != fingerprint) {
+            throw StateError('Request key reused for a different plan');
+          }
+          return existing.single['snapshot_id'] as int;
+        }
+      }
       if (expectedTasks != null) {
         final current = await txn.query('tasks');
         if (taskRowsFingerprint(current) != taskRowsFingerprint(expectedTasks)) {
@@ -106,6 +137,13 @@ class PlanSnapshotStore {
         });
       }
       await batch.commit(noResult: true);
+      if (requestKey != null) {
+        await txn.insert('plan_accept_requests', {
+          'request_key': requestKey,
+          'snapshot_id': id,
+          'payload_fingerprint': fingerprint,
+        });
+      }
       return id;
     });
   }
@@ -174,6 +212,8 @@ class PlanSnapshotStore {
       final rows = await txn.query('plan_snapshots',
           columns: ['id'], orderBy: 'id DESC', limit: 1);
       if (rows.isEmpty || rows.single['id'] != expectedId) return false;
+      await txn.delete('plan_accept_requests',
+          where: 'snapshot_id = ?', whereArgs: [expectedId]);
       await txn.delete('plan_snapshot_blocks',
           where: 'snapshot_id = ?', whereArgs: [expectedId]);
       return await txn.delete('plan_snapshots',
