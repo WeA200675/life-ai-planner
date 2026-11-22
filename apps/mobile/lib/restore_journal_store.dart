@@ -15,7 +15,23 @@ class RestoreJournalStore {
   // Recovery metadata is small; never load unbounded attacker-controlled files.
   static const int maxMarkerBytes = 16384;
 
+  /// Reject symlinked marker paths and ancestors. This is a preflight only:
+  /// callers must use a private directory inaccessible to other writers.
+  Future<void> _checkMarkerPath(File marker) async {
+    var current = marker.absolute.path;
+    while (true) {
+      if (await FileSystemEntity.type(current, followLinks: false) ==
+          FileSystemEntityType.link) {
+        throw StateError('Restore marker path contains a symbolic link');
+      }
+      final parent = File(current).parent.path;
+      if (parent == current) break;
+      current = parent;
+    }
+  }
+
   Future<void> create(File marker, RestoreJournal journal) async {
+    await _checkMarkerPath(marker);
     final validated = RestoreJournal.decode(journal.encode());
     final encoded = validated.encode();
     if (utf8.encode(encoded).length > maxMarkerBytes) {
@@ -37,6 +53,7 @@ class RestoreJournalStore {
   }
 
   Future<RestoreJournal> read(File marker) async {
+    await _checkMarkerPath(marker);
     if (await FileSystemEntity.type(marker.path, followLinks: false) !=
         FileSystemEntityType.file) {
       throw StateError('Restore marker missing or not a regular file');
