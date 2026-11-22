@@ -19,6 +19,13 @@ ANDROID_REQUIRED_COLUMNS = {
 }
 
 
+ANDROID_REQUIRED_PRIMARY_KEYS = {
+    "tasks": ("id",),
+    "plan_snapshots": ("id",),
+    "plan_snapshot_blocks": ("snapshot_id", "position"),
+}
+
+
 def inspect_android_v4_candidate(path):
     """Reject mismatched or incomplete v4 backups without writing to them.
 
@@ -30,4 +37,5 @@ def inspect_android_v4_candidate(path):
         expected_user_version=ANDROID_DB_USER_VERSION,
         required_tables=tuple(ANDROID_REQUIRED_COLUMNS),
         required_columns=ANDROID_REQUIRED_COLUMNS,
+        required_primary_keys=ANDROID_REQUIRED_PRIMARY_KEYS,
     )
