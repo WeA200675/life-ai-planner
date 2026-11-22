@@ -138,11 +138,17 @@ DayPlan replanOfflineDay(
       !completedTaskIds.every(taskIds.contains)) {
     throw ArgumentError('Duplicate task or unknown completed task id');
   }
-  // Reject malformed appointments before clipping, so corrupt input cannot
-  // silently disappear when it lies entirely in the past.
-  for (final block in fixed) {
-    if (!block.start.isBefore(block.end)) {
-      throw ArgumentError('Invalid fixed appointment');
+  // Validate the *entire* original set before clipping. Otherwise an
+  // invalid/duplicate appointment in the past silently disappears.
+  final fixedIds = <String>{};
+  final sortedFixed = [...fixed]..sort((a, b) => a.start.compareTo(b.start));
+  for (var i = 0; i < sortedFixed.length; i++) {
+    final block = sortedFixed[i];
+    if (block.id.trim().isEmpty || block.id != block.id.trim() ||
+        !fixedIds.add(block.id) || taskIds.contains(block.id) ||
+        !block.start.isBefore(block.end) ||
+        (i > 0 && sortedFixed[i - 1].end.isAfter(block.start))) {
+      throw ArgumentError('Invalid, duplicate or overlapping fixed appointment');
     }
   }
   final remainingFixed = <DayBlock>[
