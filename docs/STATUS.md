@@ -766,3 +766,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub-Commits vorhanden; Flutter-CI für die neue Änderung noch nicht nachweislich abgeschlossen (vorheriger Workflow [44972215456](https://github.com/WeA200675/life-ai-planner/actions/runs/44972215456) beim Abruf queued). Keine lokale Android-/Flutter-Ausführung behauptet.
 - **Blocker:** Staging-Aktivierung/Crash-Recovery weiterhin nicht implementiert; kein vollständiger M1–M4-Abnahmenachweis, keine manuelle Android-Geräteabnahme oder Release-Freigabe.
 - **Nächster Schritt:** CI des letzten Code-HEAD prüfen, Fehler beheben, danach Aktivierung nur bei geschlossenen SQLite-Verbindungen mit expliziter Bestätigung, Original-Backup, Crash-Recovery und WAL-Sidecar-Schutz entwerfen und testen.
+
+
+## M4 Staging-Symlink-Schutz – 2026-11-22 (03:16 Europe/Berlin)
+- Vor Änderung HEAD `4ea9679e05bdfffaeca0696bd99e7ea602a850a1`. README, Implementierungsplan und Status geprüft. PR #1 weiterhin offen, keine eigenständigen offenen Issues.
+- Ausgangs-CI: Flutter [44972221073](https://github.com/WeA200675/life-ai-planner/actions/runs/44972221073) **success** für `2b056316`; Scheduler [44972231489](https://github.com/WeA200675/life-ai-planner/actions/runs/44972231489) **success** für `4ea9679e`.
+- Code `af22b01d2f4d4a86d5abe276fac9d78f5862a816`: Staging lehnt symbolische Links auf dem unmittelbaren Elternverzeichnis sowie dem Kandidatenpfad vor Datenbanköffnung ab; insbesondere ein dangling Link darf nicht unbemerkt als neue DB behandelt werden.
+- Tests `2cbcb3e216a060d24c6214b386f437c2b4f5c369`: synthetische SQLite-FFI-Regressionen für Elternverzeichnis-Symlink und dangling Kandidaten-Symlink; Windows-Symlinktests wegen unterschiedlicher Rechte übersprungen.
+- **Verifikation:** Commits auf GitHub bestätigt. Flutter [44975330648](https://github.com/WeA200675/life-ai-planner/actions/runs/44975330648) und Scheduler [44975330643](https://github.com/WeA200675/life-ai-planner/actions/runs/44975330643) für Test-HEAD beim Abruf **queued**. Keine lokale Flutter-Ausführung und kein grüner neuer Build behauptet.
+- **Blocker:** Die Prüfung deckt nur unmittelbare Pfadkomponenten ab; symbolische Links in weiter übergeordneten Verzeichnissen sowie TOCTOU bei konkurrierenden Prozessen sind nicht ausgeschlossen. Ausschließlich private app-kontrollierte Verzeichnisse verwenden. Noch kein aktiver DB-Swap, keine bestätigte UI-Aktivierung, kein Crash-Recovery, keine Android-Geräte-/Release-Abnahme. M1–M4 nicht vollständig.
+- **Nächster Schritt:** Neue Flutter-CI prüfen und ggf. korrigieren. Danach Aktivierungskonzept mit exklusiven DB-Handles, WAL-Sicherung, Crash-Recovery-Marker und Rollback zuerst isoliert testen, bevor produktive Daten berührt werden.
