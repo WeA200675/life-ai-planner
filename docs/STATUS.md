@@ -1085,3 +1085,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächliche Verifikation:** GitHub bestätigte die drei Code-/Test-Commits. GitHub-Connector meldete für `744ab62` `workflow_runs: []`; der Endpunkt filtert PR-getriggerte Läufe, daher **kein Nachweis für erfolgreichen oder fehlgeschlagenen Push-CI-Lauf**. `git ls-remote` im Container scheiterte mit `Could not resolve host: github.com`; Flutter nicht verfügbar. Neue Tests **nicht ausgeführt**; kein grüner Test-/APK-Nachweis.
 - **Sicherheitsgrenzen:** Der optionale Vertrag muss vom Restore-Aufrufer mit den tatsächlichen Anwendungstabellen und Spalten versorgt werden; keine automatische Prüfung aller SQLite-Constraints, Migrationen oder App-Versionen. Exklusive Sperre, WAL-/Crash-Rollback, Android-Geräteabnahme weiterhin offen. Keine Secrets oder personenbezogenen Testdaten.
 - **Nächster großer Schritt:** Tatsächlichen Android-v4-Schema-Vertrag in einen isolierten Restore-Koordinator integrieren, SQLite-/Flutter-Integrationstests und CI ausführen, anschließend reproduzierbaren Release-Build und Geräteabnahme.
+
+## 2026-11-22 – Python SQLite-FK-Prüfung (Folgelauf)
+- Ausgangs-HEAD main: `8ad158d4b33c8da31e96144790effdd85ffd771f`. Scheduler Actions [45049026075](https://github.com/WeA200675/life-ai-planner/actions/runs/45049026075) für diesen HEAD: success.
+- Offene PRs: #1 (Offline SQLite Replanning); offene eigenständige Issues: keine.
+- `packages/storage/backup.py`: zusätzlich zu `PRAGMA quick_check` wird `PRAGMA foreign_key_check` ausgeführt. Damit werden verwaiste Referenzen auch in Erweiterungstabellen bei Backup und Restore abgewiesen. Commit `357f3ec23356cfd3cd9e5ab1c2603576aa5f3fc0`.
+- `tests/test_backup.py`: zwei synthetische Negativtests für Backup und Restore mit verwaisten Fremdschlüsseln. Commit `6f6268a064cc113a1b2d0c5d2b567cdf67326598`.
+- **Testnachweis:** GitHub-Schreiboperationen bestätigt. Lokaler Klon und unittest-Aufruf scheiterten vor Teststart mit `Could not resolve host: github.com`. Neue Tests **nicht ausgeführt**; CI-Ergebnis für neuen HEAD noch offen.
+- **Nächster Schritt:** GitHub Actions des neuen HEAD prüfen, gegebenenfalls Tests korrigieren; dann Flutter-SQLite-Restore-Konkurrenz-/Crash-Tests und Android-Build-/Geräteabnahme.
+- **Abnahme:** M1–M4 nicht vollständig; produktive SQLite-Restore-Umschaltung bleibt deaktiviert. Keine personenbezogenen Testdaten.
