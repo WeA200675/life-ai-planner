@@ -90,4 +90,40 @@ void main() {
     }
   });
 
+  test('symlinked ancestor refuses marker read and creation', () async {
+    if (Platform.isWindows) return;
+    final root = await Directory.systemTemp.createTemp('journal-link-test-');
+    try {
+      final real = Directory('${root.path}/real');
+      await real.create();
+      final link = Link('${root.path}/alias');
+      await link.create(real.path);
+      final marker = File('${link.path}/restore.marker');
+      await expectLater(store.create(marker, journal), throwsStateError);
+      expect(await File('${real.path}/restore.marker').exists(), isFalse);
+      final original = File('${real.path}/restore.marker');
+      await store.create(original, journal);
+      await expectLater(store.read(marker), throwsStateError);
+      expect((await store.read(original)).phase, RestorePhase.prepared);
+    } finally {
+      await root.delete(recursive: true);
+    }
+  });
+
+  test('symlinked marker refuses read and cannot replace target', () async {
+    if (Platform.isWindows) return;
+    final root = await Directory.systemTemp.createTemp('journal-file-link-');
+    try {
+      final target = File('${root.path}/target.marker');
+      await store.create(target, journal);
+      final link = Link('${root.path}/alias.marker');
+      await link.create(target.path);
+      await expectLater(store.read(File(link.path)), throwsStateError);
+      await expectLater(store.create(File(link.path), journal), throwsStateError);
+      expect((await store.read(target)).operationId, journal.operationId);
+    } finally {
+      await root.delete(recursive: true);
+    }
+  });
+
 }
