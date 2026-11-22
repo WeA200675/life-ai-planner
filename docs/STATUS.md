@@ -958,3 +958,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Verifikation:** GitHub bestätigte Code- und Test-Commit. Die neue Repository-Testdatei wurde in diesem Lauf **nicht ausgeführt**; kein grüner CI-, Flutter- oder APK-Nachweis. Testausführung und Actions-Status stehen aus.
 - **Blocker:** Exklusiver Restore-Koordinator, Crash-/WAL-Rollback, Android-Release und Geräteabnahme fehlen. Die reine Preflight-Prüfung ersetzt keine exklusive Sperre gegen konkurrierende Schreibzugriffe.
 - **Nächster Schritt:** Repository-Python-Tests und CI verifizieren; anschließend Android-Widgettests und reproduzierbaren Release-Build priorisieren.
+
+## M4 Restore-Preflight: Kandidaten verschwinden/Dateityp-Wechsel – 2026-11-22 12:20 Europe/Berlin
+- README, Implementierungsplan, STATUS, HEAD, offene PRs und Issues vor dem Lauf gelesen. Ausgangs-HEAD `6bf1e305ab46e970592d12607116946bf48a57ea`; PR #1 offen; keine eigenständigen offenen Issues. Vollständige M1–M4-Abnahme weiterhin nicht nachgewiesen.
+- Implementierung `74483d5144d41500d9aaa51d9b0e00d29f451d25`: Nach der lesenden SQLite-Prüfung führt das Verschwinden des Kandidaten nun zu `RecoveryPreflightError` statt rohem `OSError`. Zusätzlich werden Nicht-Regulärdateien und Mehrfach-Hardlinks im Abschlusscheck verworfen. Kein produktiver Restore.
+- Test `8606780668c30556abea248d7b4b0723a6974aee`: synthetischer Test simuliert `FileNotFoundError` beim letzten `Path.lstat`; ursprüngliche Datei bleibt unverändert.
+- **Verifikation:** Beide GitHub-Commits bestätigt. Isolierter lokaler Python-Nachweis für die Fehlerumwandlung ausgeführt: 1/1 PASS, allerdings **nicht** die vollständige Repository-Testdatei; diese neue Regression ist im Repository noch nicht tatsächlich ausgeführt. CI/Flutter/APK nicht als erfolgreich nachgewiesen.
+- **Blocker:** Kein nachgewiesener Actions-Lauf für diesen HEAD, kein Android-Release/Gerätetest, kein exklusiver Restore-Koordinator und Crash-Rollback. Unkooperative konkurrierende Schreiber bleiben außerhalb der Garantie des Preflight.
+- **Nächster Schritt:** Neue Regression mit Repository-Testumgebung und CI ausführen; Restore-Koordinator und Android-Widget-/Release-Tests priorisieren.
