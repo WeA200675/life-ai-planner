@@ -62,6 +62,11 @@ def inspect_candidate(path, *, expected_user_version=None, required_tables=()):
             ))
     except sqlite3.DatabaseError as exc:
         raise RecoveryPreflightError("invalid SQLite candidate") from exc
+    # A WAL/journal appearing during the read invalidates the immutable snapshot.
+    # The coordinator must still exclude uncooperative writers externally.
+    for suffix in ("-wal", "-shm", "-journal"):
+        if os.path.lexists(str(candidate) + suffix):
+            raise RecoveryPreflightError("candidate acquired SQLite sidecar during inspection")
     after = candidate.lstat()
     if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
         after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns
