@@ -1211,3 +1211,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Änderung:** Release-Artefakt wird neutral als `life-ai-planner-release-mode-candidate-signing-unverified` bezeichnet. Nach Build und SHA-256-Prüfung muss das Android-SDK-`apksigner verify --print-certs` erfolgreich sein; Signaturzertifikatsinformationen werden als Build-Artefakt gespeichert und bei erkennbarer Debug-Signatur wird ausdrücklich gewarnt. Es werden keine Schlüssel oder privaten Daten ins Repo geschrieben. Commits `7aceafd1ee4d8072da06cb467d797a1101bb2ad8`, `1ff7b9e177040ca09ba7ef383af6a2e801009650`.
 - **Nachweis:** GitHub bestätigte beide Commits. In dieser Ausführung wurde weder der neue GitHub-Actions-Workflow noch Flutter-/Android-Build oder Gerätetest erfolgreich ausgeführt; Signaturprüfung ist daher **UNVERIFIZIERT**. Die Warnung ist kein Produktionssignatur-Nachweis. Bei fehlendem `apksigner` scheitert der Job explizit.
 - **Nächster Schritt:** Workflow-Ausführung auf neuem HEAD und Build-Artefakte inklusive Zertifikatsdatei prüfen, Fehler korrigieren; erst danach Release-Signing-Konfiguration und sichere APK-Verteilung entscheiden. Restore/Crash-Rollback und Geräteabnahme bleiben offen.
+
+
+## Release-Abnahme CI-Härtung – 2026-11-22 (Folgelauf)
+- Ausgangs-HEAD: `e8f3e674cd9bd3143eecf99b85d4c14cfc1ee988`; GitHub-Suche: keine offenen Issues/PRs.
+- Commit `7a99ce064a0474dec8065d82458b15f4919447b5`: Release-Acceptance-Workflow läuft nun auch bei Änderungen an `docs/STATUS.md` und `docs/RELEASE_ACCEPTANCE_*.md`, verhindert überlappende Läufe desselben Branches und prüft die APK-Signatur-Schemes mit `apksigner verify --verbose --print-certs`.
+- Nachweis: GitHub-Commit bestätigt; **keine erfolgreich abgeschlossenen Backend-/Flutter-/APK-Tests für den neuen HEAD nachgewiesen**. Der Workflow muss in Actions geprüft werden.
+- Sicherheit: Release-Modus ist nicht gleich produktive Signatur. Debug-Signatur bleibt ausdrücklich nicht freigabefähig; keine Schlüssel im Repository.
+- Blocker: kein nachgewiesener Android-Gerätetest, keine produktive Signatur, kein vollständiger Crash-Rollback-Test. M1–M4 bleiben NICHT ABGENOMMEN.
+- Nächster Schritt: GitHub-Actions-Lauf für diesen HEAD auswerten und ggf. korrigieren; Release-Keystore außerhalb des Repos und Geräteabnahme separat nachweisen.
