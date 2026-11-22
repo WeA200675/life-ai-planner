@@ -70,4 +70,24 @@ void main() {
     }
   });
 
+  test('oversized valid journal is rejected before creating a file', () async {
+    final dir = await Directory.systemTemp.createTemp('journal-write-limit-');
+    try {
+      final marker = File('${dir.path}/restore.marker');
+      final oversized = RestoreJournal(
+        operationId: 'synthetic_operation_oversized',
+        phase: RestorePhase.prepared,
+        activePath: '/isolated/${'a' * 17000}.db',
+        candidatePath: '/isolated/candidate.db',
+        backupPath: '/isolated/backup.db',
+      );
+      await expectLater(store.create(marker, oversized), throwsFormatException);
+      expect(await marker.exists(), isFalse);
+      await store.create(marker, journal);
+      expect((await store.read(marker)).operationId, journal.operationId);
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
