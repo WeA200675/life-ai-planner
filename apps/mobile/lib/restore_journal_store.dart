@@ -17,6 +17,10 @@ class RestoreJournalStore {
 
   Future<void> create(File marker, RestoreJournal journal) async {
     final validated = RestoreJournal.decode(journal.encode());
+    final encoded = validated.encode();
+    if (utf8.encode(encoded).length > maxMarkerBytes) {
+      throw const FormatException('Restore marker exceeds size limit');
+    }
     if (await FileSystemEntity.type(marker.path, followLinks: false) !=
         FileSystemEntityType.notFound) {
       throw StateError('Restore marker already exists');
@@ -25,7 +29,7 @@ class RestoreJournalStore {
     try {
       // Exclusive creation prevents replacing an existing regular file.
       handle = await marker.open(mode: FileMode.writeOnlyExclusive);
-      await handle.writeString(validated.encode());
+      await handle.writeString(encoded);
       await handle.flush();
     } finally {
       await handle?.close();
