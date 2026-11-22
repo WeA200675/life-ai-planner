@@ -736,3 +736,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächliche Prüfung:** GitHub-Commits bestätigt. Flutter [44966091001](https://github.com/WeA200675/life-ai-planner/actions/runs/44966091001) und Scheduler [44966090741](https://github.com/WeA200675/life-ai-planner/actions/runs/44966090741) für Test-HEAD beim Abruf **queued**; kein lokaler Testlauf, kein neuer grüner Build behauptet.
 - **Grenzen:** Noch keine Aktivierung des Staging-Kandidaten, keine UI-Freigabe, kein sicherer SQLite-WAL/SHM-Swap und keine Recovery nach Prozessabbruch. Reale Android-Geräteabnahme und Release-Build fehlen; M1–M4 weiterhin unvollständig.
 - **Nächster Schritt:** neue CI verifizieren, danach gesicherten, explizit bestätigten Aktivierungsprozess mit geschlossenem DB-Handle, Original-Sicherung, Crash-Recovery und Rollback testen, ohne produktive Daten automatisch zu überschreiben.
+
+
+## M4 Staging-WAL-Sicherheit – 2026-11-22 (01:38 Europe/Berlin)
+- Ausgangs-HEAD `bd146d0c1392d9def407d054f2fdee4fe5752218`. README, IMPLEMENTATION_PLAN und STATUS geprüft. PR #1 weiter offen; Issues API enthält ausschließlich diesen PR.
+- Ausgangs-CI: Flutter für `cc8087a5` [44966091001](https://github.com/WeA200675/life-ai-planner/actions/runs/44966091001) **success**, Scheduler für `bd146d0c` [44966106967](https://github.com/WeA200675/life-ai-planner/actions/runs/44966106967) **success**.
+- `8ac190755765b954cb7cafb7576dbb266af11561` und `d6e5ff18a712243b756aed4289a974614db4c874`: Staging führt vor Freigabe einen `PRAGMA wal_checkpoint(TRUNCATE)` durch, sofern die Kandidaten-DB im WAL-Modus ist; prüft Busy-Status und Vollständigkeit, akzeptiert SQLite-Sentinel -1/-1 für fehlendes WAL. Fehler verhindern Kandidatenfreigabe; die aktive DB wird nicht angefasst.
+- `0e002f140323d3b7b52219fc079d6f5bb491e1fd`: SQLite-FFI-Tests für WAL-Checkpoint mit Schließen/Wiederöffnen sowie nicht-WAL-Fallback.
+- **Nachweis:** Code-/Test-Commits auf GitHub bestätigt; neue Flutter-CI [44967631566](https://github.com/WeA200675/life-ai-planner/actions/runs/44967631566) und Scheduler-CI [44967631573](https://github.com/WeA200675/life-ai-planner/actions/runs/44967631573) beim Abruf **queued**. Keine lokale Ausführung oder grüner neuer APK-Build behauptet.
+- **Blocker:** Noch keine produktive Aktivierung, kein WAL-sicherer atomarer Austausch mit Original-Backup/Crash-Recovery, keine explizite UI-Freigabe. Keine reale Geräte- oder Release-Abnahme; M1–M4 offen.
+- **Nächster Schritt:** CI für `0e002f14` prüfen und ggf. Fehler beheben; anschließend kontrollierte Aktivierungsstrategie mit geschlossenem DB-Handle, Backup/Recovery-Marker und Gerätetest implementieren. Keine automatische Umschaltung ohne geprüften Rollback.
