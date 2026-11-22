@@ -30,7 +30,8 @@ def _regular_private_file(path):
 
 
 def inspect_candidate(path, *, expected_user_version=None, required_tables=(),
-                      required_columns=None, required_primary_keys=None):
+                      required_columns=None, required_primary_keys=None,
+                      required_not_null=None, required_foreign_keys=None):
     """Read-only validation; reject sidecars rather than ignore WAL data.
 
     Caller must separately hold an exclusive application-wide database lock.
@@ -66,6 +67,27 @@ def inspect_candidate(path, *, expected_user_version=None, required_tables=(),
         for table, keys in required_primary_keys.items()
     ):
         raise RecoveryPreflightError("invalid required primary keys")
+    if required_not_null is None:
+        required_not_null = {}
+    if not isinstance(required_not_null, dict) or any(
+        not isinstance(table, str) or not table.isidentifier() or not table.isascii() or
+        not isinstance(cols, (tuple, list, set, frozenset)) or not cols or
+        any(not isinstance(col, str) or not col.isidentifier() or not col.isascii()
+            for col in cols)
+        for table, cols in required_not_null.items()
+    ):
+        raise RecoveryPreflightError("invalid NOT NULL contract")
+    if required_foreign_keys is None:
+        required_foreign_keys = {}
+    if not isinstance(required_foreign_keys, dict) or any(
+        not isinstance(table, str) or not table.isidentifier() or not table.isascii() or
+        not isinstance(edges, (tuple, list)) or not edges or
+        any(not isinstance(edge, (tuple, list)) or len(edge) != 3 or
+            any(not isinstance(value, str) or not value.isidentifier() or
+                not value.isascii() for value in edge) for edge in edges)
+        for table, edges in required_foreign_keys.items()
+    ):
+        raise RecoveryPreflightError("invalid foreign key contract")
     for suffix in ("-wal", "-shm", "-journal"):
         if os.path.lexists(str(candidate) + suffix):
             raise RecoveryPreflightError("candidate has SQLite sidecar")
@@ -100,6 +122,26 @@ def inspect_candidate(path, *, expected_user_version=None, required_tables=(),
                 actual = tuple(row[1] for row in sorted(info, key=lambda row: row[5]) if row[5] > 0)
                 if actual != tuple(keys):
                     raise RecoveryPreflightError("required primary key mismatch")
+            for table, cols in required_not_null.items():
+                if table not in tables:
+                    raise RecoveryPreflightError("required NOT NULL table missing")
+                info = db.execute('PRAGMA table_info("' + table + '")').fetchall()
+                actual = {row[1] for row in info if row[3] == 1}
+                # SQLite reports INTEGER PRIMARY KEY as nullable in table_info,
+                # even though the rowid alias is intrinsically non-null.
+                actual.update(row[1] for row in info if row[5] > 0 and
+                              row[2].upper() == "INTEGER" and len(
+                                  [key for key in info if key[5] > 0]) == 1)
+                if not set(cols).issubset(actual):
+                    raise RecoveryPreflightError("required NOT NULL mismatch")
+            for table, edges in required_foreign_keys.items():
+                if table not in tables:
+                    raise RecoveryPreflightError("required foreign key table missing")
+                present = {(row[3], row[2], row[4]) for row in db.execute(
+                    'PRAGMA foreign_key_list("' + table + '")'
+                )}
+                if not set(map(tuple, edges)).issubset(present):
+                    raise RecoveryPreflightError("required foreign key mismatch")
     except sqlite3.DatabaseError as exc:
         raise RecoveryPreflightError("invalid SQLite candidate") from exc
     # A WAL/journal appearing during the read invalidates the immutable snapshot.
