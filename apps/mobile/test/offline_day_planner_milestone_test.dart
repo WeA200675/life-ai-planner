@@ -22,7 +22,9 @@ void main() {
         DateTime.utc(2026, 11, 22, 10))];
     final result = planOfflineDay(start, end,
         [const DayTask(id: 'work', minutes: 90)], fixed: fixed);
-    expect(result.blocks.first.id, 'meeting');
+    // The 90-minute task starts at 10:00 because it cannot fit before 09:00.
+    expect(result.blocks.map((b) => b.id).toList(), ['meeting', 'work']);
+    expect(result.blocks.first.start, DateTime.utc(2026, 11, 22, 9));
     expect(result.blocks.last.start, DateTime.utc(2026, 11, 22, 10));
     expect(result.budgetMinutes, 378);
   });
