@@ -254,3 +254,28 @@ Future<void> inspectClosedActiveDatabase(String activePath, {
     await db.close();
   }
 }
+
+/// Read-only pair preflight for a future explicitly approved activation.
+///
+/// Reject aliases and hard links: a candidate must never refer to the active
+/// database, even when the two path strings differ. This does not lock either
+/// path or authorize a swap; the caller must still provide exclusive access.
+Future<void> inspectRestorePair(
+    String archive, String activePath, String candidatePath, {
+    DatabaseFactory? factory,
+  }) async {
+  if (activePath.trim().isEmpty || candidatePath.trim().isEmpty ||
+      !activePath.endsWith('.db') || !candidatePath.endsWith('.db')) {
+    throw ArgumentError('Two existing .db paths are required');
+  }
+  // File.identical resolves filesystem identity, including hard links.
+  // Check before opening either DB to avoid accidentally opening the active
+  // database as an alleged staging candidate.
+  if (await File(activePath).exists() &&
+      await File(candidatePath).exists() &&
+      await FileSystemEntity.identical(activePath, candidatePath)) {
+    throw StateError('Restore candidate aliases the active database');
+  }
+  await inspectClosedActiveDatabase(activePath, factory: factory);
+  await inspectStagedCandidate(archive, candidatePath, factory: factory);
+}
