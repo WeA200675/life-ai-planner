@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:life_ai_planner/local_task_schema.dart';
 import 'package:life_ai_planner/offline_day_planner.dart';
@@ -201,6 +203,42 @@ void main() {
     }
     expect(await db.query('plan_snapshots'), isEmpty);
     expect(await db.query('plan_accept_requests'), isEmpty);
+  });
+
+  test('request idempotency survives closing and reopening a real SQLite file',
+      () async {
+    final directory = await Directory.systemTemp.createTemp('planner-r1-');
+    final file = '${directory.path}/planner-test.db';
+    Database? disk;
+    try {
+      disk = await openDatabase(file, version: 4,
+          onCreate: (database, version) async {
+        await createTaskSchema(database);
+        await createPlanSnapshotSchema(database);
+      });
+      await disk.insert('tasks', {
+        'title': 'Synthetic', 'done': 0, 'minutes': 30, 'priority': 5
+      });
+      final original = await disk.query('tasks');
+      final plan = planOfflineDay(start, end, [
+        DayTask(id: (original.single['id'] as int).toString(),
+            minutes: 30, priority: 5),
+      ]);
+      final first = await PlanSnapshotStore(disk).accept(plan, start, end,
+          expectedTasks: original, requestKey: 'file-reopen-key');
+      await disk.close();
+      disk = null;
+      disk = await openDatabase(file, version: 4,
+          onOpen: createPlanSnapshotSchema);
+      final second = await PlanSnapshotStore(disk).accept(plan, start, end,
+          expectedTasks: original, requestKey: 'file-reopen-key');
+      expect(second, first);
+      expect((await PlanSnapshotStore(disk).history()).length, 1);
+      expect(await disk.query('tasks'), original);
+    } finally {
+      if (disk != null) await disk.close();
+      await directory.delete(recursive: true);
+    }
   });
 
 }
