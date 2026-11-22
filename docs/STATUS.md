@@ -1102,3 +1102,15 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächliche Testlage:** GitHub hat beide Commits bestätigt. `git ls-remote` scheiterte lokal mit `Could not resolve host: github.com`; Repository-Tests wurden **nicht ausgeführt**. GitHub-Commit-Workflow-Abfrage für `441d40a` meldete `workflow_runs: []`, ist jedoch auf PR-Events beschränkt: **kein belastbarer Push-CI-Status**. Kein grüner Testlauf und keine APK behauptet.
 - **Sicherheitsgrenzen:** Der Schema-Vertrag validiert Spaltenpräsenz, nicht Datentypen, CHECK-/FK-Constraints oder vollständige Migrationen. Exklusiver Restore-Koordinator, Original-Sicherung, WAL-/Crash-Recovery und Rollback fehlen; produktive Aktivierung bleibt deaktiviert.
 - **Nächster großer Schritt:** CI/Python-Tests für `441d40a` ausführen und korrigieren; danach den exklusiven Restore-Koordinator mit Original-Backup, Crash-Fault-Injection und Rollback implementieren. Flutter-SQLite-Integration, APK-Build und reale Geräteabnahme weiterhin ausstehend.
+
+
+## M4 Android v4 SQLite restore preflight – 2026-11-22 19:39 CET
+- Ausgangs-HEAD: `1bddaa0c185d17a8bbce4d72506b630393fd6460` (GitHub-Commit-Suche); offener PR #1, keine eigenständigen offenen Issues.
+- Die vorhandene Android-v4-Validierung prüfte Tabellen und Spalten, aber nicht die Primärschlüssel. Ein synthetisches Schema mit passenden Spalten ohne PK wäre akzeptiert worden.
+- `packages/storage/recovery_preflight.py`: optionaler, expliziter Primärschlüsselvertrag über `PRAGMA table_info`; die Reihenfolge zusammengesetzter Schlüssel wird geprüft.
+- `packages/storage/android_schema_contract.py`: PK-Vertrag für `tasks(id)`, `plan_snapshots(id)` und `plan_snapshot_blocks(snapshot_id, position)`.
+- `tests/test_android_schema_contract.py`: zwei synthetische Regressionstests für fehlenden und vertauschten Primärschlüssel.
+- Commits: `4333e3681bacb22f0ac60009d4a7d38885235122`, `e8a7c90f2b581c6093d0a59669b58c5372837ec7`, `8395ecd83b6d5ea1f6b4259d69f673af62da4653`.
+- **Nachweisgrenze:** GitHub-Schreiboperationen bestätigt; lokaler Klon scheitert an DNS (`Could not resolve host: github.com`). Neue Tests und CI für diesen Stand **nicht** als bestanden bestätigt. Die Commit-bezogene Actions-Abfrage für den Ausgangs-HEAD lieferte keine PR-Workflow-Runs, was keinen CI-Erfolg belegt.
+- **Nächster Schritt:** Tests und CI für den neuen HEAD ausführen, bei Fehlern korrigieren; danach vollständigen Android-v4-Schemaabgleich und gesperrten Restore-/Rollback-Koordinator prüfen. Kein produktiver Restore aktiviert.
+- **Abnahme:** M1–M4 offen, Android-Release-/Geräteabnahme fehlt. Keine personenbezogenen Testdaten oder Secrets verwendet.
