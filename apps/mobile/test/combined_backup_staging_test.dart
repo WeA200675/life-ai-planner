@@ -440,4 +440,51 @@ void main() {
     }
   });
 
+  test('restore pair rejects active hard-link alias without changing files',
+      () async {
+    if (Platform.isWindows) return; // Hard-link behavior differs by runner.
+    final dir = await Directory.systemTemp.createTemp('pair-hardlink-');
+    final path = '${dir.path}/active.db';
+    final db = await openDatabase(path);
+    try {
+      await createTaskSchema(db);
+      await createPlanSnapshotSchema(db);
+      await db.insert('tasks', {'id': 41, 'title': 'Keep', 'done': 0});
+      final archive = await exportCombinedBackup(db);
+      await db.close();
+      final alias = '${dir.path}/candidate.db';
+      await Link(alias).create(path); // Symlink alias is also prohibited.
+      await expectLater(inspectRestorePair(archive, path, alias),
+          throwsStateError);
+      expect(await File(path).exists(), isTrue);
+      expect(await Link(alias).exists(), isTrue);
+    } finally {
+      if (db.isOpen) await db.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('restore pair accepts separate verified databases read-only',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('pair-valid-');
+    final path = '${dir.path}/active.db';
+    final db = await openDatabase(path);
+    try {
+      await createTaskSchema(db);
+      await createPlanSnapshotSchema(db);
+      await db.insert('tasks', {'id': 42, 'title': 'Keep', 'done': 0});
+      final archive = await exportCombinedBackup(db);
+      await db.close();
+      final candidate = '${dir.path}/candidate.db';
+      await stageCombinedBackup(archive, candidate);
+      await inspectRestorePair(archive, path, candidate);
+      final reader = await openDatabase(path);
+      expect((await reader.query('tasks')).single['title'], 'Keep');
+      await reader.close();
+    } finally {
+      if (db.isOpen) await db.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
