@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'plan_export.dart';
@@ -133,9 +134,10 @@ class LocalTasks {
   }
 
   Future<int> acceptPlan(DayPlan plan, DateTime start, DateTime end,
-      List<Map<String, Object?>> expectedTasks) async =>
+      List<Map<String, Object?>> expectedTasks, {String? requestKey}) async =>
       PlanSnapshotStore(await database).accept(
-          plan, start, end, expectedTasks: expectedTasks);
+          plan, start, end,
+          expectedTasks: expectedTasks, requestKey: requestKey);
 
   Future<List<SavedPlan>> planHistory({int limit = 30, int offset = 0}) async =>
       PlanSnapshotStore(await database).history(limit: limit, offset: offset);
@@ -468,6 +470,11 @@ class _TaskScreenState extends State<TaskScreen> {
       String hhmm(DateTime time) =>
           time.hour.toString().padLeft(2, '0') + ':' +
           time.minute.toString().padLeft(2, '0');
+      // One key per preview, reused for every retry of this confirmation.
+      // Cryptographic randomness avoids collisions across app restarts.
+      final random = Random.secure();
+      final requestKey = List<int>.generate(16, (_) => random.nextInt(256))
+          .map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
       final accepted = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
@@ -517,7 +524,8 @@ class _TaskScreenState extends State<TaskScreen> {
         setState(() => _busy = true);
         int id;
         try {
-          id = await _store.acceptPlan(plan, start, end, previewRows);
+          id = await _store.acceptPlan(plan, start, end, previewRows,
+              requestKey: requestKey);
         } on StateError {
           if (mounted) {
             setState(() => _error =
