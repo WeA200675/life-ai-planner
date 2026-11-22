@@ -109,5 +109,35 @@ class RecoveryPreflightTests(unittest.TestCase):
             inspect_candidate(self.path, expected_user_version=True)
 
 
+    def test_read_only_connection_closed_on_success_and_schema_rejection(self):
+        real_connect = sqlite3.connect
+        connections = []
+
+        class TrackedConnection:
+            def __init__(self, wrapped):
+                self.wrapped = wrapped
+                self.closed = False
+
+            def execute(self, *args, **kwargs):
+                return self.wrapped.execute(*args, **kwargs)
+
+            def close(self):
+                self.closed = True
+                self.wrapped.close()
+
+        def tracked_connect(*args, **kwargs):
+            tracked = TrackedConnection(real_connect(*args, **kwargs))
+            connections.append(tracked)
+            return tracked
+
+        with patch("packages.storage.recovery_preflight.sqlite3.connect",
+                   side_effect=tracked_connect):
+            inspect_candidate(self.path, expected_user_version=4)
+            with self.assertRaisesRegex(RecoveryPreflightError, "schema"):
+                inspect_candidate(self.path, expected_user_version=3)
+        self.assertEqual(len(connections), 2)
+        self.assertTrue(all(connection.closed for connection in connections))
+
+
 if __name__ == "__main__":
     unittest.main()
