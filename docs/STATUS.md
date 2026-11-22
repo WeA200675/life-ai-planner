@@ -1173,3 +1173,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Implementiert:** Neuer Test in `apps/mobile/test/offline_sqlite_integration_release_test.dart` verwendet eine temporäre echte SQLite-Datei (statt nur in-memory), erzeugt synthetische Taskdaten, akzeptiert eine Planversion mit requestKey, schließt die Datenbank, öffnet dieselbe Datei neu und prüft, dass identischer Retry dieselbe Snapshot-ID zurückliefert, die Historie nur einen Eintrag enthält und Taskdaten unverändert sind. Temporärverzeichnis wird im finally bereinigt. Commit `693e93cc475a1271a54867661ee3825caa34f094`.
 - **Nachweise:** GitHub bestätigte Commit. Der Connector `fetch_commit_workflow_runs` lieferte für diesen Commit keine PR-Workflow-Läufe; Push-Läufe werden von diesem Endpunkt nicht vollständig erfasst. Flutter-Tests, Analyse, APK und Geräteabnahme konnten hier nicht ausgeführt bzw. als erfolgreich belegt werden; neuer Teststatus **UNVERIFIZIERT**. Keine privaten Daten/Secrets verwendet.
 - **Blocker/nächster Schritt:** Push-CI unter GitHub Actions direkt prüfen und ggf. fehlschlagende Jobs/Logs bearbeiten; Android-APK mit SHA-256-Artefakt nachweisen; anschließend Crash-/Restore-/Rollback-Abnahme und manuelle Geräteprüfung. Kein produktiver Restore aktiviert.
+
+
+## M4 Backup-Quellpfade – 2026-11-22 (20:40 Europe/Berlin)
+- Ausgangs-HEAD: `7a56546c0de47ed694f2989a123076946d1b2a5a`; offene PRs: #1, offene eigenständige Issues: 0.
+- Vorherige Scheduler-CI: [45060003255](https://github.com/WeA200675/life-ai-planner/actions/runs/45060003255) für Ausgangs-HEAD: **success**; dies bestätigt nicht die neuen Änderungen.
+- Backup/Restore lehnt jetzt symlinked und mehrfach hartverlinkte SQLite-Quelldateien vor `resolve()` ab, statt deren Umleitung stillschweigend zu akzeptieren. Zielpublikation bleibt exklusiv.
+- Code-Commit: `c057fead95a9a792f270203a221fb8c39185ea87`; drei synthetische Regressionstests: `722d9f2756bb4b31298539f128e552b6d33dd6e9`.
+- **Testnachweis:** GitHub-Commits bestätigt; lokaler Git-Klon wegen `Could not resolve host: github.com` fehlgeschlagen. Die neuen Tests und CI sind zum Dokumentationszeitpunkt **nicht** als bestanden verifiziert.
+- **Grenze:** Die neue Prüfung schützt gegen bereits vorhandene Symlinks/Hardlinks, ist aber keine vollständige Race-/TOCTOU-Sicherung gegen konkurrierende Pfadänderungen. Produktive Restore-Umschaltung bleibt deaktiviert.
+- **Nächster Schritt:** GitHub Actions für neuen HEAD prüfen, ggf. Fehler beheben; anschließend sichere Deskriptor-basierte Pfadöffnung und Flutter-/Android-Release-/Geräteabnahme.
+- **Abnahme:** M1–M4 noch nicht vollständig.
