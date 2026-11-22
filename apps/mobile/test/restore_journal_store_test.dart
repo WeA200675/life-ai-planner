@@ -57,4 +57,17 @@ void main() {
       await dir.delete(recursive: true);
     }
   });
+  test('oversized marker fails closed and remains untouched', () async {
+    final dir = await Directory.systemTemp.createTemp('journal-limit-test-');
+    try {
+      final marker = File('${dir.path}/restore.marker');
+      await marker.writeAsString('x' * (RestoreJournalStore.maxMarkerBytes + 1));
+      await expectLater(store.read(marker), throwsFormatException);
+      expect(await marker.length(), RestoreJournalStore.maxMarkerBytes + 1);
+      await expectLater(store.create(marker, journal), throwsStateError);
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
