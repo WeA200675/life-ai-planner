@@ -1,10 +1,13 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:sqflite/sqflite.dart';
 
 import 'combined_backup.dart';
 import 'local_task_schema.dart';
 import 'plan_snapshot_store.dart';
+import 'task_backup.dart';
+import 'plan_history_restore.dart';
 
 /// Builds an isolated restore candidate. Never opens, replaces or renames the
 /// active application database. The caller must choose a private new path.
@@ -48,6 +51,7 @@ Future<({int tasks, int snapshots})> stageCombinedBackup(
         ));
     final result = await restoreCombinedIntoEmptyDatabase(db, archive);
     await verifyStagedDatabase(db);
+    await verifyStagedArchive(db, archive);
     return result;
   } catch (_) {
     // Only delete a destination created by this attempt, never a file that
@@ -74,5 +78,27 @@ Future<void> verifyStagedDatabase(Database db) async {
   final foreignKeys = await db.rawQuery('PRAGMA foreign_key_check');
   if (foreignKeys.isNotEmpty) {
     throw StateError('Staged SQLite foreign key check failed');
+  }
+}
+
+/// Compare restored content to the validated archive, not just SQLite's
+/// structural checks. Catches missing, changed or extra rows before activation.
+Future<void> verifyStagedArchive(Database db, String archive) async {
+  validateCombinedBackup(archive);
+  final expected = jsonDecode(archive) as Map<String, dynamic>;
+  final actual = jsonDecode(await exportCombinedBackup(db))
+      as Map<String, dynamic>;
+  final expectedTasks = decodeTaskBackup(jsonEncode(expected['tasks']));
+  final actualTasks = decodeTaskBackup(jsonEncode(actual['tasks']));
+  final expectedHistory =
+      decodePlanHistoryBackup(jsonEncode(expected['plan_history']));
+  final actualHistory =
+      decodePlanHistoryBackup(jsonEncode(actual['plan_history']));
+  if (jsonEncode(expectedTasks.tasks) != jsonEncode(actualTasks.tasks) ||
+      jsonEncode(expectedHistory.snapshots) !=
+          jsonEncode(actualHistory.snapshots) ||
+      jsonEncode(expectedHistory.blocks) !=
+          jsonEncode(actualHistory.blocks)) {
+    throw StateError('Staged content does not match the backup');
   }
 }
