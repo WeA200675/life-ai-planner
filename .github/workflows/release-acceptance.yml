@@ -71,7 +71,11 @@ jobs:
           apk=build/app/outputs/flutter-apk/app-release.apk
           # Release mode does not imply unsigned or production-signed. The
           # generated Flutter Android scaffold may use the debug keystore.
-          keytool -printcert -jarfile "$apk" > build/app/outputs/flutter-apk/signing-certificate.txt
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$sdk"
+          mapfile -t signers < <(find "$sdk/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V)
+          test "${#signers[@]}" -gt 0
+          "${signers[${#signers[@]}-1]}" verify --print-certs "$apk" > build/app/outputs/flutter-apk/signing-certificate.txt
           cat build/app/outputs/flutter-apk/signing-certificate.txt
           if grep -Eiq 'CN=Android Debug|Android Debug' build/app/outputs/flutter-apk/signing-certificate.txt; then
             echo '::warning::Release-mode APK uses a debug signing identity; NOT a production release.'
