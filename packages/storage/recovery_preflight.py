@@ -50,7 +50,10 @@ def inspect_candidate(path, *, expected_user_version=None, required_tables=()):
             raise RecoveryPreflightError("candidate has SQLite sidecar")
     uri = candidate.as_uri() + "?mode=ro&immutable=1"
     try:
-        with sqlite3.connect(uri, uri=True, timeout=0) as db:
+        # sqlite3.Connection.__exit__ commits/rolls back but does NOT close.
+        # Explicit closing prevents lingering handles on every error path.
+        from contextlib import closing
+        with closing(sqlite3.connect(uri, uri=True, timeout=0)) as db:
             integrity = db.execute("PRAGMA integrity_check").fetchall()
             if integrity != [("ok",)]:
                 raise RecoveryPreflightError("SQLite integrity check failed")
