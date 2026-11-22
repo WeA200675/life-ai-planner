@@ -308,4 +308,28 @@ void main() {
     }
   });
 
+  test('nested ancestor symlink rejects staging without target writes',
+      () async {
+    if (Platform.isWindows) return;
+    final dir = await Directory.systemTemp.createTemp('stage-nested-link-');
+    final source = await openDatabase('${dir.path}/source.db');
+    try {
+      await createTaskSchema(source);
+      await createPlanSnapshotSchema(source);
+      final archive = await exportCombinedBackup(source);
+      final actual = await Directory('${dir.path}/real/inner')
+          .create(recursive: true);
+      final alias = Link('${dir.path}/alias');
+      await alias.create(Directory('${dir.path}/real').path);
+      final candidate = '${alias.path}/inner/candidate.db';
+      await expectLater(stageCombinedBackup(archive, candidate),
+          throwsStateError);
+      expect(await File('${actual.path}/candidate.db').exists(), isFalse);
+      expect(await alias.exists(), isTrue);
+    } finally {
+      await source.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
 }
