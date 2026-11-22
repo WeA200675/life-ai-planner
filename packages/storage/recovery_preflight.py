@@ -29,7 +29,8 @@ def _regular_private_file(path):
     return path, info
 
 
-def inspect_candidate(path, *, expected_user_version=None, required_tables=()):
+def inspect_candidate(path, *, expected_user_version=None, required_tables=(),
+                      required_columns=None):
     """Read-only validation; reject sidecars rather than ignore WAL data.
 
     Caller must separately hold an exclusive application-wide database lock.
@@ -45,6 +46,17 @@ def inspect_candidate(path, *, expected_user_version=None, required_tables=()):
         for name in required_tables
     ):
         raise RecoveryPreflightError("invalid required table names")
+    if required_columns is None:
+        required_columns = {}
+    if not isinstance(required_columns, dict) or any(
+        not isinstance(table, str) or not table.isascii() or not table or
+        not all(ch.isalnum() or ch == "_" for ch in table) or
+        not isinstance(columns, (tuple, list, set, frozenset)) or not columns or
+        any(not isinstance(col, str) or not col.isascii() or not col or
+            not all(ch.isalnum() or ch == "_" for ch in col) for col in columns)
+        for table, columns in required_columns.items()
+    ):
+        raise RecoveryPreflightError("invalid required column names")
     for suffix in ("-wal", "-shm", "-journal"):
         if os.path.lexists(str(candidate) + suffix):
             raise RecoveryPreflightError("candidate has SQLite sidecar")
@@ -59,6 +71,13 @@ def inspect_candidate(path, *, expected_user_version=None, required_tables=()):
                 raise RecoveryPreflightError("SQLite integrity check failed")
             if db.execute("PRAGMA foreign_key_check").fetchone() is not None:
                 raise RecoveryPreflightError("SQLite foreign key check failed")
+            for table, columns in required_columns.items():
+                # Names are validated above; quote identifiers defensively.
+                present = {row[1] for row in db.execute(
+                    'PRAGMA table_info("' + table + '")'
+                )}
+                if not set(columns).issubset(present):
+                    raise RecoveryPreflightError("required application columns missing")
             version = db.execute("PRAGMA user_version").fetchone()[0]
             tables = sorted(row[0] for row in db.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
