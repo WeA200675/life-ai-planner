@@ -486,7 +486,20 @@ class _TaskScreenState extends State<TaskScreen> {
         ),
       );
       if (accepted == true && mounted) {
-        final id = await _store.acceptPlan(plan, start, end, previewRows);
+        if (_busy) return;
+        setState(() => _busy = true);
+        int id;
+        try {
+          id = await _store.acceptPlan(plan, start, end, previewRows);
+        } on StateError {
+          if (mounted) {
+            setState(() => _error =
+                'Aufgaben wurden seit der Vorschau geändert. Bitte neu planen.');
+          }
+          return;
+        } finally {
+          if (mounted) setState(() => _busy = false);
+        }
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: const Text('Tagesplan lokal gespeichert.'),
