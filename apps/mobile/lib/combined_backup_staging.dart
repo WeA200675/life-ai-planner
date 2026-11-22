@@ -159,7 +159,11 @@ Future<void> checkpointStagedDatabase(Database db) async {
 /// operation and must not be silently destroyed.
 Future<bool> _stagingFilesExist(String path) async {
   for (final suffix in ['', '-wal', '-shm', '-journal']) {
-    if (await File('$path$suffix').exists()) return true;
+    final sidecarPath = '$path$suffix';
+    // File.exists follows symlinks and misses dangling links. Never let
+    // SQLite follow or replace a pre-existing linked journal/sidecar.
+    if (await FileSystemEntity.type(sidecarPath, followLinks: false) !=
+        FileSystemEntityType.notFound) return true;
   }
   return false;
 }
