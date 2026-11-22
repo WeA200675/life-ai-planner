@@ -36,6 +36,9 @@ class LocalTasks {
       final opened = await openDatabase(
         p.join(root, 'life_ai_planner.db'),
         version: 4,
+        // Idempotent additive schema for existing v4 installations.
+        // Never drop or rewrite user tasks or accepted plans.
+        onOpen: (db) async => createPlanSnapshotSchema(db),
         onCreate: (db, version) async {
           await createTaskSchema(db);
           await createPlanSnapshotSchema(db);
