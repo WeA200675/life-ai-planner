@@ -41,6 +41,33 @@ void main() {
     }
   });
 
+  test('staged archive survives independent read-only reopen', () async {
+    final dir = await Directory.systemTemp.createTemp('stage-durable-');
+    final source = await openDatabase('${dir.path}/source.db');
+    try {
+      await createTaskSchema(source);
+      await createPlanSnapshotSchema(source);
+      await source.insert('tasks', {
+        'id': 51, 'title': 'Synthetic durable task', 'done': 0,
+      });
+      final archive = await exportCombinedBackup(source);
+      final path = '${dir.path}/candidate.db';
+      await stageCombinedBackup(archive, path);
+      final reader = await databaseFactoryFfi.openDatabase(path,
+          options: OpenDatabaseOptions(readOnly: true));
+      try {
+        await verifyStagedDatabase(reader);
+        await verifyStagedArchive(reader, archive);
+        expect((await reader.query('tasks')).single['id'], 51);
+      } finally {
+        await reader.close();
+      }
+    } finally {
+      await source.close();
+      await dir.delete(recursive: true);
+    }
+  });
+
   test('invalid archive leaves no candidate file', () async {
     final dir = await Directory.systemTemp.createTemp('stage-invalid-');
     try {
