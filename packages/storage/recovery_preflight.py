@@ -76,8 +76,8 @@ def inspect_candidate(path, *, expected_user_version=None, required_tables=()):
         raise RecoveryPreflightError("candidate vanished during inspection") from exc
     if not stat.S_ISREG(after.st_mode) or after.st_nlink != 1:
         raise RecoveryPreflightError("candidate file type changed during inspection")
-    if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
-        after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns
+    if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns) != (
+        after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns
     ):
         raise RecoveryPreflightError("candidate changed during inspection")
     if expected_user_version is not None and version != expected_user_version:
