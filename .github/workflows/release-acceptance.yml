@@ -70,18 +70,41 @@ jobs:
             rm -f test/widget_test.dart
           fi
           test -f android/app/src/main/AndroidManifest.xml
+      - name: Capture Android build environment
+        shell: bash
+        run: |
+          mkdir -p acceptance-evidence
+          flutter --version 2>&1 | tee acceptance-evidence/flutter-version.log
+          java -version 2>&1 | tee acceptance-evidence/java-version.log
+          flutter doctor -v > acceptance-evidence/flutter-doctor.log 2>&1 || true
       - name: Build isolated debug smoke-test APK
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p acceptance-evidence
-          flutter pub get 2>&1 | tee acceptance-evidence/debug-pub-get.log
-          flutter build apk --debug 2>&1 | tee acceptance-evidence/android-debug-build.log
+          # Each command is guarded independently so the exact failure is
+          # retained in both the artifact and the Actions step summary.
+          if ! flutter pub get > acceptance-evidence/debug-pub-get.log 2>&1; then
+            cat acceptance-evidence/debug-pub-get.log
+            echo '::error::Debug APK blocked by flutter pub get; inspect debug-pub-get.log.'
+            echo '### Debug APK: dependency resolution failed (NO-GO)' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if ! timeout --signal=TERM --kill-after=30s 30m flutter build apk --debug --no-pub > acceptance-evidence/android-debug-build.log 2>&1; then
+            cat acceptance-evidence/android-debug-build.log
+            echo '::error::Debug APK compilation failed; inspect android-debug-build.log.'
+            echo '### Debug APK: compilation failed (NO-GO)' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
           apk=build/app/outputs/flutter-apk/app-debug.apk
-          test -s "$apk"
-          unzip -t "$apk" > /dev/null
+          if [ ! -s "$apk" ] || ! unzip -t "$apk" > /dev/null; then
+            echo '::error::Debug APK missing, empty or invalid ZIP.'
+            echo '### Debug APK: integrity check failed (NO-GO)' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
           (cd build/app/outputs/flutter-apk && sha256sum app-debug.apk > app-debug.apk.sha256)
           (cd build/app/outputs/flutter-apk && sha256sum --check app-debug.apk.sha256)
+          echo '### Debug APK: built and ZIP/SHA256 verified (device acceptance pending)' >> "$GITHUB_STEP_SUMMARY"
       - name: Publish UNVERIFIED debug device-test APK and digest
         uses: actions/upload-artifact@v4
         with:
@@ -99,6 +122,9 @@ jobs:
           path: |
             apps/mobile/acceptance-evidence/debug-pub-get.log
             apps/mobile/acceptance-evidence/android-debug-build.log
+            apps/mobile/acceptance-evidence/flutter-version.log
+            apps/mobile/acceptance-evidence/java-version.log
+            apps/mobile/acceptance-evidence/flutter-doctor.log
           if-no-files-found: warn
           retention-days: 14
 
