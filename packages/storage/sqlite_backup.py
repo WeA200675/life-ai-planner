@@ -69,6 +69,8 @@ def restore_cold(backup: str | Path, target: str | Path) -> Path:
     This function does not replace a production backup/rollback coordinator.
     """
     src, dst = Path(backup), Path(target)
+    if src.is_symlink() or dst.is_symlink():
+        raise ValueError("Symbolic links are not allowed for SQLite recovery paths")
     if not src.is_file() or src.resolve() == dst.resolve():
         raise ValueError("Invalid backup or target")
     if any(Path(str(dst) + suffix).exists() for suffix in ("-wal", "-shm", "-journal")):
