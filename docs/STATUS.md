@@ -1306,3 +1306,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächliche Verifikation:** Der Workflow-Quelltext wurde vor dem Commit gelesen und die GitHub-Änderung bestätigt. Die Commit-Workflow-Abfrage für den Ausgangs-HEAD lieferte keine PR-gefilterten Runs; Push-Läufe werden von diesem Endpunkt nicht vollständig abgedeckt. **Kein ausgeführter Flutter-Test, kein CI-Green, keine APK und kein Android-Gerätetest in diesem Lauf nachgewiesen.** Es wurden keine privaten Daten oder Secrets verarbeitet.
 - **Blocker:** Ausführbare GitHub-Actions-Logs/Artefakte bzw. lokale Flutter-/Android-Toolchain, geschütztes Release-Signing, Restore-/Crash-Rollback- und Geräteabnahme fehlen. M1–M4 nicht vollständig abgenommen.
 - **Nächster Schritt:** Neuen Flutter-Actions-Lauf auf dem aktualisierten HEAD auswerten, `life-ai-planner-flutter-test-evidence` und `life-ai-planner-android-build-diagnostics` prüfen, konkrete Test-/Buildfehler korrigieren und APK samt Prüfsumme/Signatur und Gerätetest nachweisen.
+
+
+## M4 – Mehrfachsignatur-Fail-Closed (2026-11-23)
+- Ausgangs-HEAD `5e0369b6967990801185070ed799b7118ecd5abd`; README, Implementierungsplan, STATUS und Release-Workflow gelesen; offene Issues/PRs: keine Treffer in GitHub-Suche.
+- **Befund:** Release-CI verglich bisher nur den SHA-256-Fingerabdruck von Signer #1. Ein APK mit zusätzlichen, nicht freigegebenen Signern konnte die Identitätsprüfung bestehen.
+- **Korrektur:** `.github/workflows/release-acceptance.yml` verlangt exakt eine Zertifikats-Fingerabdruckzeile von `apksigner`; 0 oder mehrere Signer führen zum Fehler. Code-Commit `60c231c07d884390f336f53b8b04ee1497371fae`.
+- **Tatsächlich ausgeführt:** Isolierter Bash-Sanitycheck der gleichen `grep -Ec`-Zählregel mit synthetischen 0/1/2-Signer-Ausgaben: 0 abgelehnt, 1 akzeptiert, 2 abgelehnt. Kein echter APK-Test und keine erfolgreiche CI-Ausführung behauptet.
+- **CI-Limit:** GitHub-Connector bietet keine vollständige Push-Workflow-Laufliste. Signierter Release-Build, Restore-/Rollback-Prüfung und Android-Geräteabnahme nicht nachgewiesen.
+- **Nächster Schritt:** Release-Actions-Lauf samt Signatur-Artefakt auf neuem HEAD prüfen; Produktions-Keystore und Zertifikatspin sicher konfigurieren; Android-Geräteabnahme mit synthetischen Daten durchführen. M1–M4 **NICHT ABGENOMMEN**.
