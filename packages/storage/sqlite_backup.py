@@ -30,13 +30,18 @@ def snapshot(source: str | Path, destination: str | Path) -> Path:
     src, dst = Path(source), Path(destination)
     if not src.is_file() or src.resolve() == dst.resolve():
         raise ValueError("Invalid source or destination")
+    if dst.exists():
+        raise FileExistsError(f"Backup destination already exists: {dst}")
     temp = _stage(dst)
     try:
         with closing(sqlite3.connect(f"file:{src}?mode=ro", uri=True)) as origin:
             with sqlite3.connect(temp) as copy:
                 origin.backup(copy)
         _validate(temp)
-        os.replace(temp, dst)
+        # A snapshot must never silently destroy the only older recovery point.
+        # Hard-link publication is atomic and fails if destination already exists.
+        # Both paths are in the same directory/filesystem by construction.
+        os.link(temp, dst)
         return dst
     finally:
         temp.unlink(missing_ok=True)
