@@ -45,6 +45,62 @@ jobs:
           path: acceptance-evidence/
           if-no-files-found: warn
           retention-days: 14
+  # Independent smoke-test artifact: a native flutter_tester crash must not
+  # prevent producing a clearly marked, unapproved device-test APK.
+  debug-test-apk:
+    needs: backend-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare Android project
+        run: |
+          set -euo pipefail
+          if [ ! -f android/app/build.gradle.kts ] && [ ! -f android/app/build.gradle ]; then
+            flutter create --no-pub --platforms=android --project-name life_ai_planner .
+            rm -f test/widget_test.dart
+          fi
+          test -f android/app/src/main/AndroidManifest.xml
+      - name: Build isolated debug smoke-test APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p acceptance-evidence
+          flutter pub get 2>&1 | tee acceptance-evidence/debug-pub-get.log
+          flutter build apk --debug 2>&1 | tee acceptance-evidence/android-debug-build.log
+          apk=build/app/outputs/flutter-apk/app-debug.apk
+          test -s "$apk"
+          unzip -t "$apk" > /dev/null
+          (cd build/app/outputs/flutter-apk && sha256sum app-debug.apk > app-debug.apk.sha256)
+          (cd build/app/outputs/flutter-apk && sha256sum --check app-debug.apk.sha256)
+      - name: Publish UNVERIFIED debug device-test APK and digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: life-ai-planner-debug-test-only
+          path: |
+            apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+            apps/mobile/build/app/outputs/flutter-apk/app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload isolated debug build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: life-ai-planner-debug-build-diagnostics
+          path: |
+            apps/mobile/acceptance-evidence/debug-pub-get.log
+            apps/mobile/acceptance-evidence/android-debug-build.log
+          if-no-files-found: warn
+          retention-days: 14
+
   android-release:
     needs: backend-tests
     runs-on: ubuntu-latest
@@ -101,34 +157,6 @@ jobs:
             apps/mobile/acceptance-evidence/flutter-analyze.log
             apps/mobile/acceptance-evidence/flutter-tests.log
             apps/mobile/coverage/lcov.info
-          if-no-files-found: warn
-          retention-days: 14
-      # Debug APK is intentionally NOT a release candidate. It allows device
-      # smoke tests even when production signing credentials are unavailable.
-      - name: Build installable debug test APK
-        shell: bash
-        run: |
-          set -euo pipefail
-          flutter build apk --debug 2>&1 | tee acceptance-evidence/android-debug-build.log
-          apk=build/app/outputs/flutter-apk/app-debug.apk
-          test -s "$apk"
-          unzip -t "$apk" > /dev/null
-          (cd build/app/outputs/flutter-apk && sha256sum app-debug.apk > app-debug.apk.sha256)
-      - name: Publish debug test APK (NOT production release)
-        uses: actions/upload-artifact@v4
-        with:
-          name: life-ai-planner-debug-test-only
-          path: |
-            apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
-            apps/mobile/build/app/outputs/flutter-apk/app-debug.apk.sha256
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload debug build diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: life-ai-planner-debug-build-diagnostics
-          path: apps/mobile/acceptance-evidence/android-debug-build.log
           if-no-files-found: warn
           retention-days: 14
       - name: Build release-mode candidate (signing status unverified)
