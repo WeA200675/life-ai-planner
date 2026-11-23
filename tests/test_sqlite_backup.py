@@ -120,5 +120,36 @@ class SQLiteBackupTests(unittest.TestCase):
                 snapshot(live, backup)
             self.assertEqual(backup.read_bytes(), b"important previous recovery data")
 
+    def test_snapshot_rejects_symlink_destination_without_touching_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            live, protected, link = root / "live.db", root / "protected.db", root / "backup.db"
+            with sqlite3.connect(live) as db:
+                db.execute("CREATE TABLE t (x INTEGER)")
+            protected.write_bytes(b"protected")
+            link.symlink_to(protected)
+            with self.assertRaises(ValueError):
+                snapshot(live, link)
+            self.assertEqual(protected.read_bytes(), b"protected")
+
+    def test_cold_restore_rejects_symlink_backup_and_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            live, backup = root / "live.db", root / "backup.db"
+            with sqlite3.connect(live) as db:
+                db.execute("CREATE TABLE t (x INTEGER)")
+                db.execute("INSERT INTO t VALUES (7)")
+            snapshot(live, backup)
+            alias = root / "alias.db"
+            alias.symlink_to(backup)
+            with self.assertRaises(ValueError):
+                restore_cold(alias, live)
+            target_link = root / "target.db"
+            target_link.symlink_to(live)
+            with self.assertRaises(ValueError):
+                restore_cold(backup, target_link)
+            with sqlite3.connect(live) as db:
+                self.assertEqual(db.execute("SELECT x FROM t").fetchone()[0], 7)
+
 if __name__ == "__main__":
     unittest.main()
