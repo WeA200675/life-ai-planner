@@ -68,9 +68,12 @@ jobs:
           fi
           test -f android/app/src/main/AndroidManifest.xml
       - name: Dependencies and static analysis
+        shell: bash
         run: |
-          flutter pub get
-          flutter analyze --no-fatal-infos
+          set -euo pipefail
+          mkdir -p acceptance-evidence
+          flutter pub get 2>&1 | tee acceptance-evidence/flutter-pub-get.log
+          flutter analyze --no-fatal-infos 2>&1 | tee acceptance-evidence/flutter-analyze.log
       - name: Flutter tests
         shell: bash
         run: |
@@ -83,6 +86,8 @@ jobs:
         with:
           name: life-ai-planner-flutter-test-evidence
           path: |
+            apps/mobile/acceptance-evidence/flutter-pub-get.log
+            apps/mobile/acceptance-evidence/flutter-analyze.log
             apps/mobile/acceptance-evidence/flutter-tests.log
             apps/mobile/coverage/lcov.info
           if-no-files-found: warn
@@ -91,13 +96,23 @@ jobs:
         run: |
           set -euo pipefail
           rm -f build/app/outputs/flutter-apk/app-release.apk
-          flutter build apk --release --no-shrink
+          flutter build apk --release --no-shrink 2>&1 | tee acceptance-evidence/android-release-build.log
           apk=build/app/outputs/flutter-apk/app-release.apk
           test -s "$apk"
           unzip -t "$apk" > /dev/null
           sha256sum "$apk" > "$apk.sha256"
           cat "$apk.sha256"
+      - name: Upload release build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: life-ai-planner-release-build-diagnostics
+          path: apps/mobile/acceptance-evidence/android-release-build.log
+          if-no-files-found: warn
+          retention-days: 14
       - name: Inspect candidate signing certificate
+        env:
+          EXPECTED_RELEASE_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
         run: |
           set -euo pipefail
           apk=build/app/outputs/flutter-apk/app-release.apk
@@ -116,7 +131,7 @@ jobs:
           # Reject unknown/self-signed identities even if their subject does not
           # contain "Android Debug". Pin the trusted release certificate digest
           # in a repository/environment variable, never a private key.
-          expected="${{ vars.ANDROID_RELEASE_CERT_SHA256 }}"
+          expected="$EXPECTED_RELEASE_CERT_SHA256"
           if [ -z "$expected" ]; then
             echo '::error::ANDROID_RELEASE_CERT_SHA256 is not configured; fail closed.'
             exit 1
