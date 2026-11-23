@@ -113,6 +113,26 @@ jobs:
             echo '::error::Release-mode APK uses a debug signing identity; production release gate failed.'
             exit 1
           fi
+          # Reject unknown/self-signed identities even if their subject does not
+          # contain "Android Debug". Pin the trusted release certificate digest
+          # in a repository/environment variable, never a private key.
+          expected="${{ vars.ANDROID_RELEASE_CERT_SHA256 }}"
+          if [ -z "$expected" ]; then
+            echo '::error::ANDROID_RELEASE_CERT_SHA256 is not configured; fail closed.'
+            exit 1
+          fi
+          actual=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' build/app/outputs/flutter-apk/signing-certificate.txt | head -n 1 | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          expected=$(printf '%s' "$expected" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          if ! [[ "$actual" =~ ^[0-9a-f]{64}$ && "$expected" =~ ^[0-9a-f]{64}$ ]]; then
+            echo '::error::Missing or malformed release certificate SHA-256 digest.'
+            exit 1
+          fi
+          if [ "$actual" != "$expected" ]; then
+            echo '::error::APK signer does not match pinned production certificate.'
+            exit 1
+          fi
+          echo 'Production certificate fingerprint matched pinned SHA-256.'
+
       - name: Upload candidate and digest
         if: always()
         uses: actions/upload-artifact@v4
