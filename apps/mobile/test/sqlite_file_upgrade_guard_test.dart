@@ -78,6 +78,62 @@ void main() {
     }
   });
 
+  test('interrupted migration transaction rolls back schema and rows on disk', () async {
+    final initial = await factory.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 1,
+        singleInstance: false,
+        onCreate: (db, _) async {
+          await db.execute('CREATE TABLE tasks ('
+              'id INTEGER PRIMARY KEY, title TEXT NOT NULL, done INTEGER NOT NULL)');
+          await db.insert('tasks', {'id': 17, 'title': 'Synthetic original', 'done': 0});
+        },
+      ),
+    );
+    await initial.close();
+
+    final db = await factory.openDatabase(
+      path,
+      options: OpenDatabaseOptions(singleInstance: false),
+    );
+    try {
+      await expectLater(
+        db.transaction((txn) async {
+          await requireValidSqliteStructure(txn);
+          await requireValidForeignKeys(txn);
+          await migrateTasksV1ToV2(txn);
+          await txn.update('tasks', {'title': 'Synthetic interrupted'}, where: 'id = ?', whereArgs: [17]);
+          // Simulate an interruption after DDL and DML but before commit.
+          throw StateError('synthetic interruption');
+        }),
+        throwsStateError,
+      );
+    } finally {
+      await db.close();
+    }
+
+    // Reopen from disk: no partial schema or data mutation may survive.
+    final reopened = await factory.openDatabase(
+      path,
+      options: OpenDatabaseOptions(singleInstance: false, readOnly: true),
+    );
+    try {
+      expect((await reopened.rawQuery('PRAGMA user_version')).single.values.single, 1);
+      final columns = await reopened.rawQuery('PRAGMA table_info(tasks)');
+      expect(columns.map((row) => row['name']), isNot(contains('minutes')));
+      expect(columns.map((row) => row['name']), isNot(contains('priority')));
+      final rows = await reopened.query('tasks');
+      expect(rows, hasLength(1));
+      expect(rows.single['id'], 17);
+      expect(rows.single['title'], 'Synthetic original');
+      await requireValidSqliteStructure(reopened);
+      await requireValidForeignKeys(reopened);
+    } finally {
+      await reopened.close();
+    }
+  });
+
   test('orphaned foreign key rejects actual upgrade before any DDL', () async {
     final db = await factory.openDatabase(
       path,
