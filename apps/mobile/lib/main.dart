@@ -44,10 +44,12 @@ class LocalTasks {
         // Idempotent additive schema for existing v4 installations.
         // Never drop or rewrite user tasks or accepted plans.
         onOpen: (db) async {
+          // Check legacy relationships BEFORE any additive DDL. A corrupt
+          // database must remain byte-for-byte logically untouched by this
+          // callback so the user can recover it from a verified backup.
+          await requireValidForeignKeys(db);
           await createPlanSnapshotSchema(db);
-          // Existing databases may contain orphaned rows from older builds
-          // that did not enable foreign keys. Fail closed rather than silently
-          // continuing to write to a corrupt relationship graph.
+          // Recheck after DDL in case a future migration adds relationships.
           await requireValidForeignKeys(db);
         },
         onCreate: (db, version) async {
