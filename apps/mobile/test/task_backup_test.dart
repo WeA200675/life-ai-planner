@@ -153,6 +153,23 @@ void main() {
     }
   });
 
+  test('backup limit measures UTF-8 bytes, not UTF-16 characters', () {
+    // 3 million Euro symbols occupy 9 MB in UTF-8 but only 3 million
+    // UTF-16 code units. Reject before parsing an oversized JSON payload.
+    final oversized = '{"format":"' + ('€' * 3000000) + '"}';
+    expect(oversized.length, lessThan(maxTaskBackupBytes));
+    expect(() => decodeTaskBackup(oversized), throwsFormatException);
+  });
+
+  test('export rejects valid Unicode tasks exceeding the byte cap', () {
+    final rows = List.generate(8000, (index) => {
+      ...task,
+      'id': index + 1,
+      'title': '€' * 400,
+    });
+    expect(() => encodeTaskBackup(rows), throwsFormatException);
+  });
+
   test('backup rejects oversized input before decoding', () {
     expect(() => decodeTaskBackup(' ' * (8 * 1024 * 1024 + 1)),
         throwsFormatException);
