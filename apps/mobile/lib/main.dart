@@ -47,9 +47,11 @@ class LocalTasks {
           // Check legacy relationships BEFORE any additive DDL. A corrupt
           // database must remain byte-for-byte logically untouched by this
           // callback so the user can recover it from a verified backup.
+          await requireValidSqliteStructure(db);
           await requireValidForeignKeys(db);
           await createPlanSnapshotSchema(db);
           // Recheck after DDL in case a future migration adds relationships.
+          await requireValidSqliteStructure(db);
           await requireValidForeignKeys(db);
         },
         onCreate: (db, version) async {
