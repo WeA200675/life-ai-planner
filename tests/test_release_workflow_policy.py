@@ -54,6 +54,21 @@ class ReleaseWorkflowPolicyTests(unittest.TestCase):
         self.assertLess(self.source.index("- name: Flutter tests"), self.source.index("- name: Build release-mode candidate"))
         self.assertLess(self.source.index("- name: Inspect candidate signing certificate"), self.source.index("- name: Publish verified release candidate"))
 
+    def test_debug_apk_fallback_is_separate_from_release(self):
+        build = _step_block(self.source, "Build installable debug test APK")
+        publish = _step_block(self.source, "Publish debug test APK (NOT production release)")
+        self.assertIn("flutter build apk --debug", build)
+        self.assertIn('test -s "$apk"', build)
+        self.assertIn('unzip -t "$apk"', build)
+        self.assertIn("sha256sum app-debug.apk", build)
+        self.assertIn("life-ai-planner-debug-test-only", publish)
+        self.assertIn("app-debug.apk.sha256", publish)
+        self.assertNotIn("app-release.apk", publish)
+        self.assertLess(self.source.index("- name: Flutter tests"), self.source.index("- name: Build installable debug test APK"))
+        self.assertLess(self.source.index("- name: Publish debug test APK"), self.source.index("- name: Build release-mode candidate"))
+        release = _step_block(self.source, "Publish verified release candidate and digest")
+        self.assertNotIn("app-debug.apk", release)
+
     def test_diagnostics_survive_failure_without_publishing_apk(self):
         for name in ("Upload backend test evidence", "Upload Flutter test evidence", "Upload release build diagnostics", "Upload signing diagnostic evidence"):
             step = _step_block(self.source, name)
