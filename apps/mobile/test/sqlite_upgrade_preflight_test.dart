@@ -12,10 +12,10 @@ void main() {
         options: OpenDatabaseOptions(
           singleInstance: false,
           version: 1,
+          onConfigure: (db) async => db.execute('PRAGMA foreign_keys = OFF'),
           onCreate: (db, _) async {
             await db.execute('CREATE TABLE parents (id INTEGER PRIMARY KEY)');
             await db.execute('CREATE TABLE children (parent_id INTEGER REFERENCES parents(id))');
-            await db.execute('PRAGMA foreign_keys = OFF');
             await db.execute('INSERT INTO children(parent_id) VALUES (999)');
           },
         ));
