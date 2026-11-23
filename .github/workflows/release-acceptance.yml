@@ -13,7 +13,9 @@ on:
       - 'docs/RELEASE_ACCEPTANCE_*.md'
 concurrency:
   group: release-acceptance-${{ github.ref }}
-  cancel-in-progress: true
+  # Preserve expensive acceptance runs for their exact commit SHA. New pushes
+  # must not cancel in-flight evidence collection or debug APK generation.
+  cancel-in-progress: false
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
