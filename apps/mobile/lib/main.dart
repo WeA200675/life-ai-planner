@@ -59,6 +59,10 @@ class LocalTasks {
           await createPlanSnapshotSchema(db);
         },
         onUpgrade: (db, oldVersion, newVersion) async {
+          // onOpen runs only AFTER onUpgrade. Reject corrupt legacy files
+          // before migrations can mutate their schema or task records.
+          await requireValidSqliteStructure(db);
+          await requireValidForeignKeys(db);
           if (oldVersion < 2) await migrateTasksV1ToV2(db);
           if (oldVersion < 3) await migrateTasksV2ToV3(db);
           if (oldVersion < 4) await createPlanSnapshotSchema(db);
