@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:life_ai_planner/local_task_schema.dart';
+import 'package:life_ai_planner/sqlite_integrity.dart';
 import 'package:life_ai_planner/offline_day_planner.dart';
 import 'package:life_ai_planner/plan_snapshot_store.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -384,6 +385,82 @@ void main() {
       await disk.delete('plan_snapshots', where: 'id = ?', whereArgs: [id]);
       expect(await disk.query('plan_snapshot_blocks'), isEmpty);
       expect(await disk.query('plan_accept_requests'), isEmpty);
+      expect(await disk.query('tasks'), before);
+    } finally {
+      if (disk != null) await disk.close();
+      await directory.delete(recursive: true);
+    }
+  });
+
+  test('legacy orphan is detected on reopen without changing any rows',
+      () async {
+    final directory = await Directory.systemTemp.createTemp('planner-orphan-');
+    final file = '${directory.path}/legacy-orphan.db';
+    Database? disk;
+    try {
+      // Simulate a legacy connection which did not enforce foreign keys.
+      disk = await openDatabase(file, version: 4,
+          onCreate: (database, version) async {
+        await createTaskSchema(database);
+        await createPlanSnapshotSchema(database);
+      });
+      await disk.insert('tasks', {'title': 'Synthetic legacy', 'done': 0});
+      await disk.insert('plan_snapshot_blocks', {
+        'snapshot_id': 987654, 'position': 0, 'task_id': 'synthetic',
+        'start_utc_ms': start.millisecondsSinceEpoch,
+        'end_utc_ms': start.add(const Duration(minutes: 5))
+            .millisecondsSinceEpoch,
+      });
+      final beforeTasks = await disk.query('tasks');
+      final beforeOrphans = await disk.query('plan_snapshot_blocks');
+      await disk.close();
+      disk = null;
+
+      // The production gate runs onOpen after enabling FK constraints.
+      await expectLater(
+        openDatabase(file, version: 4,
+            onConfigure: (database) async =>
+                database.execute('PRAGMA foreign_keys = ON'),
+            onOpen: (database) async {
+              await createPlanSnapshotSchema(database);
+              await requireValidForeignKeys(database);
+            }),
+        throwsStateError,
+      );
+
+      // A failed open must never repair or delete private data implicitly.
+      disk = await openDatabase(file, version: 4);
+      expect(await disk.query('tasks'), beforeTasks);
+      expect(await disk.query('plan_snapshot_blocks'), beforeOrphans);
+      expect((await disk.rawQuery('PRAGMA foreign_key_check')), isNotEmpty);
+    } finally {
+      if (disk != null) await disk.close();
+      await directory.delete(recursive: true);
+    }
+  });
+
+  test('valid database passes shared integrity gate after reopening',
+      () async {
+    final directory = await Directory.systemTemp.createTemp('planner-valid-');
+    final file = '${directory.path}/valid.db';
+    Database? disk;
+    try {
+      disk = await openDatabase(file, version: 4,
+          onCreate: (database, version) async {
+        await createTaskSchema(database);
+        await createPlanSnapshotSchema(database);
+      });
+      await disk.insert('tasks', {'title': 'Synthetic valid', 'done': 0});
+      final before = await disk.query('tasks');
+      await disk.close();
+      disk = null;
+      disk = await openDatabase(file, version: 4,
+          onConfigure: (database) async =>
+              database.execute('PRAGMA foreign_keys = ON'),
+          onOpen: (database) async {
+            await createPlanSnapshotSchema(database);
+            await requireValidForeignKeys(database);
+          });
       expect(await disk.query('tasks'), before);
     } finally {
       if (disk != null) await disk.close();
