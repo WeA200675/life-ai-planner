@@ -44,16 +44,27 @@ jobs:
           test -f android/app/src/main/AndroidManifest.xml
       - name: Resolve dependencies
         run: flutter pub get
-      - name: Analyze
-        run: flutter analyze --no-fatal-infos
-      - name: Test with coverage
-        run: flutter test --coverage --reporter expanded
-      - name: Upload Flutter coverage (even if later build fails)
+      - name: Analyze and retain diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p acceptance-evidence
+          flutter analyze --no-fatal-infos 2>&1 | tee acceptance-evidence/flutter-analyze.log
+      - name: Test with coverage and retain diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p acceptance-evidence
+          flutter test --coverage --reporter expanded 2>&1 | tee acceptance-evidence/flutter-tests.log
+      - name: Upload Flutter test evidence (even on failure)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: life-ai-planner-flutter-coverage
-          path: apps/mobile/coverage/lcov.info
+          name: life-ai-planner-flutter-test-evidence
+          path: |
+            apps/mobile/acceptance-evidence/flutter-analyze.log
+            apps/mobile/acceptance-evidence/flutter-tests.log
+            apps/mobile/coverage/lcov.info
           if-no-files-found: warn
           retention-days: 14
       - name: Build Android debug APK (bounded dependency-network retries)
@@ -62,18 +73,29 @@ jobs:
           set -euo pipefail
           # Maven Central/Gradle Plugin Portal occasionally return transient 403/5xx.
           # Never suppress the final failure or upload an APK from an earlier attempt.
+          mkdir -p acceptance-evidence
           rm -f build/app/outputs/flutter-apk/app-debug.apk
           for attempt in 1 2 3; do
-            if flutter build apk --debug; then
+            if flutter build apk --debug > acceptance-evidence/android-build-attempt-${attempt}.log 2>&1; then
+              cat acceptance-evidence/android-build-attempt-${attempt}.log
               test -s build/app/outputs/flutter-apk/app-debug.apk
               exit 0
             fi
+            cat acceptance-evidence/android-build-attempt-${attempt}.log
             if [ "$attempt" -eq 3 ]; then
               echo "::error::Android build failed after 3 attempts; inspect Gradle dependency HTTP responses."
               exit 1
             fi
             sleep $((attempt * 15))
           done
+      - name: Upload Android build diagnostics (even on failure)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: life-ai-planner-android-build-diagnostics
+          path: apps/mobile/acceptance-evidence/android-build-attempt-*.log
+          if-no-files-found: warn
+          retention-days: 14
       - name: Verify APK and record SHA-256
         run: |
           set -euo pipefail
