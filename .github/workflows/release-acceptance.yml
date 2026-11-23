@@ -10,7 +10,6 @@ on:
       - 'services/**'
       - 'tests/**'
       - '.github/workflows/release-acceptance.yml'
-      - 'docs/STATUS.md'
       - 'docs/RELEASE_ACCEPTANCE_*.md'
 concurrency:
   group: release-acceptance-${{ github.ref }}
