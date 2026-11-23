@@ -78,7 +78,16 @@ def restore_cold(backup: str | Path, target: str | Path) -> Path:
             with sqlite3.connect(temp) as copy:
                 origin.backup(copy)
         _validate(temp)
+        # Do not report a durable restore before the replacement image and
+        # its directory entry have reached stable storage.
+        with temp.open("rb") as staged:
+            os.fsync(staged.fileno())
         os.replace(temp, dst)
+        directory_fd = os.open(dst.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
         return dst
     finally:
         temp.unlink(missing_ok=True)
