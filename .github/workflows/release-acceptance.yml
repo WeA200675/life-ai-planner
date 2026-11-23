@@ -136,15 +136,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p acceptance-evidence
-          # A flutter_tester native crash previously left the parallel suite hanging
-          # until the workflow was cancelled. Serialize test devices and cap the
-          # runner wall-clock time so CI fails with retained evidence instead.
+          # Keep modest parallelism to reduce test wall time while limiting
+          # flutter_tester memory pressure after the prior native crash.
+          # A global watchdog prevents a crashed tester from blocking the runner.
           set +e
-          timeout --signal=TERM --kill-after=30s 20m flutter test --coverage --concurrency=1 --timeout=2m --reporter expanded 2>&1 | tee acceptance-evidence/flutter-tests.log
+          timeout --signal=TERM --kill-after=30s 12m flutter test --coverage --concurrency=2 --timeout=90s --reporter expanded 2>&1 | tee acceptance-evidence/flutter-tests.log
           test_status=${PIPESTATUS[0]}
           set -e
           if [ "$test_status" -eq 124 ] || [ "$test_status" -eq 137 ]; then
-            echo "::error::Flutter tests exceeded the bounded execution time (status $test_status)." | tee -a acceptance-evidence/flutter-tests.log
+            echo "::error::Flutter tests failed to finish within the bounded execution time (status $test_status)." | tee -a acceptance-evidence/flutter-tests.log
           fi
           exit "$test_status"
       - name: Upload Flutter test evidence
