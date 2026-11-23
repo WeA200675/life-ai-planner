@@ -10,6 +10,7 @@ import 'offline_task_plan_adapter.dart';
 import 'offline_day_planner.dart';
 import 'plan_snapshot_store.dart';
 import 'local_task_schema.dart';
+import 'sqlite_integrity.dart';
 import 'planner_theme.dart';
 import 'deadline_presentation.dart';
 import 'deferred_task_explanation.dart';
@@ -47,13 +48,7 @@ class LocalTasks {
           // Existing databases may contain orphaned rows from older builds
           // that did not enable foreign keys. Fail closed rather than silently
           // continuing to write to a corrupt relationship graph.
-          final violations = await db.rawQuery('PRAGMA foreign_key_check');
-          if (violations.isNotEmpty) {
-            throw StateError(
-              'Local SQLite foreign-key integrity check failed; '
-              'database left unchanged. Restore from a verified backup.',
-            );
-          }
+          await requireValidForeignKeys(db);
         },
         onCreate: (db, version) async {
           await createTaskSchema(db);
