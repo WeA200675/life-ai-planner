@@ -155,14 +155,23 @@ jobs:
           fi
           echo 'Production certificate fingerprint matched pinned SHA-256.'
 
-      - name: Upload candidate and digest
+      # Preserve certificate evidence after a failed signing gate, but never
+      # publish an APK artifact that did not pass every preceding check.
+      - name: Upload signing diagnostic evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: life-ai-planner-release-mode-candidate-signing-unverified
+          name: life-ai-planner-release-signing-diagnostics
+          path: apps/mobile/build/app/outputs/flutter-apk/signing-certificate.txt
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Publish verified release candidate and digest
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: life-ai-planner-release-candidate-signature-verified
           path: |
             apps/mobile/build/app/outputs/flutter-apk/app-release.apk
             apps/mobile/build/app/outputs/flutter-apk/app-release.apk.sha256
-            apps/mobile/build/app/outputs/flutter-apk/signing-certificate.txt
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
