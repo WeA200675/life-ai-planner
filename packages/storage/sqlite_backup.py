@@ -38,10 +38,23 @@ def snapshot(source: str | Path, destination: str | Path) -> Path:
             with sqlite3.connect(temp) as copy:
                 origin.backup(copy)
         _validate(temp)
+        # Persist the completed SQLite image before publishing its directory entry.
+        # Without fsync, an abrupt power loss can leave a visible but incomplete
+        # recovery point even after the backup API reports success.
+        with temp.open("rb") as staged:
+            os.fsync(staged.fileno())
         # A snapshot must never silently destroy the only older recovery point.
         # Hard-link publication is atomic and fails if destination already exists.
         # Both paths are in the same directory/filesystem by construction.
         os.link(temp, dst)
+        # Make the newly published directory entry durable on POSIX filesystems.
+        # If directory fsync fails, do not unlink the published backup: its
+        # contents are valid, but the caller must treat durability as uncertain.
+        directory_fd = os.open(dst.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
         return dst
     finally:
         temp.unlink(missing_ok=True)
