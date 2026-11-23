@@ -115,6 +115,44 @@ void main() {
     }
   });
 
+  test('identical restore never fires delete or update triggers', () async {
+    final db = await openDatabase(inMemoryDatabasePath, version: 1,
+        onCreate: (db, _) => createTaskSchema(db));
+    try {
+      await db.insert('tasks', task);
+      await db.execute('CREATE TRIGGER forbid_task_delete BEFORE DELETE ON tasks '
+          "BEGIN SELECT RAISE(ABORT, 'unexpected delete'); END");
+      await db.execute('CREATE TRIGGER forbid_task_update BEFORE UPDATE ON tasks '
+          "BEGIN SELECT RAISE(ABORT, 'unexpected update'); END");
+      final before = await db.query('tasks');
+      final backup = decodeTaskBackup(encodeTaskBackup(before));
+      expect(await restoreTaskBackup(db, backup, expectedTasks: before), 1);
+      expect(await db.query('tasks'), before);
+    } finally {
+      await db.close();
+    }
+  });
+
+  test('changed restore updates in place without deleting the task', () async {
+    final db = await openDatabase(inMemoryDatabasePath, version: 1,
+        onCreate: (db, _) => createTaskSchema(db));
+    try {
+      await db.insert('tasks', task);
+      await db.execute('CREATE TRIGGER forbid_task_delete BEFORE DELETE ON tasks '
+          "BEGIN SELECT RAISE(ABORT, 'unexpected delete'); END");
+      final before = await db.query('tasks');
+      final backup = decodeTaskBackup(encodeTaskBackup([
+        {...task, 'title': 'Updated in place'},
+      ]));
+      expect(await restoreTaskBackup(db, backup, expectedTasks: before), 1);
+      final after = (await db.query('tasks')).single;
+      expect(after['id'], task['id']);
+      expect(after['title'], 'Updated in place');
+    } finally {
+      await db.close();
+    }
+  });
+
   test('backup rejects oversized input before decoding', () {
     expect(() => decodeTaskBackup(' ' * (8 * 1024 * 1024 + 1)),
         throwsFormatException);
