@@ -1505,3 +1505,10 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Optimierung: `flutter test --coverage --concurrency=2 --timeout=90s` unter globalem 12-Minuten-Watchdog; `PIPESTATUS[0]` propagiert den echten Teststatus; Logs bleiben als Artefakt erhalten. Tests und Coverage bleiben aktiviert. Debug-Test-APK-Job ist unabhängig von Flutter-Tests.
 - Verifikation: GitHub-Workflow-Änderung committed; **noch kein neuer erfolgreich ausgeführter Flutter-/Android-CI-Run oder APK mit SHA256 nachgewiesen**. Kürzere Laufzeit ist Ziel, keine gemessene Beschleunigung. Native Crash-Ursache weiterhin offen.
 - Backlog: P0 **Test**: CI auf diesem SHA ausführen, Laufzeit und Crash beobachten; P0 **offen**: Debug-APK, SHA256 und Geräteinstallation; P0 **blockiert**: signiertes Release ohne Signatur-/Geräteabnahme; P1 **offen**: E2E-Kernpfade. M1–M4 **NO-GO**.
+
+
+## P0 – Debug-APK ohne Backend-Wartezeit (2026-11-23)
+- HEAD vor Status-Schreiben: `53562e64008f91e91e97217ef29860b1998e7ffe`. Workflow-Commit: [53562e64](https://github.com/WeA200675/life-ai-planner/commit/53562e64008f91e91e97217ef29860b1998e7ffe).
+- Korrektur: Der Job `debug-test-apk` hängt nicht mehr von `backend-tests` ab und darf sofort parallel starten. Der APK-Artefaktname bleibt `life-ai-planner-debug-test-only`; `unzip -t`, `sha256sum` und SHA256-Check bleiben obligatorisch. Produktions-Release-Gates und Backend-Tests bleiben unverändert, Debug-Artefakt ist ausdrücklich **nicht freigegeben**.
+- Nachweis: GitHub-Commit erfolgreich, aktueller HEAD erneut geprüft; Workflow-Text aus GitHub gelesen. Ein neuer GitHub-Actions-Lauf wurde über die verfügbaren PR-gefilterten Commit-Run-Daten **nicht bestätigt**; keine Laufzeitmessung, kein erfolgreiches APK-Artefakt nachgewiesen.
+- Backlog: P0 **Test**: GitHub Actions Push-Lauf für `53562e64` prüfen und Debug-APK+SHA256 sichern; P0 **offen**: nativen Flutter-Tester-Absturz anhand neuer Logs beseitigen; P0 **blockiert**: signiertes Release und physische Android-Abnahme; P1 **offen**: E2E-Kernpfade. Gesamtstatus **NO-GO**.
