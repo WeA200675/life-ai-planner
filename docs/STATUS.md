@@ -1370,3 +1370,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - CI-Status: Aus GitHub-Connector derzeit kein vollständiger Push-Workflow-Run-Index verfügbar; kein grüner CI-Status behauptet.
 - Blocker: Flutter/Android-Release-Workflow und echte Signierung noch nicht verifiziert; Android-Geräteabnahme, Restore-Rollback und quantitative M1–M4-Kriterien offen.
 - Nächster Schritt: GitHub Actions für aktuellen Code-HEAD auswerten, Fehler beheben; Produktionskeystore sicher konfigurieren und Geräteabnahme durchführen. M1–M4 **nicht abgenommen**.
+
+
+## M4 – installierbarer Debug-APK-Fallback bei blockierter Produktionssignatur (2026-11-23)
+- Ausgangs-HEAD: `533dc1cc877a30fe35fcd8af64fd4d5d71c4f1e9`; README, Implementierungsplan, Release-Workflow und Release-Policy-Tests geprüft; GitHub-Suche nach offenen Issues/PRs ohne Treffer.
+- Tatsächliche CI-Evidenz: älterer Release-Actions-Run [45113590501](https://github.com/WeA200675/life-ai-planner/actions/runs/45113590501) hat `backend-tests: success`, aber `android-release: cancelled` während `Flutter tests`; somit **kein** Android-/Release-Erfolg. Kein vollständiger Push-Run-Index für den aktuellen HEAD über den Connector verfügbar.
+- Priorität P0: Ohne freigegebenes Produktionszertifikat war bisher auch kein installierbares APK-Artefakt aus dem Release-Workflow verfügbar. Neuer separater Debug-Build nach erfolgreichen Flutter-Tests mit `flutter build apk --debug`, Dateigrößen- und ZIP-Integritätsprüfung, SHA-256-Digest sowie Artefakt `life-ai-planner-debug-test-only`. Debug-Build-Protokoll wird auch bei Fehlern hochgeladen. Debug-APK **niemals** als produktiv signierte Release-APK ausgeben; unveränderte Signatur-/Zertifikatpin-Sperre für Release.
+- Code-Commit: `4506809bbd33278216165aeaafafd21fd1756b54`; Regressionstest-Commit: `69b02324be272db575a981ac39f3ecead3d792d8`. Neuer Policy-Test kontrolliert Debug-Build, Hash, Reihenfolge, isoliertes Artefakt und Release-Trennung.
+- Verifikation: GitHub-Commits bestätigt; Workflow- und Testquelltext vor Commit statisch auf Anker/Reihenfolge geprüft. **Python-/Flutter-Tests, neuer Actions-Lauf, Debug-APK und SHA-256 sind noch nicht ausgeführt/nachgewiesen**. Es gibt keine vorgetäuschte APK-Freigabe.
+- Blocker: Actions-Lauf des neuen Code-HEAD und Test-/Build-Artefakte prüfen; echte Produktionssignierung, SQLite-Restore/Crash-Rollback und physische Android-Geräteabnahme fehlen; quantitative M1–M4-Ziele noch nicht nachgewiesen.
+- Nächste automatisch gewählte Priorität: neuen Actions-Run auswerten und bei Fehlern korrigieren; anschließend reale SQLite-Datei-Restore-/Crash-Rollback-Regression und Installation des Debug-APK auf Android-Gerät.
