@@ -25,9 +25,9 @@ class ReleaseWorkflowPolicyTests(unittest.TestCase):
 
     def test_inflight_release_runs_are_not_cancelled_by_new_pushes(self):
         # A later commit must not destroy the earlier SHA's CI evidence.
-        self.assertRegex(self.source, r"(?m)^concurrency:\\s*$")
-        self.assertRegex(self.source, r"(?m)^  cancel-in-progress: false\\s*$")
-        self.assertNotRegex(self.source, r"(?m)^  cancel-in-progress: true\\s*$")
+        self.assertRegex(self.source, r"(?m)^concurrency:\s*$")
+        self.assertRegex(self.source, r"(?m)^  cancel-in-progress: false\s*$")
+        self.assertNotRegex(self.source, r"(?m)^  cancel-in-progress: true\s*$")
 
     def test_publish_is_gated_on_success(self):
         step = _step_block(self.source, "Publish verified release candidate and digest")
