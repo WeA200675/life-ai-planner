@@ -1344,3 +1344,12 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächliche Verifikation:** GitHub hat die Code-/Test-Commits bestätigt. Scheduler-Actions-Run [45107603734](https://github.com/WeA200675/life-ai-planner/actions/runs/45107603734) für den vorherigen HEAD `3dff880` war erfolgreich. Flutter-, Release- und Scheduler-Push-Runs für `6e0c83b` wurden als `queued` beobachtet; sie belegen **keinen** Erfolg für den neuen Code. Der neue Flutter-Test wurde hier nicht lokal ausgeführt; Teststatus offen.
 - **Blocker:** Flutter-CI für den Test-HEAD auswerten, ggf. Regression korrigieren; APK-/Signaturprüfung, Restore-/Crash-Rollback und Geräteabnahme fehlen. Release R1 und M1–M4 **nicht vollständig abgenommen**.
 - **Nächster Schritt:** Aktuellen Flutter-Actions-Lauf samt Testprotokoll und APK-Artefakt prüfen; reale Dateidatenbank-Upgrades mit absichtlich beschädigten synthetischen Daten testen, danach Restore und Geräteabnahme.
+
+
+## M4 – Release-Artefakte strikt an Signaturfreigabe binden (2026-11-23)
+- Ausgangs-HEAD: `e61f7e08454f332b980b17918eb891cbcd7a1f87`; README, Implementierungsplan, STATUS und Release-Workflow gelesen; GitHub-Suche `repo:WeA200675/life-ai-planner is:open` ergab keine Treffer (Suchergebnis kann zeitversetzt sein).
+- **Befund:** `release-acceptance.yml` lud mit `if: always()` auch bei fehlgeschlagener Signaturprüfung eine APK hoch. Dadurch konnte ein nicht freigegebener Release-Mode-Kandidat als Download-Artefakt erscheinen.
+- **Implementiert:** Signaturdiagnostik bleibt mit `if: always()` verfügbar; die APK samt SHA-256 wird nur noch mit `if: success()` nach sämtlichen Backend-, Flutter-, Build- und Signatur-Gates veröffentlicht. Fehlende APK/Prüfsumme lassen den Artefakt-Schritt fehlschlagen (`if-no-files-found: error`). Commit `dedf5eff3ee3dc9d977980234407f9f9e30f3aac`.
+- **Nachweis:** GitHub-Update bestätigt und exakter Workflow-Textvergleich für die ersetzte Upload-Sektion durchgeführt. **Keine GitHub-Actions-Ausführung oder APK-/Geräteprüfung in diesem Lauf nachgewiesen.** Ein Workflow-Textvergleich ist kein CI-Test.
+- **Blocker:** CI-Ausführung und Logs/Artefakte des neuen HEAD, Release-Keystore und Zertifikatspin, SQLite-Restore-/Crash-Rollback sowie Android-Geräteabnahme. M1–M4 **NICHT ABGENOMMEN**.
+- **Nächster Schritt:** GitHub-Actions-Release-Lauf für den neuen HEAD auswerten; fehlerhafte Checks reparieren, Signierung sicher konfigurieren und die Geräteabnahme mit synthetischen Daten durchführen.
