@@ -3,6 +3,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from packages.storage.sqlite_backup import snapshot, restore_cold
 
@@ -81,6 +82,18 @@ class SQLiteBackupTests(unittest.TestCase):
                     check.execute("SELECT title FROM tasks WHERE id=1").fetchone()[0],
                     "first",
                 )
+
+    def test_snapshot_fsyncs_image_and_published_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            live, backup = Path(directory) / "live.db", Path(directory) / "backup.db"
+            with sqlite3.connect(live) as db:
+                db.execute("CREATE TABLE t (id INTEGER PRIMARY KEY)")
+                db.execute("INSERT INTO t VALUES (42)")
+            with patch("packages.storage.sqlite_backup.os.fsync", wraps=__import__("os").fsync) as sync:
+                snapshot(live, backup)
+            self.assertEqual(sync.call_count, 2)
+            with sqlite3.connect(backup) as check:
+                self.assertEqual(check.execute("SELECT id FROM t").fetchone()[0], 42)
 
     def test_snapshot_refuses_to_replace_non_database_file(self):
         with tempfile.TemporaryDirectory() as directory:
