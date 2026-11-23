@@ -95,6 +95,21 @@ class SQLiteBackupTests(unittest.TestCase):
             with sqlite3.connect(backup) as check:
                 self.assertEqual(check.execute("SELECT id FROM t").fetchone()[0], 42)
 
+    def test_cold_restore_fsyncs_image_and_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            live, backup = Path(directory) / "live.db", Path(directory) / "backup.db"
+            with sqlite3.connect(live) as db:
+                db.execute("CREATE TABLE tasks (id INTEGER PRIMARY KEY, title TEXT)")
+                db.execute("INSERT INTO tasks VALUES (1, 'before')")
+            snapshot(live, backup)
+            with sqlite3.connect(live) as db:
+                db.execute("UPDATE tasks SET title='after' WHERE id=1")
+            with patch("packages.storage.sqlite_backup.os.fsync", wraps=__import__("os").fsync) as sync:
+                restore_cold(backup, live)
+            self.assertEqual(sync.call_count, 2)
+            with sqlite3.connect(live) as restored:
+                self.assertEqual(restored.execute("SELECT title FROM tasks").fetchone()[0], "before")
+
     def test_snapshot_refuses_to_replace_non_database_file(self):
         with tempfile.TemporaryDirectory() as directory:
             live, backup = Path(directory) / "live.db", Path(directory) / "backup.db"
