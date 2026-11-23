@@ -103,6 +103,8 @@ jobs:
           retention-days: 14
 
   android-release:
+    # Validation always runs; production packaging only when certificate pin is set.
+    # A missing production signing configuration is not a failed debug APK build.
     needs: backend-tests
     runs-on: ubuntu-latest
     timeout-minutes: 75
@@ -160,7 +162,13 @@ jobs:
             apps/mobile/coverage/lcov.info
           if-no-files-found: warn
           retention-days: 14
+      - name: Explain unconfigured production signing gate
+        if: ${{ vars.ANDROID_RELEASE_CERT_SHA256 == '' }}
+        run: |
+          echo '### Production release: NOT CONFIGURED (NO-GO)' >> "$GITHUB_STEP_SUMMARY"
+          echo 'ANDROID_RELEASE_CERT_SHA256 is absent. Tests continue, but no release APK is built or published.' >> "$GITHUB_STEP_SUMMARY"
       - name: Build release-mode candidate (signing status unverified)
+        if: ${{ vars.ANDROID_RELEASE_CERT_SHA256 != '' }}
         run: |
           set -euo pipefail
           rm -f build/app/outputs/flutter-apk/app-release.apk
@@ -179,6 +187,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
       - name: Inspect candidate signing certificate
+        if: ${{ vars.ANDROID_RELEASE_CERT_SHA256 != '' }}
         env:
           EXPECTED_RELEASE_CERT_SHA256: ${{ vars.ANDROID_RELEASE_CERT_SHA256 }}
         run: |
@@ -234,7 +243,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
       - name: Publish verified release candidate and digest
-        if: success()
+        if: ${{ success() && vars.ANDROID_RELEASE_CERT_SHA256 != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: life-ai-planner-release-candidate-signature-verified
