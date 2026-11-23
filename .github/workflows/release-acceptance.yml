@@ -127,6 +127,13 @@ jobs:
             echo '::error::Missing or malformed release certificate SHA-256 digest.'
             exit 1
           fi
+          # Do not accept a second, unpinned signing identity. Android APKs
+          # may contain multiple signers; checking only Signer #1 is insufficient.
+          signer_count=$(grep -Ec '^Signer #[0-9]+ certificate SHA-256 digest:' build/app/outputs/flutter-apk/signing-certificate.txt || true)
+          if [ "$signer_count" -ne 1 ]; then
+            echo "::error::Expected exactly one APK signing certificate; found $signer_count."
+            exit 1
+          fi
           if [ "$actual" != "$expected" ]; then
             echo '::error::APK signer does not match pinned production certificate.'
             exit 1
