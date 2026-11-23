@@ -1334,3 +1334,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Sicherheitsgrenze:** `quick_check` ist kein Ersatz für `integrity_check`, Restore-Proben oder transaktionale Crash-Recovery. Bei Fehlern wird fail-closed abgebrochen, ohne Daten zu löschen.
 - **Blocker:** CI- und Geräteabnahme, Release-Signing/Keystore, APK-Nachweis, Restore-/Rollback-Proben. M1–M4 **NICHT ABGENOMMEN**.
 - **Nächster Schritt:** Flutter-Regression in GitHub Actions tatsächlich ausführen, ggf. Dart-Typ-/Buildfehler korrigieren, danach strukturelle Korruptions- und Restore-/Rollback-Integrationstests auf Datei-SQLite und Android-Gerät nachweisen.
+
+
+## M4 – Integritätsprüfung vor SQLite-Version-Upgrades (2026-11-23, 05:20 Europe/Berlin)
+- Ausgangs-HEAD `3dff88065150c6b35eac8593de2efdeb7ba90144`; README, Implementierungsplan, STATUS, offene Issues/PRs und GitHub-Actions-Push-Läufe gelesen. Offene PR #1 (M3) vorhanden, keine separaten offenen Issues.
+- **Befund:** Der bestehende strukturelle und Fremdschlüssel-Preflight lief nur in `onOpen`, während sqflite `onUpgrade` davor aufruft. Beschädigte ältere Datenbanken konnten dadurch vor der Prüfung Schemaänderungen erhalten.
+- **Änderung:** `LocalTasks.onUpgrade` führt `requireValidSqliteStructure` und `requireValidForeignKeys` vor jeglicher Migration/DDL aus. Fail-closed ohne automatische Datenlöschung. Code-Commit `6e0c83b8933245b0ada8c06d818be4b96b137523`.
+- **Regression:** Neuer synthetischer sqflite-FFI-Test `sqlite_upgrade_preflight_test.dart` erzeugt eine verwaiste Legacy-Beziehung und verlangt Ablehnung vor dem Anlegen einer weiteren Tabelle. Test-Commits `667e483f9934e091dc80efed178d89129c5bb9f2`, `a6e2e766ce486354973b79316cae6bfbd93cc43b`.
+- **Tatsächliche Verifikation:** GitHub hat die Code-/Test-Commits bestätigt. Scheduler-Actions-Run [45107603734](https://github.com/WeA200675/life-ai-planner/actions/runs/45107603734) für den vorherigen HEAD `3dff880` war erfolgreich. Flutter-, Release- und Scheduler-Push-Runs für `6e0c83b` wurden als `queued` beobachtet; sie belegen **keinen** Erfolg für den neuen Code. Der neue Flutter-Test wurde hier nicht lokal ausgeführt; Teststatus offen.
+- **Blocker:** Flutter-CI für den Test-HEAD auswerten, ggf. Regression korrigieren; APK-/Signaturprüfung, Restore-/Crash-Rollback und Geräteabnahme fehlen. Release R1 und M1–M4 **nicht vollständig abgenommen**.
+- **Nächster Schritt:** Aktuellen Flutter-Actions-Lauf samt Testprotokoll und APK-Artefakt prüfen; reale Dateidatenbank-Upgrades mit absichtlich beschädigten synthetischen Daten testen, danach Restore und Geräteabnahme.
