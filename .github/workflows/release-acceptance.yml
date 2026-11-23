@@ -110,9 +110,11 @@ jobs:
           "${signers[${#signers[@]}-1]}" verify --verbose --print-certs "$apk" > build/app/outputs/flutter-apk/signing-certificate.txt
           cat build/app/outputs/flutter-apk/signing-certificate.txt
           if grep -Eiq 'CN=Android Debug|Android Debug' build/app/outputs/flutter-apk/signing-certificate.txt; then
-            echo '::warning::Release-mode APK uses a debug signing identity; NOT a production release.'
+            echo '::error::Release-mode APK uses a debug signing identity; production release gate failed.'
+            exit 1
           fi
       - name: Upload candidate and digest
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: life-ai-planner-release-mode-candidate-signing-unverified
@@ -120,5 +122,5 @@ jobs:
             apps/mobile/build/app/outputs/flutter-apk/app-release.apk
             apps/mobile/build/app/outputs/flutter-apk/app-release.apk.sha256
             apps/mobile/build/app/outputs/flutter-apk/signing-certificate.txt
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
