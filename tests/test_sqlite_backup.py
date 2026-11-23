@@ -64,6 +64,23 @@ class SQLiteBackupTests(unittest.TestCase):
                 restore_cold(backup, live)
 
 
+    def test_dangling_sidecar_symlink_blocks_cold_restore(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            live, backup = root / "live.db", root / "backup.db"
+            with sqlite3.connect(live) as db:
+                db.execute("CREATE TABLE t (x INTEGER)")
+                db.execute("INSERT INTO t VALUES (7)")
+            snapshot(live, backup)
+            sidecar = Path(str(live) + "-wal")
+            sidecar.symlink_to(root / "missing-wal")
+            self.assertFalse(sidecar.exists())
+            with self.assertRaises(RuntimeError):
+                restore_cold(backup, live)
+            self.assertTrue(sidecar.is_symlink())
+            with sqlite3.connect(live) as db:
+                self.assertEqual(db.execute("SELECT x FROM t").fetchone()[0], 7)
+
     def test_snapshot_refuses_to_overwrite_existing_recovery_point(self):
         with tempfile.TemporaryDirectory() as directory:
             live, backup = Path(directory) / "live.db", Path(directory) / "backup.db"
