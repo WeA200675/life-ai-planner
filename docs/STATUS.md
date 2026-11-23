@@ -1362,3 +1362,11 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **Tatsächlich geprüft:** GitHub-Commit bestätigt; neuer HEAD nach Codeänderung `5962d284cdfd04aab08509c4aff09f829c21ec51`. Scheduler-Run 45113590481 für vorherigen HEAD `4527ab9` war `success`. Release-Run [45113590501](https://github.com/WeA200675/life-ai-planner/actions/runs/45113590501) für denselben vorherigen HEAD war bei der Prüfung noch `in_progress`: Backend-Job `success`, Flutter-Tests im Android-Job noch laufend. **Kein vollständiger Release-Erfolg und kein erfolgreicher Geräte-/Signaturtest behauptet.** Die Workflow-Pfadfilteränderung selbst ist noch nicht durch einen abgeschlossenen neuen Release-Lauf validiert.
 - **Blocker:** vollständige Flutter-/Release-CI-Auswertung, freigegebene Produktionssignatur/Keystore, APK-Artefakt und Geräteabnahme sowie Restore-/Crash-Rollback-Nachweise. Repository öffentlich: keine Secrets oder personenbezogenen Daten.
 - **Nächster Schritt:** Run 45113590501 und die nach dem Code-Commit gestartete Release-Abnahme bis zum Abschluss auswerten, Fehler anhand der Artefakte beheben; anschließend Signatur, APK und Geräte-Restore-Abnahme nachweisen.
+
+## Release-Workflow-Policy-Regression – 2026-11-23
+- Ausgangs-HEAD: `8adb4e01c8fe426e0929d0fecd40e9ac4c78563e`; offene Issues/PRs: keine laut GitHub-Issue-Suche.
+- Neu: `tests/test_release_workflow_policy.py` prüft mit unittest die Release-Publikationssperre, APK-Hash/Integrität, Fail-Closed-Signatur, Abhängigkeit der Jobs und Diagnostik bei Fehlern. Code-Commit: `cf46c01944c98c2cb6cabc81fd4da99a2c51c870`.
+- Verifikation: GitHub-Commit bestätigt; lokaler vollständiger Klon scheiterte an `Could not resolve host: github.com`. **Keine erfolgreiche Ausführung der neuen Tests oder des Release-Workflows nachgewiesen.**
+- CI-Status: Aus GitHub-Connector derzeit kein vollständiger Push-Workflow-Run-Index verfügbar; kein grüner CI-Status behauptet.
+- Blocker: Flutter/Android-Release-Workflow und echte Signierung noch nicht verifiziert; Android-Geräteabnahme, Restore-Rollback und quantitative M1–M4-Kriterien offen.
+- Nächster Schritt: GitHub Actions für aktuellen Code-HEAD auswerten, Fehler beheben; Produktionskeystore sicher konfigurieren und Geräteabnahme durchführen. M1–M4 **nicht abgenommen**.
