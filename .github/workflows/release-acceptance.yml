@@ -48,7 +48,8 @@ jobs:
   # Independent smoke-test artifact: a native flutter_tester crash must not
   # prevent producing a clearly marked, unapproved device-test APK.
   debug-test-apk:
-    needs: backend-tests
+    # Build a clearly unapproved test artifact immediately, in parallel with
+    # backend validation; production acceptance still requires all gates.
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
