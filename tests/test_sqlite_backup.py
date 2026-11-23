@@ -63,5 +63,34 @@ class SQLiteBackupTests(unittest.TestCase):
                 restore_cold(backup, live)
 
 
+    def test_snapshot_refuses_to_overwrite_existing_recovery_point(self):
+        with tempfile.TemporaryDirectory() as directory:
+            live, backup = Path(directory) / "live.db", Path(directory) / "backup.db"
+            with sqlite3.connect(live) as db:
+                db.execute("CREATE TABLE tasks (id INTEGER PRIMARY KEY, title TEXT)")
+                db.execute("INSERT INTO tasks VALUES (1, 'first')")
+            snapshot(live, backup)
+            original = backup.read_bytes()
+            with sqlite3.connect(live) as db:
+                db.execute("UPDATE tasks SET title='second' WHERE id=1")
+            with self.assertRaises(FileExistsError):
+                snapshot(live, backup)
+            self.assertEqual(backup.read_bytes(), original)
+            with sqlite3.connect(backup) as check:
+                self.assertEqual(
+                    check.execute("SELECT title FROM tasks WHERE id=1").fetchone()[0],
+                    "first",
+                )
+
+    def test_snapshot_refuses_to_replace_non_database_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            live, backup = Path(directory) / "live.db", Path(directory) / "backup.db"
+            with sqlite3.connect(live) as db:
+                db.execute("CREATE TABLE t (id INTEGER)")
+            backup.write_bytes(b"important previous recovery data")
+            with self.assertRaises(FileExistsError):
+                snapshot(live, backup)
+            self.assertEqual(backup.read_bytes(), b"important previous recovery data")
+
 if __name__ == "__main__":
     unittest.main()
