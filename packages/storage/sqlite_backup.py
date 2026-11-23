@@ -73,7 +73,8 @@ def restore_cold(backup: str | Path, target: str | Path) -> Path:
         raise ValueError("Symbolic links are not allowed for SQLite recovery paths")
     if not src.is_file() or src.resolve() == dst.resolve():
         raise ValueError("Invalid backup or target")
-    if any(Path(str(dst) + suffix).exists() for suffix in ("-wal", "-shm", "-journal")):
+    if any(sidecar.exists() or sidecar.is_symlink() for sidecar in
+           (Path(str(dst) + suffix) for suffix in ("-wal", "-shm", "-journal"))):
         raise RuntimeError("Active or stale SQLite sidecars: checkpoint and close before restore")
     _validate(src)
     temp = _stage(dst)
