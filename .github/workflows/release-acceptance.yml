@@ -63,13 +63,24 @@ jobs:
           cache: true
       - uses: gradle/actions/setup-gradle@v4
       - name: Prepare Android project
+        shell: bash
         run: |
           set -euo pipefail
+          mkdir -p acceptance-evidence
           if [ ! -f android/app/build.gradle.kts ] && [ ! -f android/app/build.gradle ]; then
-            flutter create --no-pub --platforms=android --project-name life_ai_planner .
+            if ! flutter create --no-pub --platforms=android --project-name life_ai_planner . > acceptance-evidence/flutter-create.log 2>&1; then
+              cat acceptance-evidence/flutter-create.log
+              echo '::error::Android scaffold generation failed; inspect flutter-create.log.'
+              exit 1
+            fi
             rm -f test/widget_test.dart
+          else
+            echo 'Android scaffold already present.' > acceptance-evidence/flutter-create.log
           fi
-          test -f android/app/src/main/AndroidManifest.xml
+          if [ ! -f android/app/src/main/AndroidManifest.xml ]; then
+            echo '::error::AndroidManifest.xml missing after scaffold preparation.'
+            exit 1
+          fi
       - name: Capture Android build environment
         shell: bash
         run: |
@@ -125,6 +136,7 @@ jobs:
             apps/mobile/acceptance-evidence/flutter-version.log
             apps/mobile/acceptance-evidence/java-version.log
             apps/mobile/acceptance-evidence/flutter-doctor.log
+            apps/mobile/acceptance-evidence/flutter-create.log
           if-no-files-found: warn
           retention-days: 14
 
