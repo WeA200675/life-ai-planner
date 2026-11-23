@@ -71,6 +71,7 @@ jobs:
             if ! flutter create --no-pub --platforms=android --project-name life_ai_planner . > acceptance-evidence/flutter-create.log 2>&1; then
               cat acceptance-evidence/flutter-create.log
               echo '::error::Android scaffold generation failed; inspect flutter-create.log.'
+              echo '### Debug APK: Android scaffold generation failed (NO-GO)' >> "$GITHUB_STEP_SUMMARY"
               exit 1
             fi
             rm -f test/widget_test.dart
@@ -79,6 +80,7 @@ jobs:
           fi
           if [ ! -f android/app/src/main/AndroidManifest.xml ]; then
             echo '::error::AndroidManifest.xml missing after scaffold preparation.'
+            echo '### Debug APK: AndroidManifest.xml missing (NO-GO)' >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
       - name: Capture Android build environment
@@ -95,11 +97,23 @@ jobs:
           mkdir -p acceptance-evidence
           # Each command is guarded independently so the exact failure is
           # retained in both the artifact and the Actions step summary.
-          if ! flutter pub get > acceptance-evidence/debug-pub-get.log 2>&1; then
+          # Resolve dependencies with a hard bound. A transient package-host
+          # outage gets one clean retry; deterministic build errors never do.
+          pub_status=0
+          timeout --signal=TERM --kill-after=10s 5m flutter pub get > acceptance-evidence/debug-pub-get.log 2>&1 || pub_status=$?
+          if [ "$pub_status" -ne 0 ]; then
+            if [ "$pub_status" -eq 124 ] || [ "$pub_status" -eq 137 ] || grep -Eiq 'SocketException|Connection reset|Connection refused|Connection timed out|Temporary failure in name resolution|pub.dev.*(503|502|504)' acceptance-evidence/debug-pub-get.log; then
+              echo 'Transient dependency-resolution failure; retrying once.' >> acceptance-evidence/debug-pub-get.log
+              sleep 5
+              pub_status=0
+              timeout --signal=TERM --kill-after=10s 5m flutter pub get >> acceptance-evidence/debug-pub-get.log 2>&1 || pub_status=$?
+            fi
+          fi
+          if [ "$pub_status" -ne 0 ]; then
             cat acceptance-evidence/debug-pub-get.log
-            echo '::error::Debug APK blocked by flutter pub get; inspect debug-pub-get.log.'
+            echo "::error::Debug APK dependency resolution failed (exit $pub_status); inspect debug-pub-get.log."
             echo '### Debug APK: dependency resolution failed (NO-GO)' >> "$GITHUB_STEP_SUMMARY"
-            exit 1
+            exit "$pub_status"
           fi
           if ! timeout --signal=TERM --kill-after=30s 30m flutter build apk --debug --no-pub > acceptance-evidence/android-debug-build.log 2>&1; then
             cat acceptance-evidence/android-debug-build.log
