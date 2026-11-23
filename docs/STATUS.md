@@ -1267,3 +1267,13 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - **CI:** GitHub-Connector lieferte für HEAD `5ebc5221753728221e0f30d28cb046ad05785852` keine PR-gefilterten Workflow-Runs; Push-Runs sind über diese Abfrage nicht vollständig sichtbar. Flutter-CI, APK, Signatur, Restore-/Crash-Rollback und Android-Geräteabnahme **NICHT NACHGEWIESEN**.
 - **Blocker:** Fehlende Flutter-/Dart-Toolchain hier; CI-Logs/Build-Artefakte und reale Geräteabnahme fehlen. Keine produktive Restore-Umschaltung. Keine privaten Daten/Secrets.
 - **Nächster Schritt:** Flutter-CI auf aktuellem HEAD prüfen, neue Integrationstests tatsächlich ausführen und Fehler beheben; APK-Artefakt/Signatur nachweisen, danach sichere Backup-/Restore-/Crash-Abnahme und Android-Gerätetest.
+
+
+## M4 – Release-Signing-Fail-Closed (2026-11-23)
+- Ausgangs-HEAD: `61f8a4128bfe807ddbe3508ca2906ef00342a90e`; README, Implementierungsplan, STATUS und Release-Workflow gelesen; offene Issue-/PR-Suche ergab 0 Treffer zum Prüfzeitpunkt.
+- Befund: Der Release-Workflow meldete eine erkannte Android-Debug-Signatur nur als Warnung. Ein grüner Job hätte deshalb trotz nicht produktiv freigabefähiger Signatur entstehen können.
+- Änderung: `.github/workflows/release-acceptance.yml` beendet den Signing-Prüfschritt bei erkannter Debug-Signatur mit Fehlercode 1. Das APK-/Prüfsummen-/Zertifikatsartefakt wird über `if: always()` soweit vorhanden auch im Fehlerfall als Diagnose gesichert. Fehlende Artefakte erzeugen keinen zweiten, irreführenden Upload-Fehler.
+- Code-Commit: `35c641590a12610cb9d0a2ccb36bbf1225928fec` (GitHub bestätigt).
+- Verifikation: GitHub-Schreibbestätigung für YAML-Änderung; **keine Ausführung des geänderten Workflows, kein Flutter-/APK-Build, keine Signatur- oder Geräteprüfung für neuen HEAD nachgewiesen**. GitHub-Connector bietet keine vollständige Push-Actions-Run-Liste. Keine Produktionsfreigabe.
+- Blocker: Sicheres Release-Signing mit außerhalb des Repos verwahrtem Keystore, erfolgreicher CI-Lauf, Android-Geräteabnahme und Crash-Restore-/Rollback-Nachweis fehlen.
+- Nächster Schritt: GitHub-Actions-Run und Signing-Artefakt des neuen HEAD prüfen, ggf. Buildfehler beheben und produktive Signatur über GitHub Secrets/geschützte Umgebung einrichten. M1–M4 **NICHT ABGENOMMEN**.
