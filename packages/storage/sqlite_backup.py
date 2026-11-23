@@ -28,6 +28,8 @@ def _stage(destination: Path) -> Path:
 def snapshot(source: str | Path, destination: str | Path) -> Path:
     """Publish an integrity-checked online snapshot, including committed WAL data."""
     src, dst = Path(source), Path(destination)
+    if src.is_symlink() or dst.is_symlink():
+        raise ValueError("Symbolic links are not allowed for SQLite recovery paths")
     if not src.is_file() or src.resolve() == dst.resolve():
         raise ValueError("Invalid source or destination")
     if dst.exists():
