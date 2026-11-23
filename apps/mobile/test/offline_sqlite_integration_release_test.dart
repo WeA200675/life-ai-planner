@@ -411,6 +411,9 @@ void main() {
         'end_utc_ms': start.add(const Duration(minutes: 5))
             .millisecondsSinceEpoch,
       });
+      // Simulate an older v4 installation before the idempotency table
+      // existed. The fail-closed open must not create it on corrupt data.
+      await disk.execute('DROP TABLE plan_accept_requests');
       final beforeTasks = await disk.query('tasks');
       final beforeOrphans = await disk.query('plan_snapshot_blocks');
       await disk.close();
@@ -422,6 +425,7 @@ void main() {
             onConfigure: (database) async =>
                 database.execute('PRAGMA foreign_keys = ON'),
             onOpen: (database) async {
+              await requireValidForeignKeys(database);
               await createPlanSnapshotSchema(database);
               await requireValidForeignKeys(database);
             }),
@@ -433,6 +437,12 @@ void main() {
       expect(await disk.query('tasks'), beforeTasks);
       expect(await disk.query('plan_snapshot_blocks'), beforeOrphans);
       expect((await disk.rawQuery('PRAGMA foreign_key_check')), isNotEmpty);
+      final idempotencyTable = await disk.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'table' "
+        "AND name = 'plan_accept_requests'",
+      );
+      expect(idempotencyTable, isEmpty,
+          reason: 'Rejected open must not perform additive schema writes');
     } finally {
       if (disk != null) await disk.close();
       await directory.delete(recursive: true);
