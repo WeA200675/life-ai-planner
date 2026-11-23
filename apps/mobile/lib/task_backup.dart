@@ -8,6 +8,7 @@ import 'plan_snapshot_store.dart';
 /// restoring tasks must not silently rewrite accepted plan versions.
 const taskBackupFormat = 'life-ai-planner-tasks';
 const taskBackupVersion = 1;
+const maxTaskBackupBytes = 8 * 1024 * 1024;
 const _columns = [
   'id', 'title', 'done', 'minutes', 'priority', 'deadline_utc_ms',
 ];
@@ -41,7 +42,9 @@ Map<String, Object?> _validateTask(Map<String, Object?> row) {
 }
 
 TaskBackup decodeTaskBackup(String source) {
-  if (source.length > 8 * 1024 * 1024) {
+  // Bound actual serialized bytes, not UTF-16 code units (Unicode may use
+  // multiple UTF-8 bytes per character). Reject before JSON allocation.
+  if (utf8.encode(source).length > maxTaskBackupBytes) {
     throw const FormatException('Backup exceeds 8 MiB');
   }
   final Object? decoded;
@@ -99,7 +102,7 @@ String encodeTaskBackup(List<Map<String, Object?>> rows) {
     'schema_version': taskBackupVersion,
     'tasks': validated,
   });
-  if (output.length > 8 * 1024 * 1024) {
+  if (utf8.encode(output).length > maxTaskBackupBytes) {
     throw const FormatException('Backup exceeds 8 MiB');
   }
   return output;
