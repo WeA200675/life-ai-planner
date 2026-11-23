@@ -1277,3 +1277,14 @@ M1–M4 nicht abgeschlossen; kein APK-Build oder Android-Gerätetest nachgewiese
 - Verifikation: GitHub-Schreibbestätigung für YAML-Änderung; **keine Ausführung des geänderten Workflows, kein Flutter-/APK-Build, keine Signatur- oder Geräteprüfung für neuen HEAD nachgewiesen**. GitHub-Connector bietet keine vollständige Push-Actions-Run-Liste. Keine Produktionsfreigabe.
 - Blocker: Sicheres Release-Signing mit außerhalb des Repos verwahrtem Keystore, erfolgreicher CI-Lauf, Android-Geräteabnahme und Crash-Restore-/Rollback-Nachweis fehlen.
 - Nächster Schritt: GitHub-Actions-Run und Signing-Artefakt des neuen HEAD prüfen, ggf. Buildfehler beheben und produktive Signatur über GitHub Secrets/geschützte Umgebung einrichten. M1–M4 **NICHT ABGENOMMEN**.
+
+
+## M4 – Fail-closed Legacy-Open vor Schemaänderungen (2026-11-23, Lauf 20)
+- README, Implementierungsplan, Status, HEAD und CI-Workflow gelesen; Ausgangs-HEAD `b766e8bb19adc171d1c054e12569ef9738893766`. PR #1 offen, keine eigenständigen offenen Issues. Keine vollständige M1–M4-Abnahme.
+- **Befund:** `LocalTasks.onOpen` führte `createPlanSnapshotSchema` aus, bevor `PRAGMA foreign_key_check` verwaiste Legacy-Datensätze erkannte. Damit konnten bei einer korrupten Alt-Datenbank neue Tabellen angelegt werden, obwohl der Öffnungsvorgang anschließend fail-closed abbrach.
+- **Korrektur:** `apps/mobile/lib/main.dart` prüft Foreign Keys jetzt **vor** additiver DDL und danach erneut. Eine bereits inkonsistente Datenbank wird ohne Schemaerweiterung abgewiesen. Commit `2c2a701929c7834564e8362257ff9431102d47c2`.
+- **Regression:** Bestehenden Datei-SQLite-Test um Legacy-v4-Situation ohne `plan_accept_requests` erweitert: absichtlich verwaister Kinddatensatz, abgewiesene Öffnung und Nachweis, dass die fehlende Tabelle **nicht** angelegt wurde. Commit `d40036b8a8d88270ef99e6d16ab82cfb477a7d28`.
+- **Tatsächlich ausgeführt:** Python sqlite3 3.46.1 mit temporärer Datei: 1 absichtlich verwaister FK-Eintrag erkannt, keine additive Tabelle bei Ablehnung; PASS. Das ist ein isolierter SQLite-Sanitycheck, **kein Flutter-Integrationstest**. `flutter` und `dart` lokal nicht verfügbar.
+- **CI:** Commit-Workflow-Abfrage für `d40036b8a8d88270ef99e6d16ab82cfb477a7d28` lieferte keine PR-gefilterten Läufe; Push-Runs werden davon nicht vollständig erfasst. Kein grüner Flutter-CI-Lauf, APK-Artefakt, produktives Signing oder Gerätetest nachgewiesen.
+- **Blocker:** Flutter-/Android-Testumgebung und verifizierte Actions-Logs/Artefakte fehlen; Restore-/Crash-Rollback- und Geräteabnahme stehen aus. Keine produktiven Nutzerdaten oder Secrets verwendet.
+- **Nächster Schritt:** Flutter-Test auf echtem v4-Datei-Upgrade und Korruptionspfad in CI ausführen; Testfehler beheben, danach reproduzierbare APK samt SHA-256/Signatur und Geräteabnahme belegen. Kein Release-Freigabestatus.
