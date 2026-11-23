@@ -173,10 +173,34 @@ Future<int> restoreTaskBackup(Database db, TaskBackup backup, {
     if (taskRowsFingerprint(current) != taskRowsFingerprint(expectedTasks)) {
       throw StateError('Tasks changed since restore preview');
     }
-    await txn.delete('tasks');
+    // Apply the smallest possible change set. Deleting and reinserting every
+    // task would fire DELETE triggers, break future FK references and rewrite
+    // unchanged records even for an identical backup.
+    final existing = <int, Map<String, Object?>>{};
+    for (final raw in current) {
+      final row = _validateTask(raw);
+      existing[row['id'] as int] = row;
+    }
+    final target = <int, Map<String, Object?>>{
+      for (final row in validated.tasks) row['id'] as int: row,
+    };
     final batch = txn.batch();
-    for (final task in validated.tasks) {
-      batch.insert('tasks', task);
+    for (final id in existing.keys) {
+      if (!target.containsKey(id)) {
+        batch.delete('tasks', where: 'id = ?', whereArgs: [id]);
+      }
+    }
+    for (final entry in target.entries) {
+      final previous = existing[entry.key];
+      if (previous == null) {
+        batch.insert('tasks', entry.value);
+      } else if (taskRowsFingerprint([previous]) !=
+          taskRowsFingerprint([entry.value])) {
+        batch.update('tasks', {
+          for (final key in _columns)
+            if (key != 'id') key: entry.value[key],
+        }, where: 'id = ?', whereArgs: [entry.key]);
+      }
     }
     await batch.commit(noResult: true);
     return validated.tasks.length;
