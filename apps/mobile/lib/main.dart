@@ -912,7 +912,7 @@ class _TaskScreenState extends State<TaskScreen> {
         appBar: AppBar(title: const Text('Life AI Planner – Offline')),
         body: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(children: [
+          child: ListView(children: [
             Row(children: [
               Expanded(child: TextField(
                 controller: _controller,
@@ -952,24 +952,27 @@ class _TaskScreenState extends State<TaskScreen> {
                 key: const ValueKey('offline-task-counts'),
               ),
             ),
-            Flexible(
-              flex: 0,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 350),
-                child: SingleChildScrollView(
-                  child: FlowDashboard(
-                    open: counts.open,
-                    completed: counts.completed,
-                    enabled: !_busy,
-                    onPreview: _showDayPreview,
-                    onReplan: () => _showDayPreview(remaining: true),
-                    onSaved: _showSavedPlan,
-                    onHistory: _showPlanHistory,
-                    onBackup: _copyTaskBackup,
-                    onRestore: _restoreTaskBackup,
-                  ),
+            ExpansionTile(
+              title: const Text('Midnight Flow – Übersicht'),
+              initiallyExpanded: true,
+              children: [
+                FlowDashboard(
+                  open: counts.open,
+                  completed: counts.completed,
+                  enabled: !_busy,
+                  onPreview: _showDayPreview,
+                  onReplan: () => _showDayPreview(remaining: true),
+                  onSaved: _showSavedPlan,
+                  onHistory: _showPlanHistory,
+                  onBackup: _copyTaskBackup,
+                  onRestore: _restoreTaskBackup,
                 ),
-              ),
+                TextButton.icon(
+                  onPressed: _busy ? null : _copyPlanHistoryBackup,
+                  icon: const Icon(Icons.history_toggle_off),
+                  label: const Text('Planhistorie sichern'),
+                ),
+              ],
             ),
             if (_error != null)
               Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
@@ -982,11 +985,13 @@ class _TaskScreenState extends State<TaskScreen> {
               selected: {_view},
               onSelectionChanged: (values) => setState(() => _view = values.first),
             ),
-            Expanded(child: shown.isEmpty
+            shown.isEmpty
                 ? Center(child: Text(_tasks.isEmpty
                     ? 'Noch keine Aufgaben gespeichert.'
                     : 'Keine passenden Aufgaben gefunden.'))
                 : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: shown.length,
                     itemBuilder: (context, index) {
                       final task = shown[index];
@@ -1034,7 +1039,7 @@ class _TaskScreenState extends State<TaskScreen> {
                         ),
                       );
                     },
-                  )),
+                  ),
           ]),
         ),
       );
