@@ -58,4 +58,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  test('wax-drop variants form closed responsive paths', () {
+    for (final variant in [0, 1, 2, 3]) {
+      const size = Size(180, 120);
+      final clipper = WaxDropClipper(variant);
+      final path = clipper.getClip(size);
+      expect(path.contains(const Offset(90, 60)), isTrue);
+      expect(path.getBounds().width, greaterThan(150));
+      expect(path.getBounds().height, greaterThan(100));
+      expect(clipper.shouldReclip(WaxDropClipper(variant)), isFalse);
+      expect(clipper.shouldReclip(WaxDropClipper(variant + 1)), isTrue);
+    }
+  });
+
 }
