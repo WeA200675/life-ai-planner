@@ -12,6 +12,7 @@ import 'plan_snapshot_store.dart';
 import 'local_task_schema.dart';
 import 'sqlite_integrity.dart';
 import 'planner_theme.dart';
+import 'flow_dashboard.dart';
 import 'deadline_presentation.dart';
 import 'deferred_task_explanation.dart';
 
@@ -951,57 +952,24 @@ class _TaskScreenState extends State<TaskScreen> {
                 key: const ValueKey('offline-task-counts'),
               ),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _busy ? null : _showDayPreview,
-                icon: const Icon(Icons.calendar_today_outlined),
-                label: const Text('Tagesvorschau'),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _busy ? null : () => _showDayPreview(remaining: true),
-                icon: const Icon(Icons.update),
-                label: const Text('Resttag neu planen'),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _busy ? null : _showSavedPlan,
-                icon: const Icon(Icons.history),
-                label: const Text('Gespeicherten Plan anzeigen'),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _busy ? null : _showPlanHistory,
-                icon: const Icon(Icons.list_alt),
-                label: const Text('Planhistorie'),
-              ),
-            ),
-            Wrap(
-              spacing: 8,
-              children: [
-                TextButton.icon(
-                  onPressed: _busy ? null : _copyPlanHistoryBackup,
-                  icon: const Icon(Icons.history_toggle_off),
-                  label: const Text('Planhistorie sichern'),
+            Flexible(
+              flex: 0,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 350),
+                child: SingleChildScrollView(
+                  child: FlowDashboard(
+                    open: counts.open,
+                    completed: counts.completed,
+                    enabled: !_busy,
+                    onPreview: _showDayPreview,
+                    onReplan: () => _showDayPreview(remaining: true),
+                    onSaved: _showSavedPlan,
+                    onHistory: _showPlanHistory,
+                    onBackup: _copyTaskBackup,
+                    onRestore: _restoreTaskBackup,
+                  ),
                 ),
-                TextButton.icon(
-                  onPressed: _busy ? null : _copyTaskBackup,
-                  icon: const Icon(Icons.copy_all_outlined),
-                  label: const Text('Aufgaben sichern'),
-                ),
-                TextButton.icon(
-                  onPressed: _busy ? null : _restoreTaskBackup,
-                  icon: const Icon(Icons.restore_outlined),
-                  label: const Text('Backup einlesen'),
-                ),
-              ],
+              ),
             ),
             if (_error != null)
               Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
