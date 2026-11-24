@@ -39,4 +39,23 @@ void main() {
     await tester.tap(find.text('Planen'));
     expect(calls, 0);
   });
+  testWidgets('narrow screens use a single dashboard column without overflow',
+      (tester) async {
+    tester.view.physicalSize = const Size(300, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: SingleChildScrollView(
+      child: FlowDashboard(
+        open: 12, completed: 8, enabled: true,
+        onPreview: () {}, onReplan: () {},
+        onSaved: () {}, onHistory: () {}, onBackup: () {}, onRestore: () {},
+      ),
+    ))));
+    expect(find.text('Neu planen'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }
