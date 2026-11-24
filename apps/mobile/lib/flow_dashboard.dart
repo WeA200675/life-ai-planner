@@ -26,7 +26,8 @@ class FlowDashboard extends StatelessWidget {
             color: PlannerTheme.turquoise, fontSize: 10)),
         ])),
       LayoutBuilder(builder: (context, size) {
-        final w = (size.maxWidth - 10) / 2;
+        final w = size.maxWidth < 280 || MediaQuery.textScalerOf(context).scale(16) > 24
+            ? size.maxWidth : (size.maxWidth - 10) / 2;
         return Wrap(spacing: 10, runSpacing: 10, children: [
           SizedBox(width: w, child: _Tile('OFFEN', '$open', Icons.bolt_outlined,
             0, const [PlannerTheme.bordeaux, PlannerTheme.ruby],
@@ -83,17 +84,19 @@ class _Tile extends StatelessWidget {
     return Semantics(button: true, enabled: tap != null,
       label: '$label: $value', child: Material(color: Colors.transparent,
         child: InkWell(onTap: tap, borderRadius: shapes[shape],
-          child: Ink(height: 102,
+          child: Ink(
             decoration: BoxDecoration(borderRadius: shapes[shape],
               gradient: LinearGradient(colors: colors),
               border: Border.all(color: const Color(0x22FFFFFF))),
             child: Padding(padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                mainAxisSize: MainAxisSize.min, children: [
                   Icon(icon, size: 19, color: Colors.white70),
-                  Text(value, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 8),
+                  Text(value,
                     style: const TextStyle(color: Colors.white,
                       fontSize: 21, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 4),
                   Text(label, style: const TextStyle(color: Colors.white70,
                     fontSize: 10, letterSpacing: 1.1)),
                 ]))))));
