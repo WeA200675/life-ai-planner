@@ -1004,37 +1004,43 @@ class _TaskScreenState extends State<TaskScreen> {
                             ? Text(deadlineLabel(task['deadline_utc_ms'] as int, DateTime.now()))
                             : null,
                         onChanged: _busy ? null : (value) => _toggle(task['id'] as int, value ?? false),
-                        secondary: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              tooltip: 'Aufgabe bearbeiten',
-                              icon: const Icon(Icons.edit_outlined),
-                              onPressed: _busy ? null : () => _edit(
-                                task['id'] as int, task['title'] as String),
-                            ),
-                            IconButton(
-                              tooltip: 'Dauer und Priorität bearbeiten',
-                              icon: const Icon(Icons.tune),
-                              onPressed: _busy ? null : () => _editPlanningMetadata(task),
-                            ),
-                            IconButton(
-                              tooltip: 'Fälligkeit festlegen',
-                              icon: const Icon(Icons.event_outlined),
-                              onPressed: _busy ? null : () => _editDeadline(task),
-                            ),
+                        secondary: PopupMenuButton<String>(
+                          tooltip: 'Weitere Aufgabenaktionen',
+                          enabled: !_busy,
+                          icon: const Icon(Icons.more_vert),
+                          onSelected: (action) {
+                            final id = task['id'] as int;
+                            final title = task['title'] as String;
+                            switch (action) {
+                              case 'edit':
+                                _edit(id, title);
+                              case 'planning':
+                                _editPlanningMetadata(task);
+                              case 'deadline':
+                                _editDeadline(task);
+                              case 'clear_deadline':
+                                _clearDeadline(id);
+                              case 'delete':
+                                _confirmDelete(id, title);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(value: 'edit',
+                              child: ListTile(leading: Icon(Icons.edit_outlined),
+                                title: Text('Bearbeiten'))),
+                            const PopupMenuItem(value: 'planning',
+                              child: ListTile(leading: Icon(Icons.tune),
+                                title: Text('Dauer und Priorität'))),
+                            const PopupMenuItem(value: 'deadline',
+                              child: ListTile(leading: Icon(Icons.event_outlined),
+                                title: Text('Fälligkeit festlegen'))),
                             if (task['deadline_utc_ms'] != null)
-                              IconButton(
-                                tooltip: 'Fälligkeit entfernen',
-                                icon: const Icon(Icons.event_busy_outlined),
-                                onPressed: _busy ? null : () => _clearDeadline(task['id'] as int),
-                              ),
-                            IconButton(
-                          tooltip: 'Aufgabe löschen',
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: _busy ? null : () => _confirmDelete(
-                            task['id'] as int, task['title'] as String),
-                            ),
+                              const PopupMenuItem(value: 'clear_deadline',
+                                child: ListTile(leading: Icon(Icons.event_busy_outlined),
+                                  title: Text('Fälligkeit entfernen'))),
+                            const PopupMenuItem(value: 'delete',
+                              child: ListTile(leading: Icon(Icons.delete_outline),
+                                title: Text('Löschen'))),
                           ],
                         ),
                       );
