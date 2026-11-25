@@ -26,9 +26,22 @@ class FlowDashboard extends StatelessWidget {
             color: PlannerTheme.coral, fontSize: 10)),
         ])),
       LayoutBuilder(builder: (context, size) {
-        final w = size.maxWidth < 340 || MediaQuery.textScalerOf(context).scale(16) > 24
-            ? size.maxWidth : (size.maxWidth - 14) / 2;
-        return Wrap(spacing: 14, runSpacing: 18, children: [
+        final available = (size.maxWidth - 20).clamp(0.0, double.infinity).toDouble();
+        final w = available < 340 || MediaQuery.textScalerOf(context).scale(16) > 24
+            ? available : (available - 14) / 2;
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            gradient: const RadialGradient(
+              center: Alignment(-.55, -.8), radius: 1.35,
+              colors: [Color(0xFF302528), Color(0xFF181416), Color(0xFF100E10)],
+              stops: [0, .55, 1],
+            ),
+            border: Border.all(color: const Color(0xFF392A2D)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            child: Wrap(spacing: 14, runSpacing: 4, children: [
           SizedBox(width: w, child: _Tile('OFFEN', '$open', Icons.bolt_outlined,
             0, const [PlannerTheme.bordeaux, PlannerTheme.ruby],
             enabled ? onPreview : null)),
@@ -44,7 +57,9 @@ class FlowDashboard extends StatelessWidget {
             Icons.autorenew, 3,
             const [Color(0xFF521019), Color(0xFF9A202D)],
             enabled ? onReplan : null)),
-        ]);
+        ]),
+          ),
+        );
       }),
       const SizedBox(height: 8),
       Wrap(spacing: 6, runSpacing: 2, children: [
@@ -75,7 +90,12 @@ class _Tile extends StatelessWidget {
       button: true,
       enabled: tap != null,
       label: '$label: $value',
-      child: CustomPaint(
+      child: RepaintBoundary(
+        child: CustomPaint(
+          painter: FloatingWaxShadowPainter(shape),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(3, 4, 7, 30),
+            child: CustomPaint(
         painter: WaxSurfacePainter(shape, colors.first, colors.last),
         child: ClipPath(
         clipper: WaxDropClipper(shape),
@@ -102,6 +122,9 @@ class _Tile extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        ),
+      ),
           ),
         ),
       ),
@@ -166,6 +189,46 @@ class WaxDropClipper extends CustomClipper<Path> {
       oldClipper.variant != variant;
 }
 
+/// Cast shadows on a separate ground plane, outside the interactive silhouette.
+class FloatingWaxShadowPainter extends CustomPainter {
+  const FloatingWaxShadowPainter(this.variant);
+  final int variant;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width - 10;
+    final h = size.height - 34;
+    if (w <= 0 || h <= 0) return;
+    final footprint = WaxDropClipper(variant).getClip(Size(w, h));
+    final center = Offset(3 + w * .53, 4 + h + 12);
+    final glow = Rect.fromCenter(center: center, width: w * .98, height: 30);
+    canvas.drawOval(glow, Paint()..shader = const RadialGradient(
+      colors: [Color(0x44B92A24), Color(0x00B92A24)],
+    ).createShader(glow));
+    canvas.save();
+    canvas.translate(10, 19);
+    canvas.drawPath(footprint, Paint()
+      ..color = const Color(0x99000000)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12));
+    canvas.restore();
+    canvas.save();
+    canvas.translate(9, 16);
+    canvas.drawPath(footprint, Paint()
+      ..color = const Color(0xB8000000)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5));
+    canvas.restore();
+    final core = Rect.fromCenter(center: center.translate(4, -1),
+      width: w * .72, height: 10);
+    canvas.drawOval(core, Paint()
+      ..color = const Color(0x99000000)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5));
+  }
+
+  @override
+  bool shouldRepaint(covariant FloatingWaxShadowPainter oldDelegate) =>
+      variant != oldDelegate.variant;
+}
+
 /// Layered, resolution-independent wax lighting; no textures or GPU shaders.
 class WaxSurfacePainter extends CustomPainter {
   const WaxSurfacePainter(this.variant, this.light, this.dark);
@@ -177,7 +240,7 @@ class WaxSurfacePainter extends CustomPainter {
     if (size.isEmpty) return;
     final path = WaxDropClipper(variant).getClip(size);
     final rect = Offset.zero & size;
-    canvas.drawShadow(path, const Color(0xFF000000), 14, false);
+    // The separate ground painter owns the cast shadow.
     canvas.save();
     canvas.translate(0, 5);
     canvas.drawPath(path, Paint()..color = const Color(0xFF310609));
