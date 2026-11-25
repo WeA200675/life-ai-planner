@@ -19,14 +19,14 @@ class FlowDashboard extends StatelessWidget {
         child: Row(children: [
           const Icon(Icons.auto_awesome, color: PlannerTheme.coral),
           const SizedBox(width: 8),
-          Expanded(child: Text('MIDNIGHT FLOW',
+          Expanded(child: Text('MIDNIGHT FLOW 3D',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800, letterSpacing: 1.4))),
           const Text('OFFLINE', style: TextStyle(
             color: PlannerTheme.turquoise, fontSize: 10)),
         ])),
       LayoutBuilder(builder: (context, size) {
-        final w = size.maxWidth < 280 || MediaQuery.textScalerOf(context).scale(16) > 24
+        final w = size.maxWidth < 340 || MediaQuery.textScalerOf(context).scale(16) > 24
             ? size.maxWidth : (size.maxWidth - 10) / 2;
         return Wrap(spacing: 10, runSpacing: 10, children: [
           SizedBox(width: w, child: _Tile('OFFEN', '$open', Icons.bolt_outlined,
@@ -34,15 +34,15 @@ class FlowDashboard extends StatelessWidget {
             enabled ? onPreview : null)),
           SizedBox(width: w, child: _Tile('ERLEDIGT', '$completed',
             Icons.check_circle_outline, 1,
-            const [Color(0xFF343944), Color(0xFF20252F)],
+            const [Color(0xFF79252B), Color(0xFF30090D)],
             enabled ? onHistory : null)),
           SizedBox(width: w, child: _Tile('TAGESPLAN', 'Planen',
             Icons.calendar_month_outlined, 2,
-            const [Color(0xFF78283A), Color(0xFF3C202B)],
+            const [Color(0xFFA12D35), Color(0xFF38090F)],
             enabled ? onPreview : null)),
           SizedBox(width: w, child: _Tile('DYNAMIK', 'Neu planen',
             Icons.autorenew, 3,
-            const [Color(0xFF49333C), Color(0xFF932D41)],
+            const [Color(0xFF521019), Color(0xFF9A202D)],
             enabled ? onReplan : null)),
         ]);
       }),
@@ -75,22 +75,16 @@ class _Tile extends StatelessWidget {
       button: true,
       enabled: tap != null,
       label: '$label: $value',
-      child: ClipPath(
+      child: CustomPaint(
+        painter: WaxSurfacePainter(shape, colors.first, colors.last),
+        child: ClipPath(
         clipper: WaxDropClipper(shape),
         child: Material(
           color: Colors.transparent,
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: colors,
-              ),
-            ),
-            child: InkWell(
+          child: InkWell(
               onTap: tap,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(22, 17, 22, 20),
+                padding: const EdgeInsets.fromLTRB(28, 24, 28, 29),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -127,7 +121,23 @@ class WaxDropClipper extends CustomClipper<Path> {
     final h = size.height;
     final flip = variant.isOdd;
     final path = Path();
-    if (!flip) {
+    if (variant == 2) {
+      path.moveTo(w * .23, h * .025);
+      path.cubicTo(w * .48, h * .09, w * .69, -h * .04, w * .86, h * .08);
+      path.cubicTo(w, h * .17, w * .91, h * .40, w * .96, h * .57);
+      path.cubicTo(w, h * .80, w * .83, h * .96, w * .61, h * .91);
+      path.cubicTo(w * .39, h * .86, w * .24, h * 1.06, w * .10, h * .91);
+      path.cubicTo(-w * .04, h * .75, w * .10, h * .53, w * .04, h * .36);
+      path.cubicTo(-w * .02, h * .16, w * .09, h * .01, w * .23, h * .025);
+    } else if (variant == 3) {
+      path.moveTo(w * .12, h * .08);
+      path.cubicTo(w * .32, -h * .06, w * .49, h * .10, w * .72, h * .035);
+      path.cubicTo(w * .97, -h * .02, w, h * .23, w * .91, h * .44);
+      path.cubicTo(w * .83, h * .65, w * 1.04, h * .80, w * .84, h * .94);
+      path.cubicTo(w * .67, h * 1.03, w * .48, h * .89, w * .30, h * .96);
+      path.cubicTo(w * .04, h * 1.02, -w * .01, h * .80, w * .055, h * .57);
+      path.cubicTo(w * .11, h * .35, -w * .04, h * .22, w * .12, h * .08);
+    } else if (!flip) {
       path.moveTo(w * .14, 0);
       path.cubicTo(w * .38, -h * .015, w * .55, h * .055, w * .79, h * .01);
       path.cubicTo(w * .96, -h * .005, w, h * .13, w * .985, h * .32);
@@ -154,4 +164,48 @@ class WaxDropClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(covariant WaxDropClipper oldClipper) =>
       oldClipper.variant != variant;
+}
+
+/// Layered, resolution-independent wax lighting; no textures or GPU shaders.
+class WaxSurfacePainter extends CustomPainter {
+  const WaxSurfacePainter(this.variant, this.light, this.dark);
+  final int variant;
+  final Color light, dark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final path = WaxDropClipper(variant).getClip(size);
+    final rect = Offset.zero & size;
+    canvas.drawShadow(path, const Color(0xFF080003), 9, false);
+    canvas.save();
+    canvas.clipPath(path);
+    canvas.drawPath(path, Paint()..shader = LinearGradient(
+      begin: Alignment.topLeft, end: Alignment.bottomRight,
+      colors: [const Color(0xFFF05A58), light, dark, const Color(0xFF190408)],
+      stops: const [0, .28, .72, 1],
+    ).createShader(rect));
+    canvas.drawPath(path, Paint()..shader = const RadialGradient(
+      center: Alignment(-.65, -.9), radius: 1.15,
+      colors: [Color(0x77FFB8A0), Color(0x11FF7868), Color(0x00000000)],
+      stops: [0, .42, 1],
+    ).createShader(rect));
+    canvas.drawPath(path, Paint()..shader = const LinearGradient(
+      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+      colors: [Color(0x00FFFFFF), Color(0x00000000), Color(0x990D0003)],
+      stops: [0, .52, 1],
+    ).createShader(rect));
+    canvas.drawPath(path, Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: [Color(0xAAFFD0B8), Color(0x33FF7060), Color(0xAA200005)],
+      ).createShader(rect));
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant WaxSurfacePainter oldDelegate) =>
+      variant != oldDelegate.variant || light != oldDelegate.light || dark != oldDelegate.dark;
 }
