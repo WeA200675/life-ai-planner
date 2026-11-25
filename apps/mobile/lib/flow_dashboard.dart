@@ -23,12 +23,12 @@ class FlowDashboard extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800, letterSpacing: 1.4))),
           const Text('OFFLINE', style: TextStyle(
-            color: PlannerTheme.turquoise, fontSize: 10)),
+            color: PlannerTheme.coral, fontSize: 10)),
         ])),
       LayoutBuilder(builder: (context, size) {
         final w = size.maxWidth < 340 || MediaQuery.textScalerOf(context).scale(16) > 24
-            ? size.maxWidth : (size.maxWidth - 10) / 2;
-        return Wrap(spacing: 10, runSpacing: 10, children: [
+            ? size.maxWidth : (size.maxWidth - 14) / 2;
+        return Wrap(spacing: 14, runSpacing: 18, children: [
           SizedBox(width: w, child: _Tile('OFFEN', '$open', Icons.bolt_outlined,
             0, const [PlannerTheme.bordeaux, PlannerTheme.ruby],
             enabled ? onPreview : null)),
@@ -84,7 +84,7 @@ class _Tile extends StatelessWidget {
           child: InkWell(
               onTap: tap,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(28, 24, 28, 29),
+                padding: const EdgeInsets.fromLTRB(28, 34, 28, 34),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -177,7 +177,11 @@ class WaxSurfacePainter extends CustomPainter {
     if (size.isEmpty) return;
     final path = WaxDropClipper(variant).getClip(size);
     final rect = Offset.zero & size;
-    canvas.drawShadow(path, const Color(0xFF080003), 9, false);
+    canvas.drawShadow(path, const Color(0xFF000000), 14, false);
+    canvas.save();
+    canvas.translate(0, 5);
+    canvas.drawPath(path, Paint()..color = const Color(0xFF310609));
+    canvas.restore();
     canvas.save();
     canvas.clipPath(path);
     canvas.drawPath(path, Paint()..shader = LinearGradient(
@@ -202,6 +206,40 @@ class WaxSurfacePainter extends CustomPainter {
         begin: Alignment.topLeft, end: Alignment.bottomRight,
         colors: [Color(0xAAFFD0B8), Color(0x33FF7060), Color(0xAA200005)],
       ).createShader(rect));
+    // Curved studio softbox reflections follow the molten surface.
+    final w = size.width;
+    final h = size.height;
+    final highlight = Path()
+      ..moveTo(w * .12, h * .17)
+      ..cubicTo(w * .22, h * .015, w * .52, h * .13, w * .77, h * .075)
+      ..cubicTo(w * .86, h * .055, w * .91, h * .12, w * .91, h * .17)
+      ..cubicTo(w * .66, h * .12, w * .42, h * .25, w * .19, h * .22)
+      ..quadraticBezierTo(w * .12, h * .21, w * .12, h * .17)
+      ..close();
+    canvas.drawPath(highlight, Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color(0xF0FFF3E6), Color(0xA0FFB8A6), Color(0x00FFB8A6)],
+        stops: [0, .35, 1],
+      ).createShader(Rect.fromLTWH(0, h * .05, w, h * .20)));
+    final gleam = Path()
+      ..moveTo(w * .10, h * .30)
+      ..cubicTo(w * .055, h * .18, w * .13, h * .095, w * .27, h * .09);
+    canvas.drawPath(gleam, Paint()
+      ..color = const Color(0xDDFFF0DE)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 2.2);
+    final bounce = Path()
+      ..moveTo(w * .17, h * .89)
+      ..cubicTo(w * .36, h * .96, w * .68, h * .88, w * .85, h * .90);
+    canvas.drawPath(bounce, Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..shader = const LinearGradient(colors: [
+        Color(0x00FF6655), Color(0xAAFF6655), Color(0x00FF6655),
+      ]).createShader(rect));
     canvas.restore();
   }
 
