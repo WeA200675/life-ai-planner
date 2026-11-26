@@ -31,7 +31,7 @@ class ReleaseWorkflowPolicyTests(unittest.TestCase):
 
     def test_publish_is_gated_on_success(self):
         step = _step_block(self.source, "Publish verified release candidate and digest")
-        self.assertRegex(step, r"(?m)^        if: success\(\)\s*$")
+        self.assertIn("        if: ${{ success() && vars.ANDROID_RELEASE_CERT_SHA256 != '' }}\n", step)
         self.assertIn("if-no-files-found: error", step)
         self.assertIn("app-release.apk.sha256", step)
         self.assertIn("app-release.apk\n", step)
@@ -61,17 +61,20 @@ class ReleaseWorkflowPolicyTests(unittest.TestCase):
         self.assertLess(self.source.index("- name: Inspect candidate signing certificate"), self.source.index("- name: Publish verified release candidate"))
 
     def test_debug_apk_fallback_is_separate_from_release(self):
-        build = _step_block(self.source, "Build installable debug test APK")
-        publish = _step_block(self.source, "Publish debug test APK (NOT production release)")
-        self.assertIn("flutter build apk --debug", build)
-        self.assertIn('test -s "$apk"', build)
-        self.assertIn('unzip -t "$apk"', build)
-        self.assertIn("sha256sum app-debug.apk", build)
+        debug_job = self.source.split("\n  debug-test-apk:\n", 1)[1].split("\n  android-release:\n", 1)[0]
+        self.assertNotRegex(debug_job, r"(?m)^    needs:")
+        self.assertNotIn("continue-on-error:", debug_job)
+        build = _step_block(debug_job, "Build isolated debug smoke-test APK")
+        publish = _step_block(debug_job, "Publish UNVERIFIED debug device-test APK and digest")
+        for requirement in ("flutter build apk --debug", '-s "$apk"', 'unzip -t "$apk"',
+                            "sha256sum app-debug.apk", "sha256sum --check app-debug.apk.sha256"):
+            self.assertIn(requirement, build)
         self.assertIn("life-ai-planner-debug-test-only", publish)
         self.assertIn("app-debug.apk.sha256", publish)
+        self.assertIn("if-no-files-found: error", publish)
         self.assertNotIn("app-release.apk", publish)
-        self.assertLess(self.source.index("- name: Flutter tests"), self.source.index("- name: Build installable debug test APK"))
-        self.assertLess(self.source.index("- name: Publish debug test APK"), self.source.index("- name: Build release-mode candidate"))
+        self.assertNotRegex(publish, r"(?m)^        if:")
+        self.assertLess(debug_job.index("- name: Build isolated debug"), debug_job.index("- name: Publish UNVERIFIED"))
         release = _step_block(self.source, "Publish verified release candidate and digest")
         self.assertNotIn("app-debug.apk", release)
 
